@@ -216,8 +216,8 @@ ohana/
 Datos por prototipo (no se commitean): `.ohana/findings.json` (comentarios) y
 `design.md` viven junto a cada prototipo, no en este repo.
 
-## Contribuir
+## Sobre este proyecto
 
-Ohana es open source (MIT). Issues y PRs bienvenidos — es una herramienta hecha por y
-para diseñadores que trabajan con agentes; si la usas con otro agente, otro design system
-u otro flujo, contar cómo te fue ya es una contribución.
+Ohana es open source (MIT): úsala, modifícala y redistribúyela con libertad — incluso
+haz tu propio fork si quieres llevarla en otra dirección. Eso sí, se distribuye **tal
+cual**: este repo no acepta contribuciones externas (PRs) ni ofrece soporte.
