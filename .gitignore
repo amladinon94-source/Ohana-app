@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.ohana/
+*.aial.yaml
+.DS_Store
+.claude/

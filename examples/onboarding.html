@@ -1,0 +1,391 @@
+<!doctype html>
+<!-- ohana-onboarding v2 -->
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ohana · Empieza aquí</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ground: #141118;               /* near-black, tinted indigo */
+    --ground-2: #1b1823;
+    --text: #ecebf2;
+    --dim: #9b96ab;
+    --faint: #67637a;
+    --accent: #7cb0ff;               /* Ohana blue */
+    --accent-strong: #a6ccff;
+    --accent-bg: rgba(124,176,255,0.14);
+    --accent-ring: rgba(124,176,255,0.5);
+    --action: #f5d90a;               /* logo yellow — "do this" moments */
+    --action-ink: #4a3d00;           /* dark text on yellow */
+    --action-bg: rgba(245,217,10,0.13);
+    --line: rgba(255,255,255,0.1);
+    --glass: linear-gradient(160deg, rgba(60,58,74,0.5), rgba(22,20,28,0.6));
+    --glass-brd: rgba(255,255,255,0.12);
+    --ok: #57e0a8;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--ground); color: var(--text);
+    font-family: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    -webkit-font-smoothing: antialiased; line-height: 1.6;
+    scroll-snap-type: y proximity; overflow-x: hidden;
+    opacity: 0; transition: opacity 0.7s var(--ease);
+  }
+  body.ready { opacity: 1; }
+  h1, h2, .eyebrow, .brand span, .cta { font-family: "Special Elite", ui-monospace, monospace; }
+  /* subtle dotted texture, like the Moka canvas */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.035) 1px, transparent 0) 0 0 / 26px 26px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 40%, transparent 100%);
+  }
+
+  .scene {
+    position: relative; z-index: 1;
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+    padding: 96px max(24px, 8vw); scroll-snap-align: center; max-width: 1100px; margin: 0 auto;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 22px;
+  }
+  .eyebrow .n { color: var(--faint); font-variant-numeric: tabular-nums; }
+  h1 {
+    margin: 0; font-size: clamp(32px, 5vw, 60px); font-weight: 400; letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  h2 {
+    margin: 0; font-size: clamp(23px, 3.1vw, 38px); font-weight: 400; letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .accent { color: var(--accent); }
+  /* signature: a stroke that draws itself under a word */
+  .mark { position: relative; white-space: nowrap; }
+  .mark::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0.08em; height: 0.09em;
+    background: var(--accent); border-radius: 2px; transform: scaleX(0); transform-origin: left;
+    transition: transform 0.9s var(--ease) 0.5s;
+  }
+  .scene.in .mark::after { transform: scaleX(1); }
+  .lead { font-size: clamp(13.5px, 1.35vw, 15.5px); color: var(--dim); max-width: 46ch; margin: 22px 0 0; font-weight: 400; line-height: 1.65; }
+  .kicker { font-size: 12.5px; color: var(--faint); max-width: 58ch; margin: 14px 0 0; }
+
+  /* orchestrated reveal */
+  [data-r] { opacity: 0; transform: translateY(28px); filter: blur(10px); transition: opacity 0.85s var(--ease), transform 0.85s var(--ease), filter 0.85s var(--ease); }
+  .scene.in [data-r] { opacity: 1; transform: none; filter: none; }
+  .scene.in [data-r="1"] { transition-delay: 0.06s; }
+  .scene.in [data-r="2"] { transition-delay: 0.15s; }
+  .scene.in [data-r="3"] { transition-delay: 0.26s; }
+  .scene.in [data-r="4"] { transition-delay: 0.38s; }
+
+  /* CTA */
+  .cta {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 40px; align-self: flex-start;
+    background: var(--action); color: var(--action-ink); border: none; border-radius: 999px;
+    padding: 13px 22px; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+    transition: transform 0.5s var(--ease), box-shadow 0.5s var(--ease);
+    box-shadow: 0 8px 30px rgba(245,217,10,0.24);
+  }
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(245,217,10,0.36); }
+  .cta svg { width: 18px; height: 18px; transition: transform 0.4s var(--ease); }
+  .cta:hover svg { transform: translateX(4px); }
+  .ghost {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; align-self: flex-start;
+    background: none; border: none; color: var(--dim); font: inherit; font-size: 14px; cursor: pointer;
+    border-bottom: 1px solid var(--line); padding: 4px 0; transition: color 0.3s;
+  }
+  .ghost:hover { color: var(--text); }
+
+  /* glass card — the app's language, used with purpose */
+  .card {
+    margin-top: 40px; background: var(--glass); border: 1px solid var(--glass-brd); border-radius: 18px;
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4); padding: 26px; max-width: 560px;
+  }
+  .card-row { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; flex: 1; min-width: 240px; }
+  .steps li { display: flex; gap: 13px; align-items: flex-start; font-size: 13.5px; color: var(--dim); line-height: 1.6; }
+  .steps b { color: var(--text); font-weight: 600; }
+  .steps .i {
+    flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-bg);
+    color: var(--accent-strong); display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  kbd {
+    font: inherit; font-size: 0.86em; font-weight: 600; background: rgba(255,255,255,0.08);
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 1px 7px; color: var(--text);
+  }
+  .chip { color: var(--accent-strong); font-weight: 600; }
+
+  /* prompt to copy */
+  .prompt { margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.28); }
+  .prompt-bar { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+  .prompt-bar span { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  .copy { background: none; border: 1px solid var(--line); color: var(--dim); border-radius: 7px; padding: 4px 12px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.25s; }
+  .copy:hover { color: var(--text); border-color: var(--accent-ring); }
+  .copy.done { color: var(--ok); border-color: var(--ok); }
+  pre { margin: 0; padding: 14px; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 13px; line-height: 1.6; color: var(--dim); white-space: pre-wrap; }
+  pre .hl { color: var(--accent-strong); }
+  code.cmd { color: var(--action); }
+
+  /* practice zone — the element you ask your agent to change */
+  .practice {
+    margin-top: 22px; padding: 26px; border: 1px dashed var(--line); border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px; background: rgba(255,255,255,0.02);
+  }
+  .practice-label { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+  #practice-button {
+    background: var(--ground-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 13px 22px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: transform 0.3s var(--ease);
+  }
+  #practice-button:hover { transform: scale(1.03); }
+
+  /* mini flow diagram (Moka scene) */
+  .flow { display: flex; align-items: center; gap: 12px; margin-top: 36px; flex-wrap: wrap; }
+  .node {
+    background: var(--glass); border: 1px solid var(--glass-brd); border-radius: 12px; padding: 12px 16px;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); font-size: 14px; font-weight: 600;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.32);
+  }
+  .node small { display: block; font-weight: 400; color: var(--faint); font-size: 12px; margin-top: 2px; }
+  .node.dec { border-color: var(--accent-ring); }
+  .node.pill { border-radius: 999px; padding: 8px 16px; font-size: 12.5px; color: var(--dim); }
+  .arrow { color: var(--faint); flex-shrink: 0; }
+  .arrow.yes { color: var(--ok); }
+  .arrow.build { color: var(--action); }
+
+  /* screen anatomy: Página → Regiones → Secciones → Componentes */
+  .anatomy {
+    margin-top: 26px; max-width: 420px; background: var(--ground-2); border: 1px solid var(--line);
+    border-radius: 14px; overflow: hidden; font-size: 12.5px; box-shadow: 0 18px 44px rgba(0,0,0,0.35);
+  }
+  .a-head { padding: 10px 14px; border-bottom: 1px solid var(--line); font-weight: 700; font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+  .a-head .a-kind { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); background: var(--accent-bg); padding: 2px 7px; border-radius: 5px; }
+  .a-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .a-region { border: 1.5px dashed rgba(255,255,255,0.22); border-radius: 10px; padding: 10px; }
+  .a-section { border: 1px dashed rgba(255,255,255,0.13); border-radius: 8px; padding: 9px; margin-top: 8px; display: flex; flex-direction: column; gap: 7px; }
+  .a-tag { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--faint); font-weight: 700; }
+  .a-comp {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 7px;
+    padding: 7px 10px; color: var(--dim); display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .a-comp b { color: var(--text); font-weight: 600; }
+  .a-goto { color: var(--accent-strong); font-size: 11.5px; white-space: nowrap; }
+
+  /* design.md token table */
+  .tokens { margin-top: 30px; max-width: 480px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.24); }
+  .tokens table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tokens th { text-align: left; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); padding: 9px 14px; border-bottom: 1px solid var(--line); font-weight: 700; }
+  .tokens td { padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--dim); }
+  .tokens tr:last-child td { border-bottom: none; }
+  .tokens code { color: var(--text); }
+  .sw { display: inline-block; width: 13px; height: 13px; border-radius: 4px; border: 1px solid var(--line); vertical-align: -2px; margin-right: 8px; }
+
+  /* progress rail */
+  #rail { position: fixed; right: 26px; top: 50%; transform: translateY(-50%); z-index: 10; display: flex; flex-direction: column; gap: 14px; }
+  #rail button { width: 9px; height: 9px; border-radius: 50%; border: none; padding: 0; background: rgba(255,255,255,0.18); cursor: pointer; transition: all 0.4s var(--ease); position: relative; }
+  #rail button.on { background: var(--accent); transform: scale(1.35); box-shadow: 0 0 0 4px var(--accent-bg); }
+  #rail button::after { content: attr(data-l); position: absolute; right: 20px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-size: 12px; color: var(--dim); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  #rail button:hover::after { opacity: 1; }
+
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; align-self: flex-start; }
+  .brand img { width: 34px; height: 34px; border-radius: 8px; }
+  .brand span { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .beta { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--accent); background: var(--accent-bg); padding: 2px 7px; border-radius: 5px; text-transform: uppercase; }
+  .foot { margin-top: 30px; font-size: 13px; color: var(--faint); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    body { opacity: 1 !important; transition: none !important; }
+    [data-r], .mark::after, .cta, .cta svg { transition: none !important; }
+    [data-r] { opacity: 1; transform: none; filter: none; }
+    .mark::after { transform: scaleX(1); }
+  }
+</style>
+</head>
+<body>
+
+<nav id="rail"></nav>
+
+<!-- 01 · HERO -->
+<section class="scene" id="s-hero" data-title="Bienvenida">
+  <div class="brand" data-r="1"><img src="../assets/logo.png" alt="Ohana" /><span>Ohana</span><span class="beta">beta</span></div>
+  <h1 data-r="1">Dirige.<br/><span class="mark accent">Tu agente construye.</span></h1>
+  <p class="lead" data-r="2">Tu espacio para diseñar productos: abres una carpeta, defines la experiencia en flujos y prototipos, y tu agente escribe el código real, sin salir de la ventana. Cada escena es para <b style="color:var(--text)">hacer</b>, no para leer.</p>
+  <button class="cta" data-r="3" onclick="go('s-change')">Empezar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+  <button class="ghost" data-r="4" onclick="go('s-open')">Ya lo conozco, saltar al final</button>
+</section>
+
+<!-- 02 · PRIMER CAMBIO -->
+<section class="scene" id="s-change" data-title="Tu primer cambio">
+  <div class="eyebrow" data-r="1"><span class="n">01</span> · Pídeselo al agente</div>
+  <h2 data-r="1">Cambia algo <span class="mark accent">sin tocar el código</span></h2>
+  <p class="lead" data-r="2">Corre tu agente en la terminal de Ohana, cópiale el prompt y míralo cambiar el botón de abajo <b style="color:var(--text)">aquí mismo</b>.</p>
+
+  <div class="practice" data-r="3">
+    <span class="practice-label">⌖ Zona de práctica</span>
+    <button id="practice-button" data-ai-id="practice-button">Cámbiame de color</button>
+  </div>
+
+  <div class="prompt" data-r="4">
+    <div class="prompt-bar"><span>Prompt para el agente</span><button class="copy" type="button">Copiar</button></div>
+    <pre>En <span class="hl">onboarding.html</span>, cambia el fondo del botón con data-ai-id="practice-button" a índigo (#8b9bff) y el texto a #141118.</pre>
+  </div>
+</section>
+
+<!-- 03 · COMENTARIOS -->
+<section class="scene" id="s-comment" data-title="Comentarios">
+  <div class="eyebrow" data-r="1"><span class="n">02</span> · Señala, no describas</div>
+  <h2 data-r="1">Deja un pin <span class="mark accent">donde algo no cuadra</span></h2>
+  <p class="lead" data-r="2">Comentas sobre el elemento real, como en Figma. El agente lee el pin, sabe a qué te refieres y responde.</p>
+  <div class="card" data-r="3">
+    <ol class="steps">
+      <li><span class="i">1</span><span>Activa el modo comentario (<kbd>⇧⌘M</kbd>) y haz clic en cualquier elemento de esta página.</span></li>
+      <li><span class="i">2</span><span>Escribe qué cambiar. Queda un <b>pin numerado</b> anclado al elemento.</span></li>
+      <li><span class="i">3</span><span>En el panel <span class="chip">Comments</span> (<kbd>⇧⌘F</kbd>), el agente responde y resuelve.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 04 · MOKA -->
+<section class="scene" id="s-moka" data-title="Moka">
+  <div class="eyebrow" data-r="1"><span class="n">03</span> · Del mapa al código</div>
+  <h2 data-r="1">Mapea el flujo, y <span class="mark accent">que el agente lo levante</span></h2>
+  <p class="lead" data-r="2">Abre un flujo desde el navegador y entras a <span class="chip">Moka</span>: dibujas el user-flow o sitemap con nodos opinados (páginas, decisiones con salidas Sí/No, inicio y fin). No es un dibujo aparte: es el brief que, con «A prototipo», el agente vuelve HTML real en tu proyecto.</p>
+
+  <div class="flow" data-r="3">
+    <div class="node pill">Inicio</div>
+    <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
+    <div class="node">Login</div>
+    <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
+    <div class="node dec">¿Válido?<small>Sí / No</small></div>
+    <svg class="arrow yes" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
+    <div class="node" style="border-color:var(--action)">Prototipo real</div>
+  </div>
+
+  <div class="card-row" style="align-items:stretch">
+    <div class="anatomy" data-r="4">
+      <div class="a-head"><span class="a-kind">Página</span> Login</div>
+      <div class="a-body">
+        <div class="a-region"><span class="a-tag">Región · Body</span>
+          <div class="a-section"><span class="a-tag">Sección · Formulario</span>
+            <div class="a-comp"><b>Input</b> Correo</div>
+            <div class="a-comp"><b>Button</b> Entrar <span class="a-goto">→ Home</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:260px;max-width:520px" data-r="4">
+      <p class="kicker" style="margin-top:26px">Cada tarjeta se <b style="color:var(--text)">componetiza</b>: regiones que definen el layout (píntalas en el editor tipo grid), secciones con nombre y componentes del catálogo o de tu design system. Un componente puede conectar a otra página, y volverse <span class="chip">global</span> para reutilizarlo.</p>
+      <div class="prompt" style="margin-top:20px">
+        <div class="prompt-bar"><span>Cuando tengas el flujo</span><button class="copy" type="button">Copiar</button></div>
+        <pre>Toma el flujo de Moka (<span class="hl">.ohana/flow.json</span>) y construye la pantalla "Login" en HTML, respetando sus regiones, secciones, componentes y la rama de la decisión.</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 · DESIGN.MD -->
+<section class="scene" id="s-design" data-title="design.md">
+  <div class="eyebrow" data-r="1"><span class="n">04</span> · La fuente de verdad</div>
+  <h2 data-r="1">El diseño vive en un archivo, <span class="mark accent">no en tu memoria</span></h2>
+  <p class="lead" data-r="2"><span class="chip">design.md</span> guarda tokens, principios, voz y decisiones. Lo editas visual en la sección <b style="color:var(--text)">Design</b> del proyecto; tu agente lo lee antes de tocar la UI y lo mantiene al día.</p>
+
+  <div class="tokens" data-r="3">
+    <table>
+      <tr><th>Token</th><th>Valor</th><th>Uso</th></tr>
+      <tr><td><code>--accent</code></td><td><span class="sw" style="background:#7cb0ff"></span><code>#7cb0ff</code></td><td>Interacción</td></tr>
+      <tr><td><code>--action</code></td><td><span class="sw" style="background:#f5d90a"></span><code>#f5d90a</code></td><td>Momento de acción</td></tr>
+      <tr><td><code>--ground</code></td><td><span class="sw" style="background:#141118"></span><code>#141118</code></td><td>Fondo</td></tr>
+    </table>
+  </div>
+
+  <div class="prompt" data-r="4" style="max-width:560px">
+    <div class="prompt-bar"><span>Prueba: registra una decisión</span><button class="copy" type="button">Copiar</button></div>
+    <pre>Registra en <span class="hl">design.md</span> esta decisión: los CTA usan --action (#f5d90a) con texto #4a3d00 y radio 999. Motivo: es el momento de acción de la marca.</pre>
+  </div>
+</section>
+
+<!-- 06 · EL CICLO -->
+<section class="scene" id="s-cycle" data-title="El ciclo">
+  <div class="eyebrow" data-r="1"><span class="n">05</span> · De la idea al repositorio</div>
+  <h2 data-r="1">Un solo hilo: <span class="mark accent">del flujo al código real</span></h2>
+  <p class="lead" data-r="2">Nada se queda en el dibujo. Defines en Flujos, iteras el prototipo con comentarios, y cuando está listo: «Generar handoff» destila el proyecto en tickets listos para Linear, y «Llevar a repositorio» lo implementa con los componentes reales de tu design system.</p>
+
+  <div class="flow" data-r="3">
+    <div class="node">Flujos</div>
+    <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
+    <div class="node">Prototipo</div>
+    <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
+    <div class="node">Comentarios</div>
+    <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
+    <div class="node" style="border-color:var(--ok);color:var(--ok)">Handoff</div>
+    <svg class="arrow build" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
+    <div class="node" style="border-color:var(--action)">Repositorio</div>
+  </div>
+
+  <p class="kicker" data-r="4">El puente es <b style="color:var(--text)">MCP</b>: tu agente ve el mismo proyecto que tú (comentarios, flujos, design.md) y sus cambios aparecen en vivo. Se conecta una vez desde el chip <b style="color:var(--text)">MCP</b> del header.</p>
+</section>
+
+<!-- 07 · CIERRE -->
+<section class="scene" id="s-open" data-title="Tu proyecto">
+  <div class="eyebrow" data-r="1"><span class="n">06</span> · Tu turno</div>
+  <h2 data-r="1">Abre lo tuyo.<br/><span class="mark accent">Empieza a dirigir.</span></h2>
+  <p class="lead" data-r="2">Abre una <b>carpeta</b> y se vuelve tu proyecto: el navegador izquierdo articula sus <kbd>Flujos</kbd> · <kbd>Prototipos</kbd> · <kbd>Planes</kbd> · <kbd>Handoff</kbd> · <kbd>Design</kbd>. También un repo (localhost) o una URL; cada tab es su propio espacio y recuerda dónde estaba.</p>
+  <button class="cta" data-r="3" onclick="console.log('__OHANA_OPEN__')">Abrir un proyecto <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+  <p class="foot" data-r="4">Y para iterar rápido, siempre a mano: live reload al guardar, inspector (<kbd>⇧⌘I</kbd>), breakpoints, zoom y screenshots (<kbd>⇧⌘S</kbd>).</p>
+</section>
+
+<script>
+  // Reveal each scene as it enters, and drive the progress rail.
+  var scenes = Array.prototype.slice.call(document.querySelectorAll(".scene"));
+  var rail = document.getElementById("rail");
+  scenes.forEach(function (sc) {
+    var b = document.createElement("button");
+    b.setAttribute("data-l", sc.getAttribute("data-title"));
+    b.addEventListener("click", function () { sc.scrollIntoView({ behavior: "smooth", block: "center" }); });
+    rail.appendChild(b);
+  });
+  var dots = Array.prototype.slice.call(rail.children);
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      var i = scenes.indexOf(e.target);
+      if (e.isIntersecting) {
+        e.target.classList.add("in");
+        if (e.intersectionRatio > 0.5) dots.forEach(function (d, j) { d.classList.toggle("on", j === i); });
+      }
+    });
+  }, { threshold: [0.15, 0.5] });
+  scenes.forEach(function (sc) { io.observe(sc); });
+  dots[0].classList.add("on");
+  // Opening sequence: fade the page in, then let the hero reveal with its stagger.
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      document.body.classList.add("ready");
+      setTimeout(function () { scenes[0].classList.add("in"); }, 160);
+    });
+  });
+
+  window.go = function (id) { var el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); };
+
+  // Copy buttons
+  document.querySelectorAll(".copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var pre = btn.closest(".prompt").querySelector("pre");
+      var txt = pre.textContent;
+      try { navigator.clipboard.writeText(txt); } catch (e) {}
+      var old = btn.textContent; btn.textContent = "Copiado ✓"; btn.classList.add("done");
+      setTimeout(function () { btn.textContent = old; btn.classList.remove("done"); }, 1600);
+    });
+  });
+</script>
+</body>
+</html>
