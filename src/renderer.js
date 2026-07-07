@@ -221,6 +221,14 @@
       t.wvReady = false;
       t.wv = (t.kind === "file" || t.previewPath) ? buildFileWebview(t) : buildURLWebview(t);
       canvas.appendChild(t.wv);
+    } else if (t.wvFailed) {
+      // Coming back to a tab whose load failed earlier (e.g. the dev server
+      // wasn't up at session restore): rebuild NOW instead of spinning a loader
+      // over a dead error page (reload() there is useless).
+      try { t.wv.remove(); } catch (e) {}
+      t.wvReady = false;
+      t.wv = (t.kind === "file" || t.previewPath) ? buildFileWebview(t) : buildURLWebview(t);
+      canvas.appendChild(t.wv);
     }
     tabs.forEach((x) => { if (x.wv) x.wv.classList.toggle("wv-hidden", x !== t); });
     webview = t.wv;
@@ -2415,7 +2423,7 @@
       const result = await window.api.repoStart({ dir: rdDir, command, url });
       if (result.error) { loadingEl.classList.remove("active"); showToast("Falló: " + result.error, "warn"); return; }
       statusEl.textContent = "Listo"; subEl.textContent = result.url;
-      openRepoTab(rdDir, result.url);
+      openRepoTab(rdDir, result.url, command);
       setTimeout(() => loadingEl.classList.remove("active"), 500);
       showToast("Repo cargado — " + result.url, "check");
     } catch (err) {
@@ -2434,10 +2442,68 @@
     wv.addEventListener("did-fail-load", (e) => {
       console.error("Webview load failed:", e.errorCode, e.errorDescription, e.validatedURL);
       if (e.errorCode === -3) return; // Aborted (normal during HMR)
+      wv._failedLoad = true; // the error page will fire did-finish-load/dom-ready — don't read those as success
       if (wv === webview) showPreviewError(t, e.errorDescription);
+      // Dev servers come and go (session restore races them, restarts, crashes):
+      // for connection-type failures keep knocking every few seconds while the
+      // tab lives, so the preview self-heals the moment the server answers.
+      const transient = [-2, -101, -102, -104, -105, -106, -118, -324].includes(e.errorCode);
+      if (!transient) return;
+      t.wvFailed = true;
+      t._wvRetries = (t._wvRetries || 0) + 1;
+      if (t._wvRetries > 80) return; // ~4 min — beyond any dev server boot
+      // reload() on a never-committed navigation is a no-op — rebuild the
+      // element so the retry actually re-navigates.
+      clearTimeout(t._wvRetryTimer);
+      t._wvRetryTimer = setTimeout(() => {
+        if (t.wv !== wv) return;
+        try { wv.remove(); } catch (err) {}
+        t.wv = null; t.wvReady = false;
+        if (webview === wv) mountWebview(t); // active tab → remount visibly
+        else { t.wv = buildURLWebview(t); t.wv.classList.add("wv-hidden"); canvas.appendChild(t.wv); }
+      }, 3000);
+      const msg = document.getElementById("preview-error-msg");
+      if (wv === webview && msg && !/Reintentando/.test(msg.textContent)) msg.textContent += " Reintentando automáticamente…";
+      // A dev server launched BY Ohana is a child process — it dies with the
+      // app, so a restored repo tab points at a dead localhost. Relaunch the
+      // SAME server it had (remembered command; for older sessions, infer:
+      // port 6006 → storybook script) and let the retry loop reconnect.
+      if (t.kind === "repo" && t.dir && !t._devAutoStart) {
+        t._devAutoStart = true;
+        if (wv === webview) showToast("Levantando el dev server…", "refresh-cw");
+        const startP = t.devCommand
+          ? window.api.repoStart({ dir: t.dir, command: t.devCommand, url: t.src })
+          : window.api.repoDetect(t.dir).then((info) => {
+              if (!info) return null;
+              let script = info.devScript;
+              const port = (t.src.match(/:(\d+)/) || [])[1];
+              if (port === "6006") { const sb = (info.scripts || []).find((s) => /storybook/i.test(s)); if (sb) script = sb; }
+              return script ? window.api.repoStart({ dir: t.dir, url: t.src, script }) : null;
+            });
+        startP.then((r) => {
+          if (!r || !r.url) return;
+          if (r.command && !t.devCommand) { t.devCommand = r.command; saveSession(); } // learned — next restore skips the guess
+          if (r.url !== t.src) {
+            t.src = r.url; t.repoUrl = r.url;
+            if (t.wv) { try { t.wv.remove(); } catch (err) {} t.wv = null; t.wvReady = false; }
+            if (activeTab() === t) mountWebview(t);
+          }
+        }).catch(() => {});
+      }
+    });
+    wv.addEventListener("did-finish-load", () => {
+      // A failed navigation COMMITS chrome-error://chromewebdata and then fires
+      // did-finish-load — that's not a success; keep the retry loop alive.
+      let u = ""; try { u = wv.getURL() || ""; } catch (e) {}
+      if (wv._failedLoad || /^chrome-error:/.test(u)) { wv._failedLoad = false; return; }
+      t.wvFailed = false; t._wvRetries = 0; clearTimeout(t._wvRetryTimer);
     });
 
     wv.addEventListener("dom-ready", () => {
+      // dom-ready also fires for the committed error page — a tab must not be
+      // marked ready (nor hide its error overlay) for chrome-error content.
+      let u = ""; try { u = wv.getURL() || ""; } catch (e) {}
+      if (wv._failedLoad || /^chrome-error:/.test(u)) return;
       t.wvReady = true;
       if (wv === webview) { hidePreviewError(); hidePreviewLoader(); }
       wv.executeJavaScript(INSPECTOR_SCRIPT).catch(() => {});
@@ -3214,6 +3280,7 @@
           key: t.key, kind: t.kind, src: t.src, name: t.name,
           dir: t.dir || null, repoDir: t.repoDir || null, repoUrl: t.repoUrl || null,
           componentsDir: t.componentsDir || null, storybookUrl: t.storybookUrl || null,
+          devCommand: t.devCommand || null, // how its dev server was launched — restore relaunches the same
           artifact: t.artifact || null, previewPath: t.previewPath || null, // each tab reopens on ITS artifact
         })),
         activeKey: activeKey,
@@ -3229,6 +3296,7 @@
       key: t.key, kind: t.kind, src: t.src, name: t.name,
       dir: t.dir || null, repoDir: t.repoDir || null, repoUrl: t.repoUrl || null,
       componentsDir: t.componentsDir || null, storybookUrl: t.storybookUrl || null,
+      devCommand: t.devCommand || null,
       artifact: t.artifact || null, previewPath: t.previewPath || null,
     }));
     if (s.toolbarPos) setToolbarPosition(s.toolbarPos);
@@ -3431,10 +3499,12 @@
   }
 
   // Open a running repo as its own tab. Main already set repoDir/mode in
-  // repo:start / repo:connectExisting before this is called.
-  function openRepoTab(dir, url) {
+  // repo:start / repo:connectExisting before this is called. `command` is the
+  // shell line that launched its dev server — remembered so a session restore
+  // can relaunch the SAME server (storybook vs dev vs custom), not a guess.
+  function openRepoTab(dir, url, command) {
     const key = "repo:" + dir;
-    upsertTab({ key, kind: "repo", src: url, name: tabName(dir) || urlLabel(url), dir, repoDir: dir, repoUrl: url });
+    upsertTab({ key, kind: "repo", src: url, name: tabName(dir) || urlLabel(url), dir, repoDir: dir, repoUrl: url, devCommand: command || (findTab(key) || {}).devCommand || null });
     activateTab(key);
   }
 
@@ -4062,6 +4132,7 @@
   let _navScanDir = null, _navScanAt = 0, _navScanning = false, _navScanQueued = false;
   async function renderProjectNav(force) {
     updateNavVisibility();
+    refreshGitCard(); // footer git card follows the same visibility (cheap: 8s cache)
     const at = activeTab();
     if (!isNavTab(at)) { projManifest = null; return; }
     document.getElementById("pn-name").textContent = at.name || "Proyecto";
@@ -4085,9 +4156,24 @@
     const tags = projTags || {};
     const sections = at.kind === "repo" ? NAV_SECTIONS.filter((s) => s.key !== "prototypes") : NAV_SECTIONS;
     const body = document.getElementById("pn-body");
+    // A repo tab's "prototype" is its running localhost — it's not a file the
+    // scan can list, so give it a fixed card at the top to come back to after
+    // opening design.md / a board (the reader replaces the center view).
+    const REPO_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+    const repoActive = at.kind === "repo" && !at.artifact && !flowMode;
+    const repoCard = at.kind === "repo"
+      ? '<div class="pn-repo-card' + (repoActive ? " active" : "") + '" data-repoview="1" title="Volver al preview del repo">' +
+        '<span class="pn-repo-ic">' + REPO_IC + '</span>' +
+        '<div class="pn-repo-txt"><span class="pn-repo-name">Preview</span>' +
+        '<span class="pn-repo-url">' + escapeHtml((at.src || "").replace(/^https?:\/\//, "")) + '</span></div>' +
+        '<span class="pn-repo-dot"></span></div>'
+      : "";
     // Collapsed → icon rail (keeps the section icons visible).
     if (navCollapsed) {
-      body.innerHTML = '<div class="pn-rail">' + sections.map((s) => {
+      const repoRail = at.kind === "repo"
+        ? '<div class="pn-rail-ic pn-rail-repo' + (repoActive ? " active" : "") + '" data-repoview="1" title="Preview del repo">' + REPO_IC + '</div>'
+        : "";
+      body.innerHTML = '<div class="pn-rail">' + repoRail + sections.map((s) => {
         const n = (m[s.key] || []).length;
         return '<div class="pn-rail-ic" data-sec="' + s.key + '" title="' + escapeHtml(s.title) + '">' + navSecIcon(s.key) + (n ? '<span class="pn-rail-count">' + n + '</span>' : "") + '</div>';
       }).join("") + '</div>';
@@ -4103,7 +4189,7 @@
         '<span class="pn-ic ' + (icCls || "") + '">' + ic + '</span><span class="pn-label">' + escapeHtml(label) + '</span>' + chip +
         (hasRef ? '<button class="pn-ref" title="@ a la terminal">@</button>' : "") + moreBtn + '</div>';
     };
-    body.innerHTML = sections.map((s) => {
+    body.innerHTML = repoCard + sections.map((s) => {
       let rows;
       if (s.art === "board") rows = (m.boards || []).map((b) => item(boardIc(b.board), "type-" + b.board, b.name, 'data-art="board" data-ref="' + b.id + '"', activeBoard === b.id, false, null, b.name, "board:" + b.id)).join("");
       else rows = (m[s.key] || []).map((p) => item(s.art === "html" ? HTML_IC : MD_IC, "type-" + s.art, p.name, 'data-art="' + s.art + '" data-ref="' + escapeHtml(p.path) + '"', art.path === p.path, true, p.rel, p.name, p.rel)).join("");
@@ -4121,6 +4207,94 @@
         '<div class="pn-sec-items">' + (rows || '<div class="pn-empty">—</div>') + '</div></div>';
     }).join("");
   }
+  // ── Git footer card (VS Code-style) ──────────────────────────────────
+  // Branch + ahead/behind + pending changes for ANY nav tab (project or repo)
+  // whose folder is a git worktree; folders without git never show it. Counts
+  // are against the last-fetched upstream — no network calls.
+  const pnGit = document.getElementById("pn-git");
+  const GIT_BRANCH_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>';
+  const GIT_CHECK_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+  let _gitDir = null, _gitAt = 0, _gitBusy = false, _gitLast = null;
+  async function refreshGitCard(force) {
+    const at = activeTab();
+    if (!isNavTab(at)) { pnGit.classList.remove("visible"); _gitDir = null; return; }
+    const fresh = _gitDir === at.dir && (performance.now() - _gitAt) < 8000;
+    if ((fresh && !force) || _gitBusy) return;
+    _gitBusy = true;
+    let st = null;
+    try { st = await window.api.gitStatus(at.dir); } catch (e) {}
+    _gitBusy = false;
+    const cur = activeTab();
+    if (!cur || cur.dir !== at.dir) { refreshGitCard(true); return; } // switched tab mid-flight
+    _gitDir = at.dir; _gitAt = performance.now();
+    if (!st || !st.git) { pnGit.classList.remove("visible"); return; }
+    const synced = st.upstream && !st.ahead && !st.behind && !st.changes;
+    let badges = "";
+    if (synced) badges = '<span class="pn-git-ok">' + GIT_CHECK_IC + 'Sincronizado</span>';
+    else {
+      if (st.upstream) badges += '<span class="pn-git-badge" title="Commits por bajar / subir">↓' + st.behind + " ↑" + st.ahead + "</span>";
+      else badges += '<span class="pn-git-badge pn-git-noup" title="La rama no tiene upstream">sin remoto</span>';
+      if (st.changes) badges += '<span class="pn-git-badge pn-git-dirty" title="Archivos con cambios sin commit">●' + st.changes + "</span>";
+    }
+    pnGit.innerHTML = '<span class="pn-git-ic">' + GIT_BRANCH_IC + '</span>' +
+      '<span class="pn-git-branch">' + escapeHtml(st.branch) + '</span>' + badges;
+    pnGit.title = "git — " + st.branch + (st.upstream ? " · ↓" + st.behind + " por bajar · ↑" + st.ahead + " por subir" : " · sin upstream") + " · " + st.changes + " cambios locales. Clic para ver el detalle.";
+    pnGit.classList.add("visible");
+    _gitLast = st;
+    if (document.querySelector(".pn-git-pop")) paintGitPopover(); // live-update an open popover
+  }
+  setInterval(() => { if (document.body.classList.contains("nav-avail")) refreshGitCard(); }, 10000);
+
+  // Detail popover (VS Code's SCM view, in miniature): upstream + sync counts +
+  // changed files with their status letter, plus a hand-off to the tab's agent.
+  const GIT_ST_LABEL = { M: "Modificado", A: "Agregado", D: "Eliminado", R: "Renombrado", U: "Nuevo (sin trackear)", C: "Copiado", T: "Tipo cambiado" };
+  function closeGitPopover() { document.querySelectorAll(".pn-git-pop").forEach((n) => n.remove()); }
+  function paintGitPopover() {
+    const pop = document.querySelector(".pn-git-pop"); const st = _gitLast;
+    if (!pop || !st) return;
+    const syncLine = st.upstream
+      ? (st.ahead || st.behind
+        ? "↓" + st.behind + " por bajar · ↑" + st.ahead + " por subir"
+        : "Al día con " + escapeHtml(st.upstreamName || "el remoto"))
+      : "La rama no tiene upstream";
+    const rows = (st.files || []).map((f) =>
+      '<div class="pn-git-file" title="' + escapeHtml((GIT_ST_LABEL[f.st] || f.st) + " — " + f.path) + '">' +
+      '<span class="pn-git-st st-' + escapeHtml(f.st) + '">' + escapeHtml(f.st) + '</span>' +
+      '<span class="pn-git-path">' + escapeHtml(f.path) + '</span></div>').join("");
+    const more = st.changes > (st.files || []).length ? '<div class="pn-git-more">+' + (st.changes - st.files.length) + ' más</div>' : "";
+    const action = st.changes
+      ? '<button class="pn-git-act" data-act="commit">Commit con el agente</button>'
+      : (st.upstream && (st.ahead || st.behind) ? '<button class="pn-git-act" data-act="sync">Sincronizar con el agente</button>' : "");
+    pop.innerHTML =
+      '<div class="pn-git-pop-h">' + GIT_BRANCH_IC + '<b>' + escapeHtml(st.branch) + '</b>' +
+      (st.upstreamName ? '<span class="pn-git-up">→ ' + escapeHtml(st.upstreamName) + '</span>' : "") + '</div>' +
+      '<div class="pn-git-sync">' + syncLine + '</div>' +
+      (st.changes ? '<div class="pn-git-sec">Cambios locales (' + st.changes + ')</div><div class="pn-git-files">' + rows + more + '</div>' : "") +
+      (action ? '<div class="pn-git-pop-f">' + action + '</div>' : "");
+    const act = pop.querySelector(".pn-git-act");
+    if (act) act.onclick = () => {
+      const at = activeTab(); if (!at) return;
+      const md = act.dataset.act === "commit"
+        ? "Haz commit de los cambios pendientes de este repo: revisa `git status` y `git diff`, agrupa los cambios relacionados y escribe mensajes claros. No hagas push sin confirmarlo conmigo."
+        : "Sincroniza este repo con su upstream: `git pull` primero (avísame si hay conflictos en vez de resolverlos a la fuerza) y luego `git push` si hay commits locales.";
+      if (!termVisible) toggleTerminal(); else switchTerminalTo(at);
+      setTimeout(() => window.api.termInput({ tabKey: at.key, data: md }), 240);
+      closeGitPopover(); showToast("Enviado a la terminal", "check");
+    };
+  }
+  pnGit.addEventListener("click", () => {
+    if (document.querySelector(".pn-git-pop")) { closeGitPopover(); return; }
+    const pop = document.createElement("div"); pop.className = "pn-git-pop";
+    const r = pnGit.getBoundingClientRect();
+    pop.style.left = r.left + "px";
+    pop.style.bottom = (window.innerHeight - r.top + 6) + "px";
+    document.body.appendChild(pop);
+    paintGitPopover(); // instant paint from cache…
+    refreshGitCard(true); // …then repaint with fresh data when it lands
+    const out = (ev) => { if (!pop.contains(ev.target) && !pnGit.contains(ev.target)) { closeGitPopover(); document.removeEventListener("mousedown", out, true); } };
+    setTimeout(() => document.addEventListener("mousedown", out, true), 0);
+  });
+
   // ⋯ menu per item: Duplicar / Eliminar.
   // ── Fase 3: Handoff → Repositorio (Ohana orquesta, el agente ejecuta) ──
   // «Generar handoff»: the agent distills the whole project into handoff/*.md.
@@ -4312,6 +4486,17 @@
     mountWebview(t);
     renderProjectNav(); saveSession();
   }
+  // Back to a repo tab's localhost preview (its "prototype"): drop whatever
+  // artifact owns the center (reader/board) and remount the repo webview.
+  async function openRepoPreview() {
+    const t = activeTab(); if (!t || t.kind !== "repo") return;
+    await saveReaderDoc();
+    hideProjReader();
+    if (flowMode) { flowMode = false; syncView(); }
+    t.artifact = null;
+    mountWebview(t);
+    renderProjectNav(); saveSession();
+  }
   let prPath = null, prRel = null, prDirty = false, prSource = "";
   // Serialize the rendered (contenteditable) DOM back to markdown — covers the
   // subset renderMarkdown produces: headings, p/div, lists, quote, pre, table, hr,
@@ -4392,6 +4577,7 @@
     }
     const sech = e.target.closest(".pn-sec-h");
     if (sech) { const k = sech.dataset.sech; navSecCollapsed[k] = !navSecCollapsed[k]; renderProjectNav(); return; }
+    if (e.target.closest("[data-repoview]")) { openRepoPreview(); return; }
     const item = e.target.closest(".pn-item"); if (!item) return;
     if (e.target.closest(".pn-more")) { const r = e.target.closest(".pn-more").getBoundingClientRect(); openNavItemMenu(item, Math.max(8, r.right - 150), r.bottom + 4); return; }
     if (e.target.closest(".pn-ref")) {
@@ -4415,7 +4601,7 @@
   document.getElementById("pr-body").addEventListener("input", () => { if (document.getElementById("proj-reader").classList.contains("mode-edit")) prDirty = true; });
   document.getElementById("pr-body").addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) { e.preventDefault(); saveReaderDoc(); } });
   document.getElementById("pr-ref").onclick = () => { const a = activeTab(); if (a && prRel) { if (!termVisible) toggleTerminal(); else switchTerminalTo(a); setTimeout(() => window.api.termInput({ tabKey: a.key, data: "@" + prRel + " " }), 240); showToast("Insertado @" + prRel, "check"); } };
-  document.getElementById("pr-close").onclick = async () => { await saveReaderDoc(); hideProjReader(); const at = activeTab(); if (at) { at.artifact = null; if (at.previewPath) mountWebview(at); } renderProjectNav(); };
+  document.getElementById("pr-close").onclick = async () => { await saveReaderDoc(); hideProjReader(); const at = activeTab(); if (at) { at.artifact = null; if (at.previewPath || at.kind === "repo") mountWebview(at); } renderProjectNav(); };
 
   // ════════════════════════════════════════════════════════════════════
   //  Components panel — browse the design system's components (from

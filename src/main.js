@@ -15,7 +15,33 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const chokidar = require("chokidar");
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
+
+// GUI apps on macOS inherit a minimal PATH (/usr/bin:/bin:…) that lacks
+// Homebrew/nvm/asdf, so commands we spawn (`npm run dev`, the tab shells) die
+// with exit 127 (command not found) in the packaged app. Resolve the user's
+// real PATH from their login shell once at startup; markers isolate it from
+// any rc-file noise (prompts, greeters). Never runs anything user-visible.
+function fixSpawnPath() {
+  if (process.platform !== "darwin") return;
+  try {
+    const shell = process.env.SHELL || "/bin/zsh";
+    const out = execFileSync(shell, ["-ilc", 'printf "__OHANA_PATH__%s__END__" "$PATH"'], {
+      encoding: "utf-8",
+      timeout: 3000,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const m = /__OHANA_PATH__(.*?)__END__/s.exec(out || "");
+    if (m && m[1].includes("/")) process.env.PATH = m[1];
+  } catch (e) { /* fall through to the static additions */ }
+  // Belt and braces: common install locations, deduped.
+  const parts = (process.env.PATH || "").split(":").filter(Boolean);
+  for (const p of ["/usr/local/bin", "/opt/homebrew/bin"]) {
+    if (!parts.includes(p)) parts.push(p);
+  }
+  process.env.PATH = parts.join(":");
+}
+fixSpawnPath();
 
 // Safety net: a rejected debugger/CDP promise must never take the whole app
 // down. Log it and keep running (Node would otherwise crash the main process).
@@ -748,7 +774,7 @@ function resolveComponentCatalog(dir) {
   const ds = findOhanaCatalog(dir);
   if (ds) return { source: "ohana-field", components: ds.components, css: ds.css || null };
 
-  // 4. desyk-style mcp-context in node_modules
+  // 4. mcp-context in node_modules (any package that ships it)
   const mcp = findMcpContext(dir);
   if (mcp) { const r = adaptMcpContext(mcp); if (r) return { source: "mcp-context", components: r }; }
 
@@ -1113,7 +1139,9 @@ function startDevServer(dir, command, preferredUrl) {
     });
 
     proc.on("exit", (code) => {
-      if (!urlFound) reject(new Error("Dev server exited with code " + code));
+      if (!urlFound) reject(new Error(code === 127
+        ? "No encontré el comando para levantar el dev server (exit 127) — ¿está instalado el package manager del repo (npm/yarn/pnpm)?"
+        : "Dev server exited with code " + code));
       devServerProcess = null;
     });
 
@@ -1127,6 +1155,44 @@ function startDevServer(dir, command, preferredUrl) {
     }, preferredUrl ? 12000 : 30000);
   });
 }
+
+// Git state for the navigator's footer card (VS Code-style): branch, ahead/
+// behind the upstream, and count of local pending changes. No network — counts
+// are against the last-fetched upstream, like VS Code's status bar.
+ipcMain.handle("git:status", async (_, dir) => {
+  const run = (args) => new Promise((res) => {
+    let out = "";
+    const p = spawn("git", args, { cwd: dir });
+    p.stdout.on("data", (d) => { out += d; });
+    p.on("error", () => res(null));
+    p.on("close", (code) => res(code === 0 ? out.trim() : null));
+  });
+  try {
+    if (!dir || !fs.existsSync(dir)) return { git: false };
+    if ((await run(["rev-parse", "--is-inside-work-tree"])) !== "true") return { git: false };
+    const branch = (await run(["rev-parse", "--abbrev-ref", "HEAD"])) || "HEAD";
+    const porcelain = await run(["status", "--porcelain"]);
+    const lines = porcelain ? porcelain.split("\n").filter(Boolean) : [];
+    // XY path — untracked (??) surfaces as U; renames keep the new path.
+    const files = lines.slice(0, 50).map((l) => {
+      const st = l.slice(0, 2).trim();
+      let p = l.slice(3);
+      if (st[0] === "R" && p.includes(" -> ")) p = p.split(" -> ")[1];
+      return { st: st === "??" ? "U" : (st[0] || st[1] || "M"), path: p };
+    });
+    // left-right against @{upstream}: left = commits to pull, right = to push.
+    const counts = await run(["rev-list", "--left-right", "--count", "@{upstream}...HEAD"]);
+    let behind = 0, ahead = 0, upstream = false, upstreamName = null;
+    if (counts != null) {
+      upstream = true;
+      upstreamName = await run(["rev-parse", "--abbrev-ref", "@{upstream}"]);
+      const m = counts.split(/\s+/);
+      behind = parseInt(m[0], 10) || 0;
+      ahead = parseInt(m[1], 10) || 0;
+    }
+    return { git: true, branch, changes: lines.length, ahead, behind, upstream, upstreamName, files };
+  } catch (e) { return { git: false }; }
+});
 
 ipcMain.handle("repo:detect", (_, dir) => detectRepoInfo(dir));
 
@@ -1150,7 +1216,7 @@ ipcMain.handle("repo:start", async (_, { dir, command, url, script }) => {
     watchSourceFiles(dir);
     watchFindings();
     writeActiveProject();
-    return { url: resolvedUrl };
+    return { url: resolvedUrl, command: cmd };
   } catch (err) {
     return { error: err.message };
   }
@@ -1423,8 +1489,12 @@ ipcMain.handle("term:start", (_, { cols, rows, tabKey, cwd, file } = {}) => {
     const env = Object.assign({}, process.env);
     if (file && fs.existsSync(file)) { env.OHANA_FILE = file; env.OHANA_FILE_NAME = path.basename(file); }
     else { delete env.OHANA_FILE; delete env.OHANA_FILE_NAME; }
+    // Always advertise full color support. xterm.js renders truecolor, but the
+    // launch context decides what the shell inherits: from Finder COLORTERM is
+    // unset and programs fall back to a dim 16-color palette.
+    env.COLORTERM = "truecolor";
     const proc = ptyLib.spawn(shell, [], {
-      name: "xterm-color",
+      name: "xterm-256color",
       cols: cols || 80,
       rows: rows || 24,
       cwd: startCwd,

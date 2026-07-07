@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld("api", {
   contextList: (dir) => ipcRenderer.invoke("context:list", dir),
   contextRead: (filePath) => ipcRenderer.invoke("context:read", filePath),
   projectScan: (dir) => ipcRenderer.invoke("project:scan", dir),
+  gitStatus: (dir) => ipcRenderer.invoke("git:status", dir),
   projectInit: (dir) => ipcRenderer.invoke("project:init", dir),
   projectWriteFile: (data) => ipcRenderer.invoke("project:writeFile", data),
   projectDeleteFile: (filePath) => ipcRenderer.invoke("project:deleteFile", filePath),

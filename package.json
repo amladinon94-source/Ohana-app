@@ -1,6 +1,6 @@
 {
   "name": "ohana",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Ohana — Superpowered HTML + React preview for designers working with an AI agent",
   "main": "src/main.js",
   "repository": {
