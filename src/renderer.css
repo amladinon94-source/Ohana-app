@@ -2312,6 +2312,15 @@
   .cc-icon.on { border-color: var(--accent-ring); color: var(--accent-strong); background: var(--accent-bg); }
   .cc-create { width: 100%; margin-top: 4px; padding: 8px; border: none; border-radius: var(--r-sm); background: var(--accent); color: #fff; font-family: inherit; font-size: var(--fs-md); font-weight: 600; cursor: default; }
   .cc-create:hover { background: var(--accent-strong); }
+  /* Edit mode: remove the component from your library */
+  .cc-delete { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); width: 100%; margin-top: 6px; padding: 7px; border: none; border-radius: var(--r-sm); background: transparent; color: var(--danger, #f87171); font-family: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: default; }
+  .cc-delete:hover { background: rgba(248,113,113,0.12); }
+  .cc-delete svg { width: 13px; height: 13px; }
+  /* Hover pencil on "My components" rows (palette) */
+  .fm-edit { display: flex; align-items: center; margin-left: auto; padding: 3px; border: none; border-radius: var(--r-xs); background: transparent; color: var(--text-d); visibility: hidden; cursor: default; }
+  .fm-item:hover .fm-edit { visibility: visible; }
+  .fm-edit:hover { color: var(--accent-strong); background: var(--accent-bg); }
+  .fm-edit svg { width: 13px; height: 13px; }
   .fm-edge-input { width: 100%; box-sizing: border-box; margin: 2px 0 2px; background: rgba(0,0,0,0.28); border: 1px solid var(--accent-ring); border-radius: var(--r-sm); color: var(--text); font-family: inherit; font-size: var(--fs-md); padding: 7px 9px; }
   .fm-edge-input:focus { outline: none; }
   .flow-edge-hit { cursor: pointer; }

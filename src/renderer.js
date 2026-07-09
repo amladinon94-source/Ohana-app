@@ -7080,15 +7080,19 @@
   // Icon choices offered when creating your own component.
   const ICON_CHOICES = ["cube", "accordion", "alert", "avatar", "badge", "breadcrumb", "button", "buttonGroup", "calendar", "carousel", "chart", "checkbox", "collapsible", "search", "menu", "table", "datePicker", "box", "fileText", "comment", "eye", "link", "db", "sparkle", "note", "heading"];
   // Create a personal (global) component: name + icon. Calls onCreate(comp) when done.
-  function openComponentCreator(rect, onCreate) {
-    let chosen = "cube";
+  // Create OR edit a personal (library) component. Pass `existing` to edit:
+  // prefilled name/icon, Save updates the library entry, and Delete removes it.
+  // Placed blocks are copies — editing the library never rewrites your boards.
+  function openComponentCreator(rect, onCreate, existing) {
+    let chosen = (existing && existing.icon) || "cube";
     flowMenu.classList.remove("palette");
     flowMenu.innerHTML =
-      '<div class="fm-label">New component (saved to your library)</div>' +
-      '<input class="fm-search cc-name" placeholder="Name — e.g. Accordion" spellcheck="false" />' +
+      '<div class="fm-label">' + (existing ? "Edit component" : "New component (saved to your library)") + '</div>' +
+      '<input class="fm-search cc-name" placeholder="Name — e.g. Accordion" spellcheck="false" value="' + escapeHtml(existing ? existing.name || "" : "") + '" />' +
       '<div class="fm-label">Icon</div>' +
-      '<div class="cc-icons">' + ICON_CHOICES.map((k, i) => '<button class="cc-icon' + (i === 0 ? " on" : "") + '" data-k="' + k + '" title="' + k + '">' + FI[k] + '</button>').join("") + '</div>' +
-      '<button class="cc-create">Create component</button>';
+      '<div class="cc-icons">' + ICON_CHOICES.map((k) => '<button class="cc-icon' + (k === chosen ? " on" : "") + '" data-k="' + k + '" title="' + k + '">' + FI[k] + '</button>').join("") + '</div>' +
+      '<button class="cc-create">' + (existing ? "Save changes" : "Create component") + '</button>' +
+      (existing ? '<button class="cc-delete">' + FI.trash + ' Delete from library</button>' : '');
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 260) + "px";
     flowMenu.style.top = Math.min(rect.bottom + 4, window.innerHeight - 300) + "px";
     flowMenu.classList.add("visible");
@@ -7097,10 +7101,21 @@
     flowMenu.querySelectorAll(".cc-icon").forEach((b) => b.onclick = () => { chosen = b.dataset.k; flowMenu.querySelectorAll(".cc-icon").forEach((x) => x.classList.toggle("on", x === b)); });
     const create = () => {
       const name = nameInp.value.trim(); if (!name) { nameInp.focus(); return; }
+      if (existing) {
+        existing.name = name; existing.icon = chosen;
+        saveUserComponents(); closeFlowMenu(); if (onCreate) onCreate(existing);
+        return;
+      }
       const comp = { id: "uc" + Date.now().toString(36), name: name, icon: chosen };
       userComponents.push(comp); saveUserComponents(); closeFlowMenu(); onCreate(comp);
     };
     flowMenu.querySelector(".cc-create").onclick = create;
+    const del = flowMenu.querySelector(".cc-delete");
+    if (del) del.onclick = () => {
+      userComponents = userComponents.filter((c) => c !== existing);
+      saveUserComponents(); closeFlowMenu(); showToast("Component removed from your library", "refresh-cw");
+      if (onCreate) onCreate(null);
+    };
     nameInp.addEventListener("keydown", (e) => { if (e.key === "Enter") create(); });
   }
   // Generic ⋯ menu for a canvas object — actions: [{ label, icon, danger, fn }].
@@ -7227,7 +7242,8 @@
         const base = BASE_COMPONENTS.filter((c) => match(c.name));
         if (base.length) h += '<div class="fm-label">Components</div>' + base.map((c) => item('data-comp="' + BASE_COMPONENTS.indexOf(c) + '"', c.icon, c.name)).join("");
         const uc = userComponents.filter((c) => match(c.name));
-        if (uc.length) h += '<div class="fm-label">My components</div>' + uc.map((c) => item('data-uc="' + userComponents.indexOf(c) + '"', c.icon, c.name)).join("");
+        // Your library rows carry a hover pencil → edit/delete the component.
+        if (uc.length) h += '<div class="fm-label">My components</div>' + uc.map((c) => '<div class="fm-item" data-uc="' + userComponents.indexOf(c) + '">' + (FI[c.icon] || FI.cube) + '<span>' + escapeHtml(c.name) + '</span><button class="fm-edit" title="Edit component">' + FI.edit + '</button></div>').join("");
         const fc = comps.filter((c) => match(c.name));
         if (fc.length) h += '<div class="fm-label">Project components</div>' + fc.map((c) => item('data-ci="' + comps.indexOf(c) + '"', "cube", c.name || "")).join("");
         h += '<div class="fm-sep"></div>' + item('data-new="1"', "plus", "Create component…");
@@ -7239,8 +7255,13 @@
         if (gids.length) h += '<div class="fm-label">Global sections</div>' + gids.map((id) => item('data-gid="' + id + '"', "diamond", globals[id].title || "Global")).join("");
       }
       list.innerHTML = h || '<div class="fm-label">No results</div>';
-      list.querySelectorAll(".fm-item").forEach((it) => it.onclick = () => {
+      list.querySelectorAll(".fm-item").forEach((it) => it.onclick = (ev) => {
         const d = it.dataset;
+        if (d.uc !== undefined && ev.target.closest(".fm-edit")) { // pencil → edit the library entry, then come back to the palette
+          ev.stopPropagation();
+          openComponentCreator(rect, () => openBlockPalette(s, rect, targetCont, mode), userComponents[+d.uc]);
+          return;
+        }
         if (d.comp !== undefined) { const c = BASE_COMPONENTS[+d.comp]; addBlock({ type: c.name, icon: c.icon, title: c.name, desc: "", items: [] }); }
         else if (d.uc !== undefined) { const c = userComponents[+d.uc]; addBlock({ type: c.name, icon: c.icon, title: c.name, desc: "", items: [] }); }
         else if (d.ci !== undefined) { const c = comps[+d.ci]; if (c) addBlock(compToBlock(c)); }
