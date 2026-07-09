@@ -68,7 +68,8 @@ swatches in the token tables. Your agent reads it before touching the UI and kee
 
 One **folder = one project**. When you open it, Ohana creates its skeleton and the **left
 navigator** lists its artifacts: **Flows** (Moka boards) · **Prototypes** (.html) ·
-**Plans** · **Handoff** · **Design**. Each artifact opens in the center (the artifact
+**Plans** · **Handoff** · **Design**. The list stays live: files or flows your agent adds,
+renames, or deletes on disk show up on their own. Each artifact opens in the center (the artifact
 decides the mode: a flow opens Moka, an HTML file opens the preview, a .md file opens the reader).
 The tabs up top are color-coded contexts: 🟢 project · 🔵 repo (localhost) · 🟡 URL,
 and each tab is an independent space that remembers where it was.
@@ -162,6 +163,10 @@ Optional. Today it supports one key:
 when previewing (in addition to `localhost`, which is always included). `*.acme.dev` also covers
 `acme.dev`. Handy if your dev servers run behind an internal domain with its own HTTPS.
 
+There's also a per-project `.ohana/config.json` (separate file) with `componentsSource`
+(where the Components panel reads your design system from) and `storybookUrl`; Ohana
+writes it for you when you configure those from the UI.
+
 Included skills for agents that support them: `ohana-comments` and `ohana-design` (copy them into your agent's skills folder).
 
 ## Build as a native .app
@@ -184,7 +189,9 @@ Open `dist/Ohana-<version>.dmg` and drag the app into `/Applications`.
 | Toggle toolbar          | ⌘\               |
 | Comment                 | ⇧⌘M              |
 | Comments panel          | ⇧⌘F              |
-| design.md panel         | ⇧⌘D              |
+| Terminal                | ⌘J               |
+| Components panel        | ⇧⌘B              |
+| Network panel           | ⇧⌘N              |
 | Element inspector       | ⇧⌘I              |
 | Full screenshot         | ⇧⌘S              |
 | Section screenshot      | ⇧⌘C              |
@@ -201,16 +208,20 @@ ohana/
 ├── .gitignore
 ├── assets/                 # icon
 ├── examples/
-│   └── onboarding.html     # example prototype (test surface)
+│   ├── onboarding.html     # example prototype (test surface)
+│   └── design.md           # example design source of truth
 ├── mcp/
 │   └── ohana-comments-server.js   # MCP server (comments + design.md)
 ├── skills/                 # agent skills (ohana-comments, ohana-design)
 └── src/
     ├── main.js             # Electron main process
     ├── preload.js          # IPC bridge
+    ├── viewer-preload.js   # preview-side shim (mocks, pins)
     ├── renderer.html       # UI markup (chrome)
     ├── renderer.css        # UI styles
-    └── renderer.js         # UI logic
+    ├── renderer.js         # UI logic
+    ├── lib/                # markdown renderer
+    └── vendor/             # xterm.js
 ```
 
 Per-prototype data (not committed): `.ohana/findings.json` (comments) and
