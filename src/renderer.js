@@ -5513,8 +5513,15 @@
   const flowMini = document.getElementById("flow-minimap");
 
   function flowGenId() { return "s" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
+  let _flowWcT = null;
   function flowApplyView() {
     flowNodes.style.transform = "translate(" + flowView.x + "px," + flowView.y + "px) scale(" + flowView.s + ")";
+    // Promote the layer only WHILE panning/zooming; release on idle so the
+    // browser re-rasters at the final scale (a permanent will-change kept the
+    // cached raster and the canvas looked low-res after zooming).
+    flowNodes.style.willChange = "transform";
+    if (_flowWcT) clearTimeout(_flowWcT);
+    _flowWcT = setTimeout(() => { flowNodes.style.willChange = "auto"; }, 220);
     const z = document.getElementById("flow-zoom"); if (z) z.textContent = Math.round(flowView.s * 100) + "%";
     scheduleCull();      // virtualize (zoom-in) or redraw the canvas overview (zoom-out)
     renderMinimap();
@@ -5750,7 +5757,7 @@
   // those are applied without a rebuild). If it's unchanged, we keep the element.
   const _screenSig = {};
   function screenSig(s) {
-    return s.kind + "|" + screenStatus(s) + "|" + flowFilter + "|" + (s.w || "") + "|" +
+    return s.kind + "|" + screenStatus(s) + "|" + (s.variant || "") + "|" + flowFilter + "|" + (s.w || "") + "|" +
       JSON.stringify({ n: s.name, d: s.desc, a: s.apis, l: s.links, ly: s.layout, h: s.handle });
   }
   function renderFlow() {
@@ -5888,9 +5895,12 @@
     // Free sides keep a plain (blue) connector so the node can still branch normally.
     const freePorts = outs ? portsFor(["top", "right", "bottom", "left"].filter((sd) => !outs.some((o) => o.side === sd))) : ports;
     // Decision node — a diamond with an editable question + Yes/No outputs.
+    // Empty-state is a per-node STATE: every kind carries the class + a floating tag.
+    const varCls = s.variant === "empty" ? " variant-empty" : "";
+    const varTag = s.variant === "empty" ? '<span class="fl-variant-tag floating" title="Empty state — toggle it from the ⋯ menu">' + FI.secEmpty + '<span>Empty</span></span>' : '';
     if (s.kind === "decision") {
-      el.className = "flow-screen decision status-" + st + (flowSel.has(s.id) ? " selected" : "") + dimCls;
-      el.innerHTML =
+      el.className = "flow-screen decision status-" + st + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
+      el.innerHTML = varTag +
         '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<div class="fs-diamond"><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="Decision?">' + escapeHtml(s.name || "") + '</div></div>' +
         outsHtml + freePorts;
@@ -5898,9 +5908,9 @@
       return el;
     }
     if (TERMINAL_KINDS[s.kind]) { // Start / End — terminator pill marking start/end of the experience
-      el.className = "flow-screen terminal term-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + dimCls;
+      el.className = "flow-screen terminal term-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
       el.style.setProperty("--fs-accent", k.color);
-      el.innerHTML =
+      el.innerHTML = varTag +
         '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<div class="fs-term"><span class="fs-term-ic">' + k.icon + '</span><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="' + escapeHtml(k.label) + '">' + escapeHtml(s.name || "") + '</div></div>' +
         ports;
@@ -5909,9 +5919,9 @@
     }
     if (s.kind === "subflow") { // links to another flow in the project (click to open it)
       const target = (flowDoc.flows || []).find((f) => f.id === s.flowRef);
-      el.className = "flow-screen compact ck-subflow" + (flowSel.has(s.id) ? " selected" : "") + dimCls;
+      el.className = "flow-screen compact ck-subflow" + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
       el.style.setProperty("--fs-accent", k.color);
-      el.innerHTML =
+      el.innerHTML = varTag +
         '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<button class="fs-cnode fs-subflow" title="' + (target ? "Open linked flow" : "Link a flow from the project") + '">' +
           '<span class="fs-cnode-ic">' + k.icon + '</span>' +
@@ -5930,16 +5940,16 @@
       return el;
     }
     if (COMPACT_KINDS[s.kind]) { // (compact flow nodes)
-      el.className = "flow-screen compact ck-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + dimCls;
+      el.className = "flow-screen compact ck-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
       el.style.setProperty("--fs-accent", k.color);
-      el.innerHTML =
+      el.innerHTML = varTag +
         '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<div class="fs-cnode"><span class="fs-cnode-ic">' + k.icon + '</span><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="' + escapeHtml(k.label) + '">' + escapeHtml(s.name || "") + '</div></div>' +
         (outs ? outsHtml + freePorts : ports);
       wireScreenEl(el, s);
       return el;
     }
-    el.className = "flow-screen status-" + st + (flowSel.has(s.id) ? " selected" : "") + (s.variant === "empty" ? " variant-empty" : "") + dimCls;
+    el.className = "flow-screen status-" + st + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
     el.style.width = (s.w || SCREEN_W) + "px";
     el.innerHTML =
       '<div class="fs-head">' +
@@ -6028,6 +6038,15 @@
       mb.addEventListener("click", (e) => { e.stopPropagation(); (isRegion ? openRegionMenu : openSectionMenu)(s, cont, parent, mb.getBoundingClientRect()); });
       head.appendChild(mb);
       el.appendChild(head);
+      // Section description — context for the organism (auto-shown when it has
+      // content; toggled from the ⋯ menu, same tri-state as component fields).
+      const descVis = cont.showDesc !== undefined ? !!cont.showDesc : !!cont.desc;
+      if (!isRegion && descVis) {
+        const ds = document.createElement("div"); ds.className = "fl-sec-desc"; ds.contentEditable = "true"; ds.spellcheck = false; ds.dataset.ph = "Description…"; ds.textContent = cont.desc || "";
+        ds.addEventListener("mousedown", (e) => e.stopPropagation());
+        ds.addEventListener("input", () => { cont.desc = ds.textContent; saveFlow(); });
+        el.appendChild(ds);
+      }
     }
     // Body — the children flow here in the container's direction (row/col).
     const body = document.createElement("div"); body.className = "fl-body dir-" + (cont.dir === "row" ? "row" : "col");
@@ -6298,10 +6317,12 @@
     if (flowActBar.parentElement !== host) host.appendChild(flowActBar);
     _actEl = el;
     if (isCont(node)) {
-      // editor → structure tools; card → only add a block into the region
+      // editor → structure tools; card → add a block; sections also reorder
+      // (move before/after within their region) right from the bar.
+      const isSection = !editing && s && contLevel(s, node, parent) === "section";
       flowActBar.innerHTML = editing
         ? actBtn("cols", FL_ICON.row, "Columns") + actBtn("rows", FL_ICON.col, "Rows") + actBtn("region", FL_ICON.split, "Region") + (parent ? '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "") : "")
-        : actBtn("block", FI.plus, "Block");
+        : (isSection ? actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + '<span class="fl-ab-sep"></span>' : "") + actBtn("block", FI.plus, "Block");
     } else {
       flowActBar.innerHTML = actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + actBtn("global", FI.diamond, node.globalId ? "Detach" : "Global") + actBtn("opts", FI.dots, "") + '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "");
     }
@@ -6314,7 +6335,11 @@
   function actDo(s, node, parent, a, editing) {
     if (isCont(node)) {
       if (a === "block") { openBlockPalette(s, flowActBar.getBoundingClientRect(), node); return; }
-      if (a === "cols") divideRegion(node, "row");
+      if (a === "up" || a === "down") { // reorder a section within its region
+        const arr = parent && parent.children;
+        if (arr) { const i = arr.indexOf(node), j = a === "up" ? i - 1 : i + 1; if (i !== -1 && j >= 0 && j < arr.length) { arr[i] = arr[j]; arr[j] = node; } }
+      }
+      else if (a === "cols") divideRegion(node, "row");
       else if (a === "rows") divideRegion(node, "col");
       else if (a === "region") node.children.push({ cid: genCid(), dir: node.dir === "row" ? "col" : "row", children: [] });
       else if (a === "del" && parent) { const i = parent.children.indexOf(node); if (i !== -1) parent.children.splice(i, 1); }
@@ -6528,7 +6553,8 @@
     const lh = el.querySelector(".fs-layout-host");
     if (lh) {
       lh.addEventListener("mouseover", (e) => {
-        const tgt = e.target.closest(".fs-block"); // only blocks float a bar; regions use their inline "+ Bloque"
+        // Blocks and sections float a bar (sections: reorder + add); regions keep their inline "+ Section".
+        const tgt = e.target.closest(".fs-block, .fl-cont.lvl-section");
         if (tgt && tgt.__fnode) { if (_actHideT) { clearTimeout(_actHideT); _actHideT = null; } if (tgt !== _actEl) showActBarFor(tgt); }
         else if (!e.target.closest(".fl-actbar")) { _actHideT = _actHideT || setTimeout(hideActBar, 160); }
       });
@@ -7105,7 +7131,9 @@
   function openSectionMenu(s, cont, parent, rect) {
     flowMenu.classList.remove("palette");
     const isEmptyVar = cont.variant === "empty";
+    const descVis = cont.showDesc !== undefined ? !!cont.showDesc : !!cont.desc;
     flowMenu.innerHTML =
+      '<div class="fm-item" data-a="desc">' + FI.fileText + '<span>Description</span>' + (descVis ? '<span class="fm-check">✓</span>' : '') + '</div>' +
       '<div class="fm-item" data-a="variant">' + FI.secEmpty + '<span>' + (isEmptyVar ? "Mark as content" : "Mark as empty state") + '</span>' + (isEmptyVar ? '<span class="fm-check">✓</span>' : '') + '</div>' +
       '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Turn into component</span></div>' +
       '<div class="fm-sep"></div>' +
@@ -7116,6 +7144,12 @@
     flowMenu.querySelectorAll("[data-a]").forEach((it) => it.onclick = () => {
       const a = it.dataset.a;
       if (a === "variant") { cont.variant = isEmptyVar ? "content" : "empty"; saveFlow(); renderFlow(); closeFlowMenu(); return; }
+      if (a === "desc") {
+        cont.showDesc = !descVis;
+        saveFlow(); renderFlow(); closeFlowMenu();
+        if (cont.showDesc) setTimeout(() => { const d = flowNodes.querySelector('.fl-cont[data-cid="' + cont.cid + '"] .fl-sec-desc'); if (d) d.focus(); }, 0);
+        return;
+      }
       if (parent && isCont(parent)) {
         const idx = parent.children.indexOf(cont);
         if (idx !== -1) {

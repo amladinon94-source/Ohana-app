@@ -1760,7 +1760,10 @@
   .fa-btn svg { width: 16px; height: 16px; }
   .fa-sep { width: 1px; height: 18px; background: var(--lg-border); margin: 0 3px; }
   #flow-marquee { position: absolute; z-index: 50; pointer-events: none; border: 1px solid var(--accent); background: var(--accent-bg); border-radius: 2px; }
-  #flow-nodes { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+  /* No permanent will-change: it pins the raster and the canvas goes blurry
+     after zooming. JS promotes the layer during pan/zoom and releases it on
+     idle so Chromium re-rasters crisp at the final scale. */
+  #flow-nodes { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
   #flow-edges { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; z-index: 1; }
   .flow-edge { fill: none; stroke: var(--accent-ring); color: var(--accent-ring); stroke-width: 2; transition:stroke-width 0.16s var(--ease), filter 0.16s var(--ease); }
   /* Hover a connection: brighter + a glow in its own color (currentColor tracks the
@@ -2019,11 +2022,11 @@
   .fl-cont.fl-grid { display: grid; gap: var(--sp-2); align-content: start; }
   .fl-cont.fl-grid > .fl-cont { align-self: stretch; min-width: 0; min-height: 0; }
   .fl-cont:hover { border-color: rgba(124,176,255,0.28); }
-  /* Region: layout structure (more visible dashes). Section: UI organism
-     inside the region (fainter dashes). The component is the only solid
-     card — three levels, same label, different border presence. */
-  .fl-cont.lvl-section { border: 1px dashed rgba(255,255,255,0.07); background: transparent; border-radius: var(--r-sm); }
-  .fl-cont.lvl-section:hover { border-color: rgba(124,176,255,0.28); }
+  /* Region: solid frame (the layout structure). Section: no box — just a top
+     stroke separating organisms. The component is the only full card. */
+  .fl-cont.lvl-region { border-style: solid; }
+  .fl-cont.lvl-section { border: none; border-top: 1px solid rgba(255,255,255,0.12); border-radius: 0; background: transparent; }
+  .fl-cont.lvl-section:hover { border-top-color: rgba(124,176,255,0.4); }
   /* Empty container: keep the body from growing so the add button sits at the TOP */
   .fl-cont.empty > .fl-body { flex: 0 0 auto; min-height: 0; }
   .fl-cont.empty.lvl-region:hover { border-color: var(--accent-ring); }
@@ -2143,11 +2146,15 @@
   /* "+ Component" — secondary add inside a section (lighter than "+ Section") */
   .fl-add-comp { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); width: 100%; margin-top: 5px; padding: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-d); background: transparent; border: 1px dashed rgba(255,255,255,0.14); border-radius: var(--r-xs); cursor: default; flex-shrink: 0; box-sizing: border-box; }
   .fl-add-comp:hover { border-color: var(--accent-ring); color: var(--accent-strong); background: var(--accent-bg); }
-  /* Empty-state: a visible, toggleable STATE on screens, regions, and sections. */
+  /* Empty-state: a visible, toggleable STATE on any node, region, or section. */
   .fl-variant-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--warning, #f5a623); background: rgba(245,166,35,0.12); border-radius: 999px; flex-shrink: 0; }
   .fl-variant-tag svg { width: 11px; height: 11px; }
+  .fl-variant-tag.floating { position: absolute; top: -24px; right: -4px; z-index: 5; background: rgba(245,166,35,0.16); }
   .fl-cont.variant-empty > .fl-body { border: 1px dashed rgba(245,166,35,0.35); border-radius: var(--r-sm); }
-  .flow-screen.variant-empty .fs-layout-host { opacity: 0.85; }
+  .flow-screen.variant-empty { outline: 1px dashed rgba(245,166,35,0.55); outline-offset: 4px; }
+  /* Section description — one quiet context line under the name */
+  .fl-sec-desc { padding: 0 8px 6px; font-size: var(--fs-xs); line-height: 1.45; color: var(--text-d); outline: none; }
+  .fl-sec-desc:empty::before { content: attr(data-ph); opacity: 0.5; }
   /* ✓ on toggleable menu items (variant / component-field switches) */
   .fm-check { margin-left: auto; padding-left: var(--sp-4); color: var(--accent-strong); font-weight: 700; }
   .fl-add-comp svg { width: 11px; height: 11px; }
