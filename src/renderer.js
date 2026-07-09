@@ -6812,6 +6812,11 @@
   // its own context. Endpoint chips render on the card with the db icon.
   function openApiEditor(s, rect) {
     s.apis = s.apis || [];
+    // Live card refresh while typing — the popover lives OUTSIDE the card, so
+    // re-rendering the card never steals focus. Without this the chips kept
+    // showing stale values until something else re-rendered the flow.
+    let _refT = null;
+    const refreshCard = () => { if (_refT) clearTimeout(_refT); _refT = setTimeout(renderFlow, 250); };
     const draw = () => {
       const rows = s.apis.map((a, i) =>
         '<div class="fm-link-row" data-i="' + i + '">' +
@@ -6831,14 +6836,17 @@
         const i = parseInt(row.dataset.i, 10); const a = s.apis[i];
         const u = row.querySelector(".fm-link-url"), c = row.querySelector(".fm-link-ctx");
         [u, c].forEach((n) => n.addEventListener("mousedown", (e) => e.stopPropagation()));
-        u.oninput = () => { a.endpoint = u.value.trim(); saveFlow(); };
-        c.oninput = () => { a.ctx = c.value.trim(); saveFlow(); };
+        u.oninput = () => { a.endpoint = u.value.trim(); saveFlow(); refreshCard(); };
+        c.oninput = () => { a.ctx = c.value.trim(); saveFlow(); refreshCard(); };
         row.querySelector(".fm-link-del").onclick = (e) => { e.stopPropagation(); s.apis.splice(i, 1); saveFlow(); renderFlow(); draw(); };
       });
       const add = flowMenu.querySelector('[data-act="add"]');
       add.onclick = (e) => {
         e.stopPropagation(); s.apis.push({ endpoint: "", ctx: "" }); saveFlow(); renderFlow(); draw();
-        const last = flowMenu.querySelector(".fm-link-row:last-of-type .fm-link-url");
+        // (:last-of-type never matched — the Add item is the last div — so the
+        // fresh row's input was never focused; grab the real last row instead.)
+        const rows2 = flowMenu.querySelectorAll(".fm-link-row");
+        const last = rows2.length ? rows2[rows2.length - 1].querySelector(".fm-link-url") : null;
         if (last) { last.focus(); }
       };
     };
@@ -6851,6 +6859,9 @@
   // each with its own context. Each link shows a blue "connected" dot on the card.
   function openLinksEditor(s, rect) {
     s.links = s.links || [];
+    // Same live card refresh as the API editor (chips went stale while typing).
+    let _refT = null;
+    const refreshCard = () => { if (_refT) clearTimeout(_refT); _refT = setTimeout(renderFlow, 250); };
     const draw = () => {
       const rows = s.links.map((l, i) =>
         '<div class="fm-link-row" data-i="' + i + '">' +
@@ -6872,8 +6883,8 @@
         const i = parseInt(row.dataset.i, 10); const l = s.links[i];
         const u = row.querySelector(".fm-link-url"), c = row.querySelector(".fm-link-ctx");
         [u, c].forEach((n) => n.addEventListener("mousedown", (e) => e.stopPropagation()));
-        u.oninput = () => { l.url = u.value.trim(); saveFlow(); };
-        c.oninput = () => { l.ctx = c.value.trim(); saveFlow(); };
+        u.oninput = () => { l.url = u.value.trim(); saveFlow(); refreshCard(); };
+        c.oninput = () => { l.ctx = c.value.trim(); saveFlow(); refreshCard(); };
         const op = row.querySelector(".fm-link-open");
         if (op) op.onclick = (e) => { e.stopPropagation(); if (l.url) { openLinkedView(l.url); closeFlowMenu(); } };
         row.querySelector(".fm-link-del").onclick = (e) => { e.stopPropagation(); s.links.splice(i, 1); saveFlow(); renderFlow(); draw(); };
@@ -6883,7 +6894,8 @@
         if (act === "addcur") { const at = activeTab(); s.links.push({ url: at ? at.src : "", ctx: "" }); }
         else if (act === "addnew") { s.links.push({ url: "", ctx: "" }); }
         saveFlow(); renderFlow(); draw();
-        const last = flowMenu.querySelector(".fm-link-row:last-of-type .fm-link-url");
+        const rows2 = flowMenu.querySelectorAll(".fm-link-row");
+        const last = rows2.length ? rows2[rows2.length - 1].querySelector(".fm-link-url") : null;
         if (last) { last.focus(); last.select(); }
       });
     };
