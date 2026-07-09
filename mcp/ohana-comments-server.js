@@ -318,8 +318,9 @@ const MOKA_GUIDE = [
   "## Screen content (hierarchy)",
   "Page → REGIONS → SECTIONS → COMPONENTS.",
   "- REGIONS define the card's layout. Apply a preset with `ohana_flow_set_layout` (a builtin or a project layout created in the grid painter), or create them with `ohana_flow_add_section` WITHOUT `region` (e.g. Header / Body / Footer).",
-  "- SECTIONS are UI organisms inside a region: `ohana_flow_add_section({ screenId, name, region })`.",
-  "- COMPONENTS (buttons, tables, badges…) go inside sections: `ohana_flow_add_component({ screenId, section, name })`.",
+  "- SECTIONS are UI organisms inside a region: `ohana_flow_add_section({ screenId, name, region, desc })` — use `desc` to contextualize the organism (shown under its name).",
+  "- COMPONENTS (buttons, tables, badges…) go inside sections: `ohana_flow_add_component({ screenId, section, name })`. Cards render compact (just the type); add `desc`/`items` only when they carry real detail.",
+  "- EMPTY STATE is a per-node STATE, not a type: pass `variant: \"empty\"` on `add_screen`/`update_screen`/`add_section` to mark a screen, region, or section as an empty state (amber tag in Moka). Design empty states deliberately — they teach the interface.",
   "- Connections: they leave from pages or from components (`ohana_flow_connect` with `fromComponent`) and ALWAYS land on the target card, never on a component.",
   "",
   "## Golden rule",
@@ -354,6 +355,7 @@ function publicNode(n, globals) {
     const o = { cid: n.cid, dir: n.dir || "col", grow: n.grow || null, children: n.children.map((c) => publicNode(c, globals)) };
     if (n.name) o.name = n.name;
     if (n.variant) o.variant = n.variant;
+    if (n.desc) o.desc = n.desc;
     if (n.grid) o.grid = { cols: n.grid.cols, rows: n.grid.rows }; // grid layout root
     if (n.area) o.area = n.area.slice();                          // region cells [c0,r0,c1,r1]
     return o;
@@ -900,6 +902,7 @@ const TOOLS = [
         name: { type: "string", description: "Screen title (for a decision, the question)." },
         kind: { type: "string", enum: FLOW_KINDS, description: "Screen type (default: page)." },
         status: { type: "string", enum: FLOW_STATUSES, description: "Build status: todo (to build) | wip (in progress) | done. Default: todo." },
+        variant: { type: "string", enum: ["content", "empty"], description: "Content state: \"empty\" marks this screen as an EMPTY STATE (shows an amber tag/outline in Moka). Default: content." },
         desc: { type: "string", description: "Context of this screen." },
         flowRef: { type: "string", description: "For kind:\"subflow\": id of the project flow this card links to." },
         x: { type: "number", description: "Canvas X (optional; auto if omitted)." },
@@ -922,6 +925,7 @@ const TOOLS = [
         y: typeof args.y === "number" ? args.y : 80 + Math.floor(n / 4) * 240,
         apis: [], links: [], blocks: [],
       };
+      if (args.variant === "empty") s.variant = "empty";
       if (args.flowRef) {
         const target = (doc.flows || []).find((f) => f.id === args.flowRef);
         if (!target) throw new Error("Flow not found for flowRef: " + args.flowRef + " (use ohana_flow_list for ids)");
@@ -943,6 +947,7 @@ const TOOLS = [
         name: { type: "string" },
         kind: { type: "string", enum: FLOW_KINDS },
         status: { type: "string", enum: FLOW_STATUSES, description: "Build status: todo | wip | done." },
+        variant: { type: "string", enum: ["content", "empty"], description: "Content state: \"empty\" marks it as an empty state, \"content\" clears it." },
         desc: { type: "string" },
         x: { type: "number" },
         y: { type: "number" },
@@ -971,6 +976,7 @@ const TOOLS = [
       if (args.name !== undefined) s.name = args.name;
       if (args.kind !== undefined && FLOW_KINDS.indexOf(args.kind) !== -1) s.kind = args.kind;
       if (args.status !== undefined && FLOW_STATUSES.indexOf(args.status) !== -1) s.status = args.status;
+      if (args.variant !== undefined) { if (args.variant === "empty") s.variant = "empty"; else delete s.variant; }
       if (args.desc !== undefined) s.desc = args.desc;
       if (typeof args.x === "number") s.x = args.x;
       if (typeof args.y === "number") s.y = args.y;
@@ -1298,8 +1304,8 @@ const TOOLS = [
   },
   {
     name: "ohana_flow_add_section",
-    description: "Add a named container to a screen. Hierarchy: Page → REGIONS → SECTIONS → COMPONENTS. Without `region` it creates a root-level container (= a REGION, e.g. Header/Body/Footer); pass `region` (name or cid) to nest a SECTION inside that region. variant: content (default) or empty (empty state). Returns containerId to drop components into.",
-    inputSchema: { type: "object", properties: { screenId: { type: "string" }, name: { type: "string" }, region: { type: "string", description: "Region name or cid to nest the section in. Omit to create a region at the card root." }, variant: { type: "string", enum: ["content", "empty"] }, flowId: { type: "string" } }, required: ["screenId", "name"], additionalProperties: false },
+    description: "Add a named container to a screen. Hierarchy: Page → REGIONS → SECTIONS → COMPONENTS. Without `region` it creates a root-level container (= a REGION, e.g. Header/Body/Footer); pass `region` (name or cid) to nest a SECTION inside that region. variant: content (default) or empty (empty state — amber tag in Moka). desc contextualizes the organism. Returns containerId to drop components into.",
+    inputSchema: { type: "object", properties: { screenId: { type: "string" }, name: { type: "string" }, region: { type: "string", description: "Region name or cid to nest the section in. Omit to create a region at the card root." }, variant: { type: "string", enum: ["content", "empty"] }, desc: { type: "string", description: "Section description — context for this organism (shown under its name)." }, flowId: { type: "string" } }, required: ["screenId", "name"], additionalProperties: false },
     handler: (args) => {
       const active = resolveActive();
       const { doc, path: fp } = readFlowDoc(active);
@@ -1317,6 +1323,7 @@ const TOOLS = [
       }
       const sec = { cid: genId("c"), dir: "col", name: args.name || "Section", children: [] };
       if (args.variant) sec.variant = args.variant;
+      if (args.desc) sec.desc = args.desc;
       host.children.push(sec);
       writeFlowDoc(active, doc, fp);
       return { ok: true, containerId: sec.cid, screenId: s.id };

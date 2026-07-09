@@ -5849,7 +5849,7 @@
   }
   // Portable guide for any agent (Claude/Codex/…) reading the project folder.
   // Versioned: bump MOKA_GUIDE_V when the template changes so stale copies regenerate.
-  const MOKA_GUIDE_V = "<!-- moka-guide v4 -->"; // v4: workspace folder names resolved per project
+  const MOKA_GUIDE_V = "<!-- moka-guide v5 -->"; // v5: empty-state as a per-node state + section descriptions
   async function ensureMokaGuide() {
     try {
       const existing = await window.api.ohanaReadFile("MOKA.md");
@@ -5887,7 +5887,9 @@
         "Hierarchy: Page → REGIONS → SECTIONS → COMPONENTS.",
         "- REGIONS define the card's layout (Header/Body/Footer or a preset: `ohana_flow_set_layout` accepts builtins and project layouts created in the grid painter).",
         "- SECTIONS are UI organisms inside a region (`ohana_flow_add_section({ screenId, name, region })`; without `region` it creates a root region).",
-        "- COMPONENTS (Button, Data table, Chart, Accordion, etc.) go inside sections (`ohana_flow_add_component`). Each one carries its detail (title/description/elements): what it says, how it looks, how it works.",
+        "- COMPONENTS (Button, Data table, Chart, Accordion, etc.) go inside sections (`ohana_flow_add_component`). Cards render compact (just the type); add title/description/elements only when they carry real detail.",
+        "- SECTIONS can carry a `desc` (context for the organism) — `ohana_flow_add_section({ screenId, name, region, desc })`.",
+        "- EMPTY STATE is a per-node STATE, not a type: `variant: \"empty\"` on add_screen/update_screen/add_section marks a screen, region, or section as an empty state (amber tag in Moka). Design empty states deliberately.",
         "In `flow.json` the layout is a tree: containers (regions/sections) with leaf blocks (components). Connections leave from pages or components and always land on the destination card, never on a component.",
         "",
         "## Referring to a screen",
@@ -6258,10 +6260,11 @@
       mb.addEventListener("click", (e) => { e.stopPropagation(); (isRegion ? openRegionMenu : openSectionMenu)(s, cont, parent, mb.getBoundingClientRect()); });
       head.appendChild(mb);
       el.appendChild(head);
-      // Section description — context for the organism (auto-shown when it has
-      // content; toggled from the ⋯ menu, same tri-state as component fields).
+      // Description — context for the organism (auto-shown when it has content;
+      // toggled from the ⋯ menu, same tri-state as component fields). Regions
+      // can carry one too (the MCP's add_section desc lands on either level).
       const descVis = cont.showDesc !== undefined ? !!cont.showDesc : !!cont.desc;
-      if (!isRegion && descVis) {
+      if (descVis) {
         const ds = document.createElement("div"); ds.className = "fl-sec-desc"; ds.contentEditable = "true"; ds.spellcheck = false; ds.dataset.ph = "Description…"; ds.textContent = cont.desc || "";
         ds.addEventListener("mousedown", (e) => e.stopPropagation());
         ds.addEventListener("input", () => { cont.desc = ds.textContent; saveFlow(); });
