@@ -5590,7 +5590,7 @@
     // cached raster and the canvas looked low-res after zooming).
     flowNodes.style.willChange = "transform";
     if (_flowWcT) clearTimeout(_flowWcT);
-    _flowWcT = setTimeout(() => { flowNodes.style.willChange = "auto"; }, 220);
+    _flowWcT = setTimeout(() => { if (!flowNodes.classList.contains("glide")) flowNodes.style.willChange = "auto"; }, 220);
     const z = document.getElementById("flow-zoom"); if (z) z.textContent = Math.round(flowView.s * 100) + "%";
     scheduleCull();      // virtualize (zoom-in) or redraw the canvas overview (zoom-out)
     renderMinimap();
@@ -7568,25 +7568,37 @@
     items.forEach((b) => { minX = Math.min(minX, b[0]); minY = Math.min(minY, b[1]); maxX = Math.max(maxX, b[2]); maxY = Math.max(maxY, b[3]); });
     return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
   }
+  // Programmatic view jumps (fit / center) GLIDE; manual pan/zoom stays 1:1.
+  let _glideT = null;
+  function glideView(apply) {
+    flowNodes.classList.add("glide"); flowEdgesSvg.classList.add("glide");
+    apply();
+    if (_glideT) clearTimeout(_glideT);
+    _glideT = setTimeout(() => { flowNodes.classList.remove("glide"); flowEdgesSvg.classList.remove("glide"); flowNodes.style.willChange = "auto"; }, 320);
+  }
   function fitFlowView() {
-    const bb = flowBBox();
-    const r = flowVp.getBoundingClientRect();
-    if (!bb) { flowView = { x: 60, y: 60, s: 1 }; flowApplyView(); return; }
-    const pad = 70;
-    const s = Math.min(1.5, Math.max(0.15, Math.min((r.width - pad * 2) / Math.max(bb.w, 1), (r.height - pad * 2) / Math.max(bb.h, 1))));
-    flowView.s = s;
-    flowView.x = (r.width - bb.w * s) / 2 - bb.minX * s;
-    flowView.y = (r.height - bb.h * s) / 2 - bb.minY * s;
-    flowApplyView();
+    glideView(() => {
+      const bb = flowBBox();
+      const r = flowVp.getBoundingClientRect();
+      if (!bb) { flowView = { x: 60, y: 60, s: 1 }; flowApplyView(); return; }
+      const pad = 70;
+      const s = Math.min(1.5, Math.max(0.15, Math.min((r.width - pad * 2) / Math.max(bb.w, 1), (r.height - pad * 2) / Math.max(bb.h, 1))));
+      flowView.s = s;
+      flowView.x = (r.width - bb.w * s) / 2 - bb.minX * s;
+      flowView.y = (r.height - bb.h * s) / 2 - bb.minY * s;
+      flowApplyView();
+    });
   }
   function centerOnScreen(s, select) {
     const r = flowVp.getBoundingClientRect();
     const w = s.kind === "decision" ? DECISION_W : SCREEN_W;
     const h = s.kind === "decision" ? DECISION_H : (_flowHeights[s.id] || 140);
     const cx = (s.x || 0) + w / 2, cy = (s.y || 0) + h / 2;
-    flowView.x = r.width / 2 - cx * flowView.s;
-    flowView.y = r.height / 2 - cy * flowView.s;
-    flowApplyView();
+    glideView(() => {
+      flowView.x = r.width / 2 - cx * flowView.s;
+      flowView.y = r.height / 2 - cy * flowView.s;
+      flowApplyView();
+    });
     if (select) { flowSel = new Set([s.id]); refreshSelClasses(); }
   }
   function openFlowSearch(rect) {

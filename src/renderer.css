@@ -52,8 +52,12 @@
     --fs-xl: 16px;
     /* Standard control height (buttons, inputs, list items) */
     --ctl-h: 28px;
-    /* ── Motion (a single curve + duration scale) ── */
+    /* ── Motion (curves + duration scale) ──
+       State changes, feedback, and reveals only — never decoration.
+       Exits are instant or faster than entrances. */
     --ease: cubic-bezier(0.22, 0.61, 0.36, 1); /* smooth ease-out for slides */
+    --ease-out: cubic-bezier(0.25, 1, 0.5, 1);   /* out-quart: reveals, menus */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); /* decisive: overlays */
     --t-fast: 0.12s;
     --t: 0.15s;
     --t-slow: 0.25s;
@@ -2398,4 +2402,74 @@
   }
   .g-btn:focus-visible, .flow-btn:focus-visible, .pn-fbtn:focus-visible, .tb-mode:focus-visible, .pn-add:focus-visible {
     outline: 2px solid var(--focus-ring); outline-offset: 1px;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     Motion system — state, feedback, and reveals (product register).
+     Entrances 140–220ms on out-quart/expo; exits instant (never slower
+     than entrances); nothing decorative. Keyframes fire on .visible /
+     insertion, so display-toggled surfaces animate without JS.
+     ════════════════════════════════════════════════════════════════════ */
+
+  /* ── Reveals ─────────────────────────────────────────────────────── */
+  @keyframes m-pop-in { from { opacity: 0; transform: translateY(4px) scale(0.985); } }
+  @keyframes m-fade-in { from { opacity: 0; } }
+  @keyframes m-rise-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } }
+
+  /* Menus & popovers: Moka menus/palettes/pickers, nav context menus,
+     comment thread card, floating act bar. Origin near the trigger. */
+  #flow-menu.visible { animation: m-pop-in 0.16s var(--ease-out); transform-origin: top left; }
+  .pn-menu { animation: m-pop-in 0.16s var(--ease-out); transform-origin: top left; }
+  #thread-card.visible { animation: m-pop-in 0.2s var(--ease-out-expo); transform-origin: top left; }
+  .fl-actbar.visible { animation: m-pop-in 0.14s var(--ease-out); transform-origin: bottom center; }
+
+  /* Modal overlays: backdrop fades, the card rises — one beat, no chain. */
+  .open-overlay.visible, #docs-overlay.visible, #layout-editor.visible { animation: m-fade-in 0.18s var(--ease-out); }
+  .open-overlay.visible .open-card, #docs-overlay.visible .docs-modal, #layout-editor.visible .le-modal { animation: m-rise-in 0.22s var(--ease-out-expo); }
+
+  /* Full-surface states: home, preview error, flow error. */
+  #empty-state:not(.hidden) { animation: m-fade-in 0.2s var(--ease-out); }
+  #preview-error.visible, #flow-error.visible { animation: m-rise-in 0.2s var(--ease-out); }
+
+  /* ── Feedback (hover / press) ────────────────────────────────────── */
+  /* One shared hover voice for chrome controls and list rows. Elements
+     with their own transition declaration override this wholesale. */
+  .g-btn, .flow-btn, .pn-fbtn, .tb-mode, .pn-add, .pn-more, .fl-ab-btn, .fs-status,
+  .fs-menu-btn, .fl-sec-menu, .fm-item, .fm-kind, .pn-item, .np-item, .ctx-item,
+  .cc-icon, .cc-create, .cc-delete, .cmt-btn, .open-opt, .fm-edit, .le-btn,
+  .fl-add, .fl-add-section, .fl-add-comp, .fs-build, .docs-tab, .thread-btn {
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
+                border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease),
+                opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+  }
+  /* Press: a firm, quick dip on real push-buttons (not list rows). */
+  .g-btn:active, .flow-btn:active, .pn-fbtn:active, .tb-mode:active, .cc-create:active,
+  .cc-delete:active, .open-opt:active, .fs-build:active, .le-btn:active, .cmt-btn:active,
+  .fl-add:active, .fl-add-section:active, .fl-add-comp:active, .fl-ab-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* ── Moka canvas ─────────────────────────────────────────────────── */
+  /* Selection ring / dim / empty-state outline shift smoothly; cards are
+     rebuilt on content changes, so no entrance animation (it would replay
+     on every edit — fatigue, not feedback). */
+  .flow-screen { transition: box-shadow 0.16s var(--ease), outline-color 0.16s var(--ease), border-color 0.16s var(--ease), opacity 0.2s var(--ease); }
+  .fs-block { transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+  .fs-port, .fs-out { transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+  .fl-variant-tag { animation: m-fade-in 0.16s var(--ease-out); }
+
+  /* Programmatic view jumps (fit-all, center-on-screen, search) glide to
+     their target; manual pan/zoom never transitions (must track 1:1). */
+  #flow-nodes.glide { transition: transform 0.3s var(--ease-out-expo); }
+
+  /* ── Reduced motion: everything collapses to instant. The bento loader
+        keeps its gentle pulse — that IS its reduced fallback. ─────────── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .bento-host .bl { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
   }
