@@ -28,8 +28,8 @@ contextBridge.exposeInMainWorld("api", {
   storybookIndex: (base) => ipcRenderer.invoke("storybook:index", base),
 
   // Network (devtools amables)
-  netGetBody: (requestId) => ipcRenderer.invoke("net:getBody", requestId),
-  netClear: () => ipcRenderer.invoke("net:clear"),
+  netGetBody: (data) => ipcRenderer.invoke("net:getBody", data), // { wcId, requestId }
+  netClear: (wcId) => ipcRenderer.invoke("net:clear", wcId),
   cacheClear: () => ipcRenderer.invoke("cache:clear"),
 
   // Session persistence

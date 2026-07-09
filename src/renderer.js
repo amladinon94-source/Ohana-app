@@ -233,6 +233,7 @@
     tabs.forEach((x) => { if (x.wv) x.wv.classList.toggle("wv-hidden", x !== t); });
     webview = t.wv;
     webviewReady = !!t.wvReady;
+    if (typeof syncNetPanelToActiveTab === "function") syncNetPanelToActiveTab(); // per-tab network log + mocks
     applyBreakpoint();
     if (webviewReady) {
       hidePreviewLoader();
@@ -282,6 +283,7 @@
     });
     wv.addEventListener("dom-ready", () => {
       t.wvReady = true;
+      try { t.wcId = wv.getWebContentsId(); } catch (e) {} // per-tab network capture key
       if (wv === webview) { hidePreviewError(); hidePreviewLoader(); }
       wv.executeJavaScript(INSPECTOR_SCRIPT).catch(() => {});
       wv.executeJavaScript(PINS_SCRIPT).then(() => { if (wv === webview) syncPins(); }).catch(() => {});
@@ -2505,6 +2507,7 @@
       let u = ""; try { u = wv.getURL() || ""; } catch (e) {}
       if (wv._failedLoad || /^chrome-error:/.test(u)) return;
       t.wvReady = true;
+      try { t.wcId = wv.getWebContentsId(); } catch (e) {} // per-tab network capture key
       if (wv === webview) { hidePreviewError(); hidePreviewLoader(); }
       wv.executeJavaScript(INSPECTOR_SCRIPT).catch(() => {});
       // Inject comment pins (delay for React hydration)
@@ -4768,18 +4771,40 @@
   let netPreviewing = null; // the request currently shown in the preview
   const networkPanel = document.getElementById("network-panel");
 
-  window.api.on("net:list", (list) => {
-    netData = list || [];
+  // Per-tab capture: main tags every list with the webview's webContents id.
+  // Cache it on the owning tab; only the ACTIVE tab's data drives the panel.
+  window.api.on("net:list", (msg) => {
+    const t = tabs.find((x) => x.wcId === msg.wcId);
+    if (t) t._netData = msg.list || [];
+    const at = activeTab();
+    if (!at || at.wcId !== msg.wcId) return; // background tab — cache only
+    netData = msg.list || [];
     // Refresh the LIST only. Never touch an open detail — replacing it while the
     // user is reading made the response "disappear" whenever a newer request to
     // the same endpoint arrived. The detail stays until they go back or pick another.
     if (networkVisible && netFilter !== "console") renderNetwork();
   });
-  window.api.on("console:list", (list) => {
-    consoleData = list || [];
+  window.api.on("console:list", (msg) => {
+    const t = tabs.find((x) => x.wcId === msg.wcId);
+    if (t) t._consoleData = msg.list || [];
+    const at = activeTab();
+    if (!at || at.wcId !== msg.wcId) return;
+    consoleData = msg.list || [];
     updateNetErrBadge();
     if (networkVisible && netFilter === "console") renderNetwork();
   });
+  // On tab switch, swap the panel to the incoming tab's cached capture + mocks.
+  let _netPanelKey = null;
+  function syncNetPanelToActiveTab() {
+    const at = activeTab();
+    netData = (at && at._netData) || [];
+    consoleData = (at && at._consoleData) || [];
+    const key = at ? at.key : null;
+    if (key !== _netPanelKey) { _netPanelKey = key; netPreviewing = null; } // keep an open detail on same-tab remounts
+    updateNetErrBadge();
+    if (networkVisible) renderNetwork();
+    renderMocksBar();
+  }
   function updateNetErrBadge() {
     const btn = document.getElementById("btn-network");
     if (!btn) return;
@@ -4852,7 +4877,7 @@
     const body = document.getElementById("np-prev-body");
     body.textContent = "Loading…";
     document.getElementById("np-preview").classList.add("visible");
-    const res = await window.api.netGetBody(r.requestId);
+    const res = await window.api.netGetBody({ wcId: (activeTab() || {}).wcId, requestId: r.requestId });
     let txt = res && res.body ? res.body : "";
     if (res && res.base64Encoded) { try { txt = atob(txt); } catch (e) {} }
     let isJson = false;
@@ -4860,7 +4885,9 @@
     netPreviewingBody = txt; // remember the real body for "use the real one"
     // Header (url + status) plain, then the body — JSON gets syntax colors.
     const header = escMd(r.url) + "\n" + (r.status != null ? "Status: " + r.status : "") + "\n\n";
-    const bodyHtml = txt ? (isJson ? hlJson(escMd(txt)) : escMd(txt)) : "(no body available)";
+    // highlightCode escapes internally; hlJson was never exported from OhanaMD
+    // (pre-existing crash: any JSON body left the detail stuck on "Loading…").
+    const bodyHtml = txt ? (isJson ? highlightCode(txt, "json") : escMd(txt)) : "(no body available)";
     body.innerHTML = header + bodyHtml;
     // If no custom mock is set for this endpoint, seed the editor with the real body
     const ta = document.getElementById("np-mock-body");
@@ -4877,7 +4904,7 @@
   document.getElementById("btn-network").onclick = toggleNetwork;
   document.getElementById("np-close").onclick = toggleNetwork;
   document.getElementById("np-back").onclick = () => document.getElementById("np-preview").classList.remove("visible");
-  document.getElementById("np-clear").onclick = async () => { await window.api.netClear(); };
+  document.getElementById("np-clear").onclick = async () => { await window.api.netClear((activeTab() || {}).wcId); };
   document.getElementById("np-cache").onclick = async () => {
     const ok = await window.api.cacheClear();
     showToast(ok ? "Cache and cookies cleared — reload with ⌘R" : "Couldn't clear the cache", ok ? "check" : "warn");
@@ -4900,13 +4927,14 @@
   // Each override = { match, state, status? }. Applies ONLY to requests whose
   // URL matches that pathname, so you mock one API without touching the rest.
   // state: normal | loading | empty | many | status (status uses any code 200–599).
-  let dataOverrides = []; // [{ match, state, status, body }]
+  // Overrides live ON the tab: each tab mocks its own app independently.
+  function tabOverrides() { const at = activeTab(); return at ? (at.dataOverrides = at.dataOverrides || []) : []; }
   let netPreviewingBody = ""; // raw body of the request shown in the detail (for "use the real one")
   const DATA_STATE_LABEL = { normal: "Normal", loading: "Loading", empty: "Empty", many: "Many rows", custom: "Mock" };
   function pathOnly(u) { try { return new URL(u, location.href).pathname; } catch (e) { return (u || "").split("?")[0]; } }
   function overrideFor(url) {
     const p = pathOnly(url);
-    return dataOverrides.find((x) => x.match && (p.indexOf(x.match) !== -1 || (url || "").indexOf(x.match) !== -1)) || null;
+    return tabOverrides().find((x) => x.match && (p.indexOf(x.match) !== -1 || (url || "").indexOf(x.match) !== -1)) || null;
   }
   // Status code → reason phrase, so you know which state you're simulating.
   const STATUS_TEXT = { 200: "OK", 201: "Created", 204: "No Content", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 409: "Conflict", 422: "Unprocessable", 429: "Too Many Requests", 500: "Internal Server Error", 502: "Bad Gateway", 503: "Service Unavailable" };
@@ -4924,9 +4952,10 @@
   function renderMocksBar() {
     const bar = document.getElementById("np-mocks");
     if (!bar) return;
-    if (!dataOverrides.length) { bar.style.display = "none"; return; }
+    const ovs = tabOverrides();
+    if (!ovs.length) { bar.style.display = "none"; return; }
     bar.style.display = "";
-    const n = dataOverrides.length;
+    const n = ovs.length;
     document.getElementById("np-mocks-label").textContent = n + (n === 1 ? " endpoint mocked" : " endpoints mocked");
   }
   function applyOverrides(reload) {
@@ -4934,7 +4963,7 @@
       // Persist to sessionStorage so the viewer preload re-applies it at
       // document-start on reload (catches the page's initial requests), and set
       // it live for the already-loaded shim.
-      const json = JSON.stringify(dataOverrides);
+      const json = JSON.stringify(tabOverrides());
       webview.executeJavaScript("try{sessionStorage.setItem('__ohanaOverrides'," + JSON.stringify(json) + ");}catch(e){} window.__ohanaOverrides=" + json + ";").catch(function () {});
       if (reload) webview.reload();
     }
@@ -4943,15 +4972,16 @@
   }
   function setOverride(match, ov) {
     if (!match) return;
-    dataOverrides = dataOverrides.filter((x) => x.match !== match);
+    const at = activeTab(); if (!at) return;
+    at.dataOverrides = tabOverrides().filter((x) => x.match !== match);
     const state = ov && ov.state;
-    if (state && state !== "normal") dataOverrides.push({ match: match, state: state, status: ov.status, body: ov.body });
+    if (state && state !== "normal") at.dataOverrides.push({ match: match, state: state, status: ov.status, body: ov.body });
     syncForceButtons();
     applyOverrides(true);
     const what = !state || state === "normal" ? "normal" : (state === "custom" ? "mock JSON" : (state === "status" ? "status " + ov.status : (DATA_STATE_LABEL[state] || state)));
     showToast("Forced " + what + " on " + match + " — reloading…", "refresh-cw");
   }
-  function clearOverrides() { dataOverrides = []; syncForceButtons(); applyOverrides(true); showToast("Mocks cleared — reloading…", "refresh-cw"); }
+  function clearOverrides() { const at = activeTab(); if (at) at.dataOverrides = []; syncForceButtons(); applyOverrides(true); showToast("Mocks cleared — reloading…", "refresh-cw"); }
   // Reflect the active override of the currently-previewed endpoint in the controls
   function syncForceButtons() {
     if (!netPreviewing) return;
@@ -5003,7 +5033,7 @@
   const _bodyCache = new Map(); // requestId -> decoded body text
   async function getBodyCached(r) {
     if (_bodyCache.has(r.requestId)) return _bodyCache.get(r.requestId);
-    const res = await window.api.netGetBody(r.requestId);
+    const res = await window.api.netGetBody({ wcId: (activeTab() || {}).wcId, requestId: r.requestId });
     let txt = res && res.body ? res.body : "";
     if (res && res.base64Encoded) { try { txt = atob(txt); } catch (e) {} }
     _bodyCache.set(r.requestId, txt);

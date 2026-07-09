@@ -10,6 +10,7 @@ const {
   protocol,
   session,
   Notification,
+  webContents,
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -425,88 +426,95 @@ ipcMain.handle("project:duplicateFile", (_, filePath) => {
 });
 
 // ─── Network capture (friendly devtools) ─────────────────────────────
-// Attach CDP to the active preview webview and surface a focused, friendly view
-// of its requests — with response bodies on demand for "which endpoint fills
-// this?". Only one preview webview is live at a time (it's recreated per tab).
-let netDebuggee = null;
-const netRequests = new Map(); // requestId -> {requestId,url,method,type,status,mimeType,size,failed}
-const consoleEntries = [];     // {level:"warning"|"error", text}
-let _netSendT = null;
-function sendNet() {
-  if (_netSendT) return;
-  _netSendT = setTimeout(() => {
-    _netSendT = null;
+// Attach CDP to EVERY preview webview and keep a separate buffer per
+// webContents: each tab owns its own network/console log (tabs keep their
+// webviews alive across switches, so a single global debuggee would mix
+// tabs' traffic and go blind on switch-back).
+const netByWc = new Map(); // wcId -> { requests: Map, console: [], _netT, _conT }
+const NET_MAX_REQUESTS = 500;
+function netBuffers(wcId) {
+  let b = netByWc.get(wcId);
+  if (!b) { b = { requests: new Map(), console: [], _netT: null, _conT: null }; netByWc.set(wcId, b); }
+  return b;
+}
+function sendNet(wcId) {
+  const b = netBuffers(wcId);
+  if (b._netT) return;
+  b._netT = setTimeout(() => {
+    b._netT = null;
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send("net:list", Array.from(netRequests.values()));
+      mainWindow.webContents.send("net:list", { wcId, list: Array.from(b.requests.values()) });
     }
   }, 180);
 }
-let _conSendT = null;
-function sendConsole() {
-  if (_conSendT) return;
-  _conSendT = setTimeout(() => {
-    _conSendT = null;
+function sendConsole(wcId) {
+  const b = netBuffers(wcId);
+  if (b._conT) return;
+  b._conT = setTimeout(() => {
+    b._conT = null;
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send("console:list", consoleEntries.slice(-200));
+      mainWindow.webContents.send("console:list", { wcId, list: b.console.slice(-200) });
     }
   }, 180);
 }
-function pushConsole(level, text) {
-  consoleEntries.push({ level, text: String(text || "").slice(0, 2000) });
-  if (consoleEntries.length > 300) consoleEntries.splice(0, consoleEntries.length - 300);
-  sendConsole();
+function pushConsole(wcId, level, text) {
+  const b = netBuffers(wcId);
+  b.console.push({ level, text: String(text || "").slice(0, 2000) });
+  if (b.console.length > 300) b.console.splice(0, b.console.length - 300);
+  sendConsole(wcId);
 }
 function consoleArgsText(args) {
   return (args || []).map((a) => (a.value !== undefined ? String(a.value) : (a.description || a.unserializableValue || a.type || ""))).join(" ");
 }
 function attachNet(contents) {
   try {
-    if (netDebuggee && !netDebuggee.isDestroyed() && netDebuggee !== contents) {
-      try { netDebuggee.debugger.detach(); } catch (e) {}
-    }
-    netDebuggee = contents;
-    netRequests.clear();
-    consoleEntries.length = 0;
+    const wcId = contents.id;
+    netBuffers(wcId);
     if (!contents.debugger.isAttached()) contents.debugger.attach("1.3");
     contents.debugger.sendCommand("Network.enable").catch(() => {});
     contents.debugger.sendCommand("Runtime.enable").catch(() => {});
     contents.debugger.sendCommand("Log.enable").catch(() => {});
     contents.debugger.on("message", (_e, method, params) => {
+      const b = netBuffers(wcId);
       if (method === "Runtime.consoleAPICalled") {
-        if (params.type === "error" || params.type === "assert") pushConsole("error", consoleArgsText(params.args));
-        else if (params.type === "warning") pushConsole("warning", consoleArgsText(params.args));
+        if (params.type === "error" || params.type === "assert") pushConsole(wcId, "error", consoleArgsText(params.args));
+        else if (params.type === "warning") pushConsole(wcId, "warning", consoleArgsText(params.args));
         return;
       }
       if (method === "Runtime.exceptionThrown") {
         const d = params.exceptionDetails || {};
-        pushConsole("error", (d.exception && (d.exception.description || d.exception.value)) || d.text || "Uncaught exception");
+        pushConsole(wcId, "error", (d.exception && (d.exception.description || d.exception.value)) || d.text || "Uncaught exception");
         return;
       }
       if (method === "Log.entryAdded") {
         const en = params.entry || {};
-        if (en.level === "error" || en.level === "warning") pushConsole(en.level, en.text || "");
+        if (en.level === "error" || en.level === "warning") pushConsole(wcId, en.level, en.text || "");
         return;
       }
       if (method === "Network.requestWillBeSent") {
-        netRequests.set(params.requestId, {
+        if (b.requests.size >= NET_MAX_REQUESTS) { // cap long-running tabs (polling apps)
+          const oldest = b.requests.keys().next().value;
+          if (oldest !== undefined) b.requests.delete(oldest);
+        }
+        b.requests.set(params.requestId, {
           requestId: params.requestId, url: params.request.url, method: params.request.method,
           type: params.type || "", status: null, mimeType: "", size: 0, failed: null,
         });
       } else if (method === "Network.responseReceived") {
-        const r = netRequests.get(params.requestId);
+        const r = b.requests.get(params.requestId);
         if (r) { r.status = params.response.status; r.mimeType = params.response.mimeType; if (params.type) r.type = params.type; }
-        sendNet();
+        sendNet(wcId);
       } else if (method === "Network.loadingFinished") {
-        const r = netRequests.get(params.requestId);
+        const r = b.requests.get(params.requestId);
         if (r && params.encodedDataLength) r.size = params.encodedDataLength;
-        sendNet();
+        sendNet(wcId);
       } else if (method === "Network.loadingFailed") {
-        const r = netRequests.get(params.requestId);
+        const r = b.requests.get(params.requestId);
         if (r) { r.status = -1; r.failed = params.errorText || "failed"; }
-        sendNet();
+        sendNet(wcId);
       }
     });
-    contents.debugger.on("detach", () => { if (netDebuggee === contents) netDebuggee = null; });
+    contents.on("destroyed", () => { netByWc.delete(wcId); });
   } catch (e) {}
 }
 app.on("web-contents-created", (_e, contents) => {
@@ -532,12 +540,19 @@ app.whenReady().then(() => {
     });
   } catch (e) {}
 });
-ipcMain.handle("net:getBody", async (_e, requestId) => {
-  if (!netDebuggee || netDebuggee.isDestroyed()) return null;
-  try { return await netDebuggee.debugger.sendCommand("Network.getResponseBody", { requestId }); }
+ipcMain.handle("net:getBody", async (_e, data) => {
+  const { wcId, requestId } = data || {};
+  const wc = wcId ? webContents.fromId(wcId) : null;
+  if (!wc || wc.isDestroyed() || !wc.debugger.isAttached()) return null;
+  try { return await wc.debugger.sendCommand("Network.getResponseBody", { requestId }); }
   catch (e) { return null; }
 });
-ipcMain.handle("net:clear", () => { netRequests.clear(); consoleEntries.length = 0; sendNet(); sendConsole(); return true; });
+ipcMain.handle("net:clear", (_e, wcId) => {
+  const b = netBuffers(wcId);
+  b.requests.clear(); b.console.length = 0;
+  sendNet(wcId); sendConsole(wcId);
+  return true;
+});
 ipcMain.handle("cache:clear", async () => {
   try {
     const vs = session.fromPartition("persist:viewer");
