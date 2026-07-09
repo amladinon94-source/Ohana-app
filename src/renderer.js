@@ -6412,7 +6412,7 @@
     if (linkBtn) { linkBtn.addEventListener("mousedown", (e) => e.stopPropagation()); linkBtn.addEventListener("click", (e) => { e.stopPropagation(); openLinksEditor(s, linkBtn.getBoundingClientRect()); }); }
     const layoutBtn = el.querySelector(".fs-layout-btn");
     if (layoutBtn) { layoutBtn.addEventListener("mousedown", (e) => e.stopPropagation()); layoutBtn.addEventListener("click", (e) => { e.stopPropagation(); openLayoutPicker(s, layoutBtn.getBoundingClientRect()); }); }
-    // status pill → cycle por construir → en progreso → listo
+    // status pill → cycle to build → in progress → done
     const stBtn = el.querySelector(".fs-status");
     if (stBtn) { stBtn.addEventListener("mousedown", (e) => e.stopPropagation()); stBtn.addEventListener("click", (e) => { e.stopPropagation(); const ni = (STATUS_ORDER.indexOf(screenStatus(s)) + 1) % STATUS_ORDER.length; s.status = STATUS_ORDER[ni]; saveFlow(); renderFlow(); }); }
     // link chips → open that view in Preview
