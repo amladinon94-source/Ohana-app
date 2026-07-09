@@ -2724,6 +2724,8 @@
       setTimeout(() => { if (fl.parentNode) fl.parentNode.removeChild(fl); }, 650);
     } catch (e) {}
   }
+  // Project files changed on disk (agent or external) → rescan the navigator.
+  window.api.on("project:changed", () => { if (typeof renderProjectNav === "function") renderProjectNav(true); });
   // Popups from previewed content arrive here as a request to open a URL tab.
   window.api.on("url:openTab", (url) => { if (url) openFromURL(url); });
   window.api.on("toast:show", (msg) => { if (msg) showToast(msg, "warn"); });
@@ -3556,6 +3558,9 @@
     activeKey = null;
     repoMode = false; repoUrl = null;
     if (webview) { webview.remove(); webview = null; webviewReady = false; }
+    // Clear any preview error/loader overlay from the closed tab — otherwise it
+    // stays painted on top of the empty state (overlapping-text bug).
+    hidePreviewError(); hidePreviewLoader();
     tabsEl.classList.remove("show");
     hideUrlPop();
     titleCenterEl.style.display = "";
@@ -7891,6 +7896,10 @@
   // Agent builds stream many writes: we DON'T re-render per write. We show one
   // persistent loader and only apply the latest content once writes go quiet.
   window.api.on("flow:updated", (content) => {
+    // Keep the navigator's Flows list live even outside Moka (agent-created
+    // boards must appear without entering flow mode). renderProjectNav folds
+    // queued rescans, so bursty agent writes stay cheap.
+    if (typeof renderProjectNav === "function") renderProjectNav(true);
     if (!flowMode) return;
     if (Date.now() - _flowLastSelfWrite < 1500) return; // ignore our own write's echo
     _flowPendingReload = content;                        // always keep the freshest

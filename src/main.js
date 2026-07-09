@@ -1383,6 +1383,8 @@ let findingsWatcher = null;
 let commandsWatcher = null;
 let designWatcher = null;
 let flowWatcher = null;
+let projectWatcher = null;
+let _projChangedT = null;
 function watchFindings() {
   if (findingsWatcher) { findingsWatcher.close(); findingsWatcher = null; }
   if (commandsWatcher) { commandsWatcher.close(); commandsWatcher = null; }
@@ -1390,6 +1392,7 @@ function watchFindings() {
   // and stale watchers from the previous project would keep firing its events.
   if (flowWatcher) { flowWatcher.close(); flowWatcher = null; }
   if (designWatcher) { designWatcher.close(); designWatcher = null; }
+  if (projectWatcher) { projectWatcher.close(); projectWatcher = null; }
   const ohanaDir = getOhanaDir();
   if (!ohanaDir) return;
 
@@ -1439,6 +1442,37 @@ function watchFindings() {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("flow:updated", content);
     } catch (e) {}
   });
+
+  // Watch the project tree so the navigator stays live: added/removed prototypes
+  // (.html) and docs (.md) anywhere in the project, plus the agent-written docs
+  // in .ohana/handoff and .ohana/plans (the scan lists those explicitly). Only
+  // add/unlink matter — content changes don't alter the navigator's lists.
+  const projDir = path.dirname(ohanaDir);
+  const projPing = () => {
+    if (_projChangedT) return;
+    _projChangedT = setTimeout(() => {
+      _projChangedT = null;
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("project:changed");
+    }, 250);
+  };
+  projectWatcher = chokidar.watch(projDir, {
+    persistent: true,
+    ignoreInitial: true,
+    depth: 3, // mirror project:scan's walk depth
+    ignored: (p) => {
+      const rel = path.relative(projDir, p);
+      if (!rel || rel.startsWith("..")) return false;
+      const parts = rel.split(path.sep);
+      // Descend into .ohana only for handoff/ and plans/ (flow.json has its own watcher).
+      if (parts[0] === ".ohana") return !(parts.length === 1 || parts[1] === "handoff" || parts[1] === "plans");
+      return parts.some((s) => s.startsWith(".") || s === "node_modules");
+    },
+    awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 60 },
+  });
+  const projRelevant = (p) => /\.(html?|md)$/i.test(p);
+  projectWatcher.on("add", (p) => { if (projRelevant(p)) projPing(); });
+  projectWatcher.on("unlink", (p) => { if (projRelevant(p)) projPing(); });
+  projectWatcher.on("unlinkDir", projPing);
 
   // Watch design.md (next to the prototype) for external edits (e.g. Claude)
   if (designWatcher) designWatcher.close();

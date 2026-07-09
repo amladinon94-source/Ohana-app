@@ -102,6 +102,7 @@ contextBridge.exposeInMainWorld("api", {
       "ohana:findingsUpdated",
       "ohana:commandsUpdated",
       "flow:updated",
+      "project:changed",
       "url:openTab",
       "toast:show",
     ];
