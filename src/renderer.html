@@ -19,17 +19,17 @@
   <!-- URL editor: pops under a repo/url tab when you click it (Enter loads) -->
   <div id="url-pop"><input id="url-bar" spellcheck="false" placeholder="localhost:3000" /></div>
   <div id="hdr-tools">
-    <button class="g-btn" id="btn-open" data-tip="Abrir  ⌘O" data-icon="folder"></button>
+    <button class="g-btn" id="btn-open" data-tip="Open  ⌘O" data-icon="folder"></button>
     <div class="hdr-sep"></div>
     <button class="g-btn" id="btn-findings" data-tip="Comments  ⇧⌘F" data-icon="comment"></button>
     <button class="g-btn" id="btn-terminal" data-tip="Terminal  ⌘J" data-icon="terminal"></button>
-    <button class="g-btn" id="btn-components" data-tip="Componentes  ⇧⌘B" data-icon="box"></button>
-    <button class="g-btn" id="btn-network" data-tip="Red  ⇧⌘N" data-icon="network"></button>
+    <button class="g-btn" id="btn-components" data-tip="Components  ⇧⌘B" data-icon="box"></button>
+    <button class="g-btn" id="btn-network" data-tip="Network  ⇧⌘N" data-icon="network"></button>
     <div class="hdr-sep"></div>
-    <button class="g-btn" id="btn-toggle-pins" data-tip="Ocultar/mostrar comentarios">
+    <button class="g-btn" id="btn-toggle-pins" data-tip="Hide/show comments">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/><line x1="4" y1="4" x2="20" y2="20" class="tp-slash" style="display:none;"/></svg>
     </button>
-    <button class="g-btn" id="btn-present" data-tip="Modo presentación — ocultar la UI  (Esc para salir)">
+    <button class="g-btn" id="btn-present" data-tip="Presentation mode — hide the UI  (Esc to exit)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M10 8l4 2.5L10 13z" fill="currentColor" stroke="none"/><path d="M8 21h8M12 17v4"/></svg>
     </button>
     <div class="hdr-sep"></div>
@@ -57,19 +57,19 @@
   </div>
 </div>
 
-<!-- ─── Project navigator: left rail for a folder workspace (Flujos / Prototipos /
+<!-- ─── Project navigator: left rail for a folder workspace (Flows / Prototypes /
      Handoff / Design / Markdown). Collapsible. Shown only for project tabs. ─── -->
 <aside id="project-nav">
   <div class="pn-head">
-    <span class="pn-name" id="pn-name">Proyecto</span>
-    <button class="pn-collapse" id="pn-collapse" title="Contraer navegador">
+    <span class="pn-name" id="pn-name">Project</span>
+    <button class="pn-collapse" id="pn-collapse" title="Collapse navigator">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
   </div>
   <div class="pn-body" id="pn-body"></div>
-  <div class="pn-git" id="pn-git" title="Estado de git"></div>
+  <div class="pn-git" id="pn-git" title="Git status"></div>
 </aside>
-<button id="pn-expand" title="Mostrar navegador">
+<button id="pn-expand" title="Show navigator">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
 </button>
 <!-- Markdown reader (Design / Handoff / Markdown artifacts) shown in the center. -->
@@ -80,10 +80,10 @@
     <span class="flow-project" id="pr-project"></span>
     <span class="flow-switcher"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M13 2v7h7"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg><span id="pr-name"></span></span>
     <span style="flex:1"></span>
-    <div class="tb-modes pr-tabs"><button class="tb-mode active" id="pr-tab-preview" data-tip="Preview" data-icon="eye"></button><button class="tb-mode" id="pr-tab-edit" data-tip="Editar" data-icon="edit"></button></div>
+    <div class="tb-modes pr-tabs"><button class="tb-mode active" id="pr-tab-preview" data-tip="Preview" data-icon="eye"></button><button class="tb-mode" id="pr-tab-edit" data-tip="Edit" data-icon="edit"></button></div>
     <span class="flow-topbar-sep"></span>
-    <button class="flow-btn ghost" id="pr-ref" title="Etiquetar @archivo en la terminal">@</button>
-    <button class="flow-btn ghost" id="pr-close" title="Cerrar" data-icon="x"></button>
+    <button class="flow-btn ghost" id="pr-ref" title="Reference @file in the terminal">@</button>
+    <button class="flow-btn ghost" id="pr-close" title="Close" data-icon="x"></button>
   </div>
   <div class="pr-body markdown" id="pr-body"></div>
 </div>
@@ -103,58 +103,58 @@
   <div id="preview-error">
     <div class="fe-box">
       <svg class="fe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-      <div class="fe-title" id="preview-error-title">El preview no cargó</div>
+      <div class="fe-title" id="preview-error-title">The preview didn't load</div>
       <div class="fe-msg" id="preview-error-msg"></div>
       <div class="fe-prompt"><pre id="preview-error-prompt"></pre></div>
       <div class="fe-actions">
-        <button class="flow-btn" id="preview-error-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:14px;height:14px;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><line x1="13" y1="15" x2="17" y2="15"/></svg> Enviar a la terminal</button>
-        <button class="flow-btn ghost" id="preview-error-retry">Reintentar</button>
+        <button class="flow-btn" id="preview-error-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:14px;height:14px;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><line x1="13" y1="15" x2="17" y2="15"/></svg> Send to the terminal</button>
+        <button class="flow-btn ghost" id="preview-error-retry">Retry</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ─── Flow / Maquetación canvas (beta) — user-flow & sitemap builder ─── -->
+<!-- ─── Flow / Layout canvas (beta) — user-flow & sitemap builder ─── -->
 <div id="flow-canvas">
   <div id="flow-topbar">
     <span class="flow-title">Moka <span class="flow-beta">beta</span></span>
     <span class="flow-project" id="flow-project"></span>
-    <button class="flow-switcher" id="flow-switcher"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span id="flow-switcher-name">Flujo</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><polyline points="6 9 12 15 18 9"/></svg></button>
+    <button class="flow-switcher" id="flow-switcher"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span id="flow-switcher-name">Flow</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><polyline points="6 9 12 15 18 9"/></svg></button>
     <span style="flex:1"></span>
-    <button class="flow-btn ghost" id="flow-search" title="Buscar pantalla  /" data-icon="search"></button>
-    <button class="flow-btn ghost" id="flow-filter" title="Filtrar por estado" data-icon="filter"><span id="flow-filter-label">Todos</span></button>
-    <button class="flow-btn ghost" id="flow-fit" title="Ver todo  F" data-icon="fit"></button>
-    <button class="flow-btn ghost" id="flow-refresh" title="Recargar flow.json del disco" data-icon="refresh"></button>
+    <button class="flow-btn ghost" id="flow-search" title="Search screen  /" data-icon="search"></button>
+    <button class="flow-btn ghost" id="flow-filter" title="Filter by status" data-icon="filter"><span id="flow-filter-label">All</span></button>
+    <button class="flow-btn ghost" id="flow-fit" title="Fit all  F" data-icon="fit"></button>
+    <button class="flow-btn ghost" id="flow-refresh" title="Reload flow.json from disk" data-icon="refresh"></button>
     <span class="flow-topbar-sep"></span>
-    <button class="flow-btn ghost" id="flow-snap" title="Ajustar a la grilla (snap)" data-icon="magnet"></button>
-    <button class="flow-btn ghost" id="flow-layout" title="Ordenar (layout automático)" data-icon="workflow"></button>
-    <button class="flow-btn ghost" id="flow-layout-opts" title="Opciones de orden (dirección / conectores)" data-icon="down"></button>
-    <button class="flow-btn ghost" id="flow-export" title="Exportar al agente" data-icon="upload"></button>
+    <button class="flow-btn ghost" id="flow-snap" title="Snap to grid" data-icon="magnet"></button>
+    <button class="flow-btn ghost" id="flow-layout" title="Arrange (auto layout)" data-icon="workflow"></button>
+    <button class="flow-btn ghost" id="flow-layout-opts" title="Layout options (direction / connectors)" data-icon="down"></button>
+    <button class="flow-btn ghost" id="flow-export" title="Export to the agent" data-icon="upload"></button>
     <span class="flow-topbar-sep"></span>
-    <button class="flow-btn ghost" id="flow-view-proto" title="Ver prototipo enlazado" style="display:none;" data-icon="eye"></button>
-    <button class="flow-btn" id="flow-to-proto" title="Llevar a prototipo — el agente construye el HTML"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg> A prototipo</button>
+    <button class="flow-btn ghost" id="flow-view-proto" title="View linked prototype" style="display:none;" data-icon="eye"></button>
+    <button class="flow-btn" id="flow-to-proto" title="Send to prototype — the agent builds the HTML"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg> To prototype</button>
     <span class="flow-zoom" id="flow-zoom">100%</span>
   </div>
   <!-- Align/distribute bar — shows when 2+ screens are selected -->
   <div id="flow-align">
-    <button class="fa-btn" data-al="left" title="Alinear a la izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="4" x2="4" y2="20"/><rect x="7" y="7" width="12" height="3.5" rx="1"/><rect x="7" y="13.5" width="8" height="3.5" rx="1"/></svg></button>
-    <button class="fa-btn" data-al="centerh" title="Centrar horizontal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="12" y1="4" x2="12" y2="20"/><rect x="6" y="7" width="12" height="3.5" rx="1"/><rect x="8" y="13.5" width="8" height="3.5" rx="1"/></svg></button>
-    <button class="fa-btn" data-al="right" title="Alinear a la derecha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="20" y1="4" x2="20" y2="20"/><rect x="5" y="7" width="12" height="3.5" rx="1"/><rect x="9" y="13.5" width="8" height="3.5" rx="1"/></svg></button>
+    <button class="fa-btn" data-al="left" title="Align left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="4" x2="4" y2="20"/><rect x="7" y="7" width="12" height="3.5" rx="1"/><rect x="7" y="13.5" width="8" height="3.5" rx="1"/></svg></button>
+    <button class="fa-btn" data-al="centerh" title="Center horizontally"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="12" y1="4" x2="12" y2="20"/><rect x="6" y="7" width="12" height="3.5" rx="1"/><rect x="8" y="13.5" width="8" height="3.5" rx="1"/></svg></button>
+    <button class="fa-btn" data-al="right" title="Align right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="20" y1="4" x2="20" y2="20"/><rect x="5" y="7" width="12" height="3.5" rx="1"/><rect x="9" y="13.5" width="8" height="3.5" rx="1"/></svg></button>
     <span class="fa-sep"></span>
-    <button class="fa-btn" data-al="top" title="Alinear arriba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="4" x2="20" y2="4"/><rect x="7" y="7" width="3.5" height="12" rx="1"/><rect x="13.5" y="7" width="3.5" height="8" rx="1"/></svg></button>
-    <button class="fa-btn" data-al="middlev" title="Centrar vertical"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="12" x2="20" y2="12"/><rect x="7" y="6" width="3.5" height="12" rx="1"/><rect x="13.5" y="8" width="3.5" height="8" rx="1"/></svg></button>
-    <button class="fa-btn" data-al="bottom" title="Alinear abajo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="20" x2="20" y2="20"/><rect x="7" y="5" width="3.5" height="12" rx="1"/><rect x="13.5" y="9" width="3.5" height="8" rx="1"/></svg></button>
+    <button class="fa-btn" data-al="top" title="Align top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="4" x2="20" y2="4"/><rect x="7" y="7" width="3.5" height="12" rx="1"/><rect x="13.5" y="7" width="3.5" height="8" rx="1"/></svg></button>
+    <button class="fa-btn" data-al="middlev" title="Center vertically"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="12" x2="20" y2="12"/><rect x="7" y="6" width="3.5" height="12" rx="1"/><rect x="13.5" y="8" width="3.5" height="8" rx="1"/></svg></button>
+    <button class="fa-btn" data-al="bottom" title="Align bottom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="4" y1="20" x2="20" y2="20"/><rect x="7" y="5" width="3.5" height="12" rx="1"/><rect x="13.5" y="9" width="3.5" height="8" rx="1"/></svg></button>
     <span class="fa-sep"></span>
-    <button class="fa-btn" data-al="disth" title="Distribuir horizontal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="3.5" height="10" rx="1"/><rect x="10.25" y="7" width="3.5" height="10" rx="1"/><rect x="17.5" y="7" width="3.5" height="10" rx="1"/></svg></button>
-    <button class="fa-btn" data-al="distv" title="Distribuir vertical"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="7" y="3" width="10" height="3.5" rx="1"/><rect x="7" y="10.25" width="10" height="3.5" rx="1"/><rect x="7" y="17.5" width="10" height="3.5" rx="1"/></svg></button>
+    <button class="fa-btn" data-al="disth" title="Distribute horizontally"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="3.5" height="10" rx="1"/><rect x="10.25" y="7" width="3.5" height="10" rx="1"/><rect x="17.5" y="7" width="3.5" height="10" rx="1"/></svg></button>
+    <button class="fa-btn" data-al="distv" title="Distribute vertically"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="7" y="3" width="10" height="3.5" rx="1"/><rect x="7" y="10.25" width="10" height="3.5" rx="1"/><rect x="7" y="17.5" width="10" height="3.5" rx="1"/></svg></button>
   </div>
   <!-- AI generation panel (Relume-style) -->
   <div id="flow-gen-panel">
-    <div class="fg-head"><span class="fg-title">✦ Generar flujo con IA <span class="flow-beta">beta</span></span><button class="fg-close" id="flow-gen-close">✕</button></div>
-    <label class="fg-label">Describe la funcionalidad / épica / iteración</label>
-    <textarea id="flow-gen-prompt" class="fg-textarea" spellcheck="false" placeholder="Ej: Flujo de configuración de un monitor de anomalías: el operador define el dataset, ajusta sensibilidad y límites por bound, y confirma en un diálogo de revisión…"></textarea>
-    <button class="flow-btn" id="flow-gen-run" style="width:100%; justify-content:center; margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:14px;height:14px;"><path d="M12 3v18M3 12h18"/></svg> Generar (el agente escribe flow.json)</button>
-    <div class="fg-hint">El agente construye el flujo con las herramientas de Moka y aparece <b>en vivo</b> en el lienzo (verás el loader mientras trabaja). Él decide cuántas pantallas hacen falta según tu descripción.</div>
+    <div class="fg-head"><span class="fg-title">✦ Generate flow with AI <span class="flow-beta">beta</span></span><button class="fg-close" id="flow-gen-close">✕</button></div>
+    <label class="fg-label">Describe the feature / epic / iteration</label>
+    <textarea id="flow-gen-prompt" class="fg-textarea" spellcheck="false" placeholder="e.g. Setup flow for an anomaly monitor: the operator picks the dataset, tunes sensitivity and per-bound limits, and confirms in a review dialog…"></textarea>
+    <button class="flow-btn" id="flow-gen-run" style="width:100%; justify-content:center; margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:14px;height:14px;"><path d="M12 3v18M3 12h18"/></svg> Generate (the agent writes flow.json)</button>
+    <div class="fg-hint">The agent builds the flow with Moka's tools and it appears <b>live</b> on the canvas (you'll see the loader while it works). It decides how many screens are needed based on your description.</div>
   </div>
   <div id="flow-viewport">
     <div id="flow-nodes">
@@ -163,19 +163,19 @@
     <!-- Zoom-out overview: the whole flow rasterized to ONE canvas (content + colors
          + connections) — fluid at any card count. Shown below ~50% zoom. -->
     <canvas id="flow-overview"></canvas>
-    <canvas id="flow-minimap" width="180" height="120" title="Minimapa — clic para navegar"></canvas>
+    <canvas id="flow-minimap" width="180" height="120" title="Minimap — click to navigate"></canvas>
     <div id="flow-empty" class="flow-empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" style="width:30px;height:30px;opacity:0.5;"><rect x="3" y="3" width="7" height="6" rx="1.5"/><rect x="14" y="9" width="7" height="6" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><path d="M10 6h2a2 2 0 012 2v1M10 18h2a2 2 0 002-2v-1"/></svg>
-      <div style="margin-top:12px;font-weight:600;">Construye el user flow de este proyecto</div>
-      <div style="margin-top:6px;font-size:12px;opacity:0.7;max-width:42ch;line-height:1.5;">Agrega pantallas (página, modal, diálogo, navegación), conéctalas para definir la interacción, y expórtalo como prompt estructurado. Se guarda en <b>.ohana/flow.json</b> como documentación viva.</div>
-      <button class="flow-btn" id="flow-empty-add" style="margin-top:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Agregar primera pantalla</button>
+      <div style="margin-top:12px;font-weight:600;">Build this project's user flow</div>
+      <div style="margin-top:6px;font-size:12px;opacity:0.7;max-width:42ch;line-height:1.5;">Add screens (page, modal, dialog, navigation), connect them to define the interaction, and export it as a structured prompt. It's saved to <b>.ohana/flow.json</b> as living documentation.</div>
+      <button class="flow-btn" id="flow-empty-add" style="margin-top:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add first screen</button>
     </div>
   </div>
   <!-- Reload banner: an external edit arrived while you were working -->
   <div id="flow-reload-banner">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-    <span>El agente actualizó el flujo</span>
-    <button id="flow-reload-btn">Recargar</button>
+    <span>The agent updated the flow</span>
+    <button id="flow-reload-btn">Reload</button>
   </div>
   <!-- Bento loader: shown briefly while (re)loading the flow -->
   <div id="flow-loader" class="bento-host">
@@ -188,12 +188,12 @@
   <div id="flow-error">
     <div class="fe-box">
       <svg class="fe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-      <div class="fe-title" id="flow-error-title">Algo salió mal</div>
+      <div class="fe-title" id="flow-error-title">Something went wrong</div>
       <div class="fe-msg" id="flow-error-msg"></div>
       <div class="fe-prompt"><pre id="flow-error-prompt"></pre></div>
       <div class="fe-actions">
-        <button class="flow-btn" id="flow-error-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:14px;height:14px;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><line x1="13" y1="15" x2="17" y2="15"/></svg> Enviar a la terminal</button>
-        <button class="flow-btn ghost" id="flow-error-copy">Copiar prompt</button>
+        <button class="flow-btn" id="flow-error-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:14px;height:14px;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><line x1="13" y1="15" x2="17" y2="15"/></svg> Send to the terminal</button>
+        <button class="flow-btn ghost" id="flow-error-copy">Copy prompt</button>
       </div>
     </div>
   </div>
@@ -204,29 +204,29 @@
 <div id="layout-editor">
   <div class="le-modal">
     <div class="le-head">
-      <span class="le-title">Editor de layout</span>
-      <input id="le-name" class="le-name" placeholder="Nombre del layout" spellcheck="false" />
+      <span class="le-title">Layout editor</span>
+      <input id="le-name" class="le-name" placeholder="Layout name" spellcheck="false" />
       <span style="flex:1"></span>
-      <button class="le-btn ghost" id="le-cancel">Cancelar</button>
-      <button class="le-btn" id="le-save">Guardar layout</button>
+      <button class="le-btn ghost" id="le-cancel">Cancel</button>
+      <button class="le-btn" id="le-save">Save layout</button>
     </div>
     <div class="le-controls">
       <span class="le-ctl-label">Grid</span>
       <div class="le-stepper"><button data-grid="col-">−</button><span id="le-cols">4</span><button data-grid="col+">+</button></div>
-      <span class="le-ctl-x">columnas</span>
+      <span class="le-ctl-x">columns</span>
       <div class="le-stepper"><button data-grid="row-">−</button><span id="le-rows">3</span><button data-grid="row+">+</button></div>
-      <span class="le-ctl-x">filas</span>
+      <span class="le-ctl-x">rows</span>
       <span class="le-ctl-sep"></span>
       <button class="le-preset" data-preset="2x2">2×2</button>
       <button class="le-preset" data-preset="3x3">3×3</button>
       <button class="le-preset" data-preset="4x4">4×4</button>
       <span style="flex:1"></span>
-      <button class="le-clear" id="le-clear">Limpiar</button>
+      <button class="le-clear" id="le-clear">Clear</button>
     </div>
     <div class="le-body">
       <div id="le-stage"><div id="le-host"></div></div>
     </div>
-    <div class="le-hint"><b>Arrastra sobre las celdas</b> para pintar una región (define cuántas ocupa). Cada región es una zona del layout; nómbrala haciendo clic en su etiqueta. Ajusta la resolución del grid arriba.</div>
+    <div class="le-hint"><b>Drag across the cells</b> to paint a region (defines how many it spans). Each region is a zone of the layout; name it by clicking its label. Adjust the grid resolution above.</div>
   </div>
 </div>
 
@@ -234,193 +234,192 @@
 <div id="docs-overlay">
   <div class="docs-modal">
     <div class="docs-head">
-      <span class="docs-title">Documentación<span class="docs-sub">cómo se gestiona Ohana desde la terminal</span></span>
-      <button class="docs-close" id="docs-close" title="Cerrar  Esc" data-icon="x"></button>
+      <span class="docs-title">Documentation<span class="docs-sub">how Ohana is managed from the terminal</span></span>
+      <button class="docs-close" id="docs-close" title="Close  Esc" data-icon="x"></button>
     </div>
     <div class="docs-body">
       <nav class="docs-nav">
         <button class="docs-navitem active" data-sec="moka">Moka</button>
-        <button class="docs-navitem" data-sec="review">Comentarios &amp; Diseño</button>
-        <button class="docs-navitem" data-sec="connect">Cómo se conecta</button>
-        <button class="docs-navitem" data-sec="mcpref">Referencia MCP</button>
+        <button class="docs-navitem" data-sec="review">Comments &amp; Design</button>
+        <button class="docs-navitem" data-sec="connect">How it connects</button>
+        <button class="docs-navitem" data-sec="mcpref">MCP Reference</button>
       </nav>
       <div class="docs-content">
 
         <!-- ── MOKA ── -->
         <section data-sec="moka">
-          <h2>Moka — maquetación y user-flows</h2>
-          <p class="docs-lead">El modo de maquetación de Ohana: construyes el user-flow / sitemap del proyecto antes (o mientras) lo construyes. <b>Los flujos son del proyecto</b> — viven en la sección «Flujos» del navegador izquierdo y en <code>.ohana/flow.json</code> como documentación viva, legible por ti y por el agente. Abrir un flujo te lleva directo a Moka; no hay modos que cambiar.</p>
+          <h2>Moka — layout and user flows</h2>
+          <p class="docs-lead">Ohana's layout mode: you build the project's user flow / sitemap before (or while) you build it. <b>Flows belong to the project</b> — they live in the "Flows" section of the left navigator and in <code>.ohana/flow.json</code> as living documentation, readable by you and the agent. Opening a flow takes you straight to Moka; there are no modes to switch.</p>
 
           <h3>Sitemap ⇄ User flow</h3>
-          <p>El tipo se elige <b>al crear el flujo</b> (botón «+» de la sección Flujos) y Moka lo ordena en consecuencia:</p>
+          <p>The type is chosen <b>when you create the flow</b> ("+" button in the Flows section) and Moka arranges it accordingly:</p>
           <ul>
-            <li><b>Sitemap</b> — arquitectura de navegación: una <b>jerarquía vertical</b> (nivel 1 → nivel 2/3). Se acomoda como árbol.</li>
-            <li><b>User flow</b> — secuencia de una tarea: <b>horizontal</b> (paso 1 → 2 → 3), con ramas en las decisiones. Se acomoda por capas (Sugiyama).</li>
+            <li><b>Sitemap</b> — navigation architecture: a <b>vertical hierarchy</b> (level 1 → level 2/3). Laid out as a tree.</li>
+            <li><b>User flow</b> — the sequence of a task: <b>horizontal</b> (step 1 → 2 → 3), with branches at decisions. Laid out in layers (Sugiyama).</li>
           </ul>
 
-          <h3>Tipos de nodo</h3>
+          <h3>Node types</h3>
           <ul>
-            <li><b>Pantallas</b> (tarjeta completa): Página, Modal, Diálogo, Navegación. Cada una: <b>estado</b> (Por construir / En progreso / Listo) con filtro, y <code>APIs</code> + <code>vínculos</code> (varios, con su contexto).</li>
-            <li><b>Decisión</b> (rombo): trae sus salidas <b>ya resueltas</b> — <span style="color:#34d399">Sí</span> (verde) y <span style="color:#f87171">No</span> (rojo). No es un FigJam libre: la lógica queda explícita.</li>
-            <li><b>Respuesta del sistema</b>: nodo compacto con salidas <span style="color:#34d399">Éxito</span> / <span style="color:#f87171">Error</span>.</li>
-            <li><b>Inicio</b> y <b>Fin</b>: píldoras que marcan dónde <b>empieza y termina la experiencia</b> — el export las usa para que el agente entienda el recorrido.</li>
+            <li><b>Screens</b> (full card): Page, Modal, Dialog. Each one: <b>status</b> (To build / In progress / Done) with a filter, and <code>APIs</code> + <code>links</code> (several, with their context).</li>
+            <li><b>Decision</b> (diamond): comes with its outputs <b>already resolved</b> — <span style="color:#34d399">Yes</span> (green) and <span style="color:#f87171">No</span> (red). It's not a free-form FigJam: the logic stays explicit.</li>
+            <li><b>Subflow</b>: a compact node that links to another flow in the project (navigate flows without giant boards).</li>
+            <li><b>Start</b> and <b>End</b>: pills that mark where the <b>experience begins and ends</b> — the export uses them so the agent understands the journey.</li>
           </ul>
 
-          <h3>Anatomía de una pantalla: Sección → Componente</h3>
-          <p>Se diseña como se diseña una pantalla de verdad:</p>
+          <h3>Anatomy of a screen: Section → Component</h3>
+          <p>You design it the way you design a real screen:</p>
           <ul>
-            <li><b>+ Sección</b> (a nivel de pantalla): agregas secciones (ej. «Hero», «Filtros»). Cada sección tiene <b>nombre editable</b> y un menú <b>⋯</b> (Eliminar sección · Volver componente). Variantes: Contenido / Empty state.</li>
-            <li><b>+ Componente</b> (dentro de una sección): eliges del <b>catálogo base</b> (Acordeón, Alerta, Avatar, Badge, Breadcrumbs, Button, Button group, Calendar, Carrusel, Chart, Checkbox, Colapsable, Buscador, Menú, Data table, Date picker), de <b>tus componentes</b> (biblioteca global con nombre + ícono) o de los <b>componentes del proyecto</b> (tu design system, en repos).</li>
-            <li>A cada componente le anotas su <b>detalle</b> — título, descripción (qué dice / cómo se ve / cómo funciona) y elementos.</li>
-            <li><b>Layout por presets:</b> la tarjeta puede partir de un layout SaaS (Sidebar, Topbar, Master-detail…) o del editor de layout (divides en columnas/filas, guardas el preset por proyecto).</li>
+            <li><b>+ Section</b> (at the screen level): you add sections (e.g. "Hero", "Filters"). Each section has an <b>editable name</b> and a <b>⋯</b> menu (Delete section · Turn into component). Variants: Content / Empty state.</li>
+            <li><b>+ Component</b> (inside a section): you pick from the <b>base catalog</b> (Accordion, Alert, Avatar, Badge, Breadcrumbs, Button, Button group, Calendar, Carousel, Chart, Checkbox, Collapsible, Search, Menu, Data table, Date picker), from <b>your components</b> (global library with name + icon), or from the <b>project's components</b> (your design system, in repos).</li>
+            <li>For each component you note its <b>detail</b> — title, description (what it says / how it looks / how it works) and elements.</li>
+            <li><b>Layout by presets:</b> the card can start from a SaaS layout (Sidebar, Topbar, Master-detail…) or from the layout editor (split into columns/rows, save the preset per project).</li>
           </ul>
 
-          <h3>Conexiones</h3>
+          <h3>Connections</h3>
           <ul>
-            <li>Salidas por lado: <b>azul</b> = conexión normal · <b>verde</b> = positiva (Sí/Éxito) · <b>roja</b> = negativa (No/Error). El color/semántica queda en el edge para que el agente entienda la lógica.</li>
-            <li><b>Arrastrar = conectar</b> (al lado donde sueltas); <b>clic = crea una pantalla nueva ya conectada</b> por el lado opuesto, sin encimarse. <b>Agarra la línea</b> para re-rutearla; clic en la línea abre el editor (dirección, etiqueta, color, eliminar).</li>
-            <li><b>Multi-flujo por tab:</b> cada flujo pertenece a un archivo/repo (<code>src</code>); el selector muestra solo los del tab activo, y puedes reclamar flujos «sin asignar».</li>
+            <li>Outputs by side: <b>blue</b> = normal connection · <b>green</b> = positive (Yes/Success) · <b>red</b> = negative (No/Error). The color/semantics stays on the edge so the agent understands the logic.</li>
+            <li><b>Drag = connect</b> (to the side where you drop); <b>click = create a new screen already connected</b> on the opposite side, without overlapping. <b>Grab the line</b> to reroute it; clicking the line opens the editor (direction, label, color, delete).</li>
+            <li><b>Multi-flow per tab:</b> each flow belongs to a file/repo (<code>src</code>); the switcher shows only those of the active tab, and you can claim "unassigned" flows.</li>
           </ul>
 
-          <h3>Herramientas del lienzo</h3>
+          <h3>Canvas tools</h3>
           <ul>
-            <li><b>Pointer</b> (<code>V</code>): selecciona/mueve; arrastrar en vacío = marquee múltiple. <b>Manito</b> (<code>H</code> / <code>Espacio</code>): panea.</li>
-            <li>Topbar: <b>Buscar</b> (<code>/</code>) · <b>Filtro por estado</b> · <b>Ver todo</b> (<code>F</code>) · <b>Recargar</b> · <b>Snap</b> · <b>Ordenar</b> (layout automático) · <b>Opciones de orden</b> · <b>Exportar</b>.</li>
-            <li>Toolbar flotante (paleta de inserción): Generar con IA · Agregar pantalla · Frame · Nota · Título de sección.</li>
-            <li><b>Notas</b> (stickies) y <b>títulos de sección</b> en el canvas, ambos con su menú <b>⋯</b>. <b>Alinear/distribuir</b> · <b>snap a grilla</b> · <b>minimapa</b>.</li>
-            <li>Atajos: <code>Ctrl/Cmd+C</code>/<code>V</code> copiar/pegar · <code>Ctrl/Cmd+Shift+C</code> o <code>Alt</code>+arrastrar duplica · <code>Ctrl/Cmd+Z</code>/<code>Shift+Z</code> deshacer/rehacer · <code>Supr</code> borrar · <code>Ctrl/Cmd+A</code> todo.</li>
+            <li><b>Pointer</b> (<code>V</code>): select/move; dragging on empty space = marquee multi-select. <b>Hand</b> (<code>H</code> / <code>Space</code>): pans.</li>
+            <li>Topbar: <b>Search</b> (<code>/</code>) · <b>Filter by status</b> · <b>Fit all</b> (<code>F</code>) · <b>Reload</b> · <b>Snap</b> · <b>Arrange</b> (auto layout) · <b>Layout options</b> · <b>Export</b>.</li>
+            <li>Floating toolbar (insertion palette): Generate with AI · Add screen · Frame · Note · Section title.</li>
+            <li><b>Notes</b> (stickies) and <b>section titles</b> on the canvas, both with their <b>⋯</b> menu. <b>Align/distribute</b> · <b>snap to grid</b> · <b>minimap</b>.</li>
+            <li>Shortcuts: <code>Ctrl/Cmd+C</code>/<code>V</code> copy/paste · <code>Ctrl/Cmd+Shift+C</code> or <code>Alt</code>+drag duplicates · <code>Ctrl/Cmd+Z</code>/<code>Shift+Z</code> undo/redo · <code>Del</code> delete · <code>Ctrl/Cmd+A</code> select all.</li>
           </ul>
 
-          <h3>De Moka a código — prototipo o repositorio</h3>
-          <p>El flujo no es un dibujo: es el <b>brief</b> que el agente convierte en producto real.</p>
+          <h3>From Moka to code — prototype or repository</h3>
+          <p>The flow isn't a drawing: it's the <b>brief</b> the agent turns into a real product.</p>
           <ul>
-            <li><b>Exportar al agente</b> (topbar): manda el flujo como prompt estructurado a la terminal del tab — con Inicio/Fin, cada pantalla con sus secciones y componentes, las APIs/vínculos y la lógica de las ramas.</li>
-            <li>Te refieres a las pantallas <b>por su nombre</b> («construye la pantalla de Login», «agrega una sección de filtros al Dashboard»); Ohana le da a cada nodo un id interno para que el agente resuelva sin ambigüedad a cuál te refieres.</li>
-            <li><b>A un prototipo HTML:</b> en el topbar del flujo, pulsa <b>«A prototipo»</b> — enlaza el flujo a un HTML en <code>prototipos/</code> y el agente lo construye; luego «Ver prototipo» lo abre en el mismo proyecto. La edición visual es libre.</li>
-            <li><b>A un repositorio:</b> abre el repo como tab; el agente implementa cada pantalla del flujo usando los <b>componentes reales del design system</b> del proyecto — la maqueta indica qué componente va en cada sección.</li>
+            <li><b>Export to the agent</b> (topbar): sends the flow as a structured prompt to the tab's terminal — with Start/End, each screen with its sections and components, the APIs/links, and the branch logic.</li>
+            <li>You refer to screens <b>by their name</b> ("build the Login screen", "add a filters section to the Dashboard"); Ohana gives each node an internal id so the agent resolves without ambiguity which one you mean.</li>
+            <li><b>To an HTML prototype:</b> in the flow topbar, click <b>"To prototype"</b> — it links the flow to an HTML file in <code>prototypes/</code> and the agent builds it; then "View prototype" opens it in the same project. Visual editing is unrestricted.</li>
+            <li><b>To a repository:</b> open the repo as a tab; the agent implements each screen of the flow using the project's <b>real design system components</b> — the mockup indicates which component goes in each section.</li>
           </ul>
 
-          <h3>Comandos MCP (Moka)</h3>
-          <div class="docs-tool"><code>ohana_flow_read</code><span>Lee el flujo activo: pantallas, edges y globals.</span></div>
-          <div class="docs-tool"><code>ohana_flow_list</code><span>Lista todos los flujos del proyecto y cuál está activo.</span></div>
-          <div class="docs-tool"><code>ohana_flow_new</code><span>Crea un flujo nuevo (y lo activa).</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_screen</code><span>Agrega una pantalla (page/modal/dialog/nav/decision).</span></div>
-          <div class="docs-tool"><code>ohana_flow_update_screen</code><span>Edita nombre/tipo/contexto/posición; reemplaza apis y links.</span></div>
-          <div class="docs-tool"><code>ohana_flow_delete_screen</code><span>Borra una pantalla y las conexiones que la tocan.</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_block</code><span>Agrega un bloque a una región (con tipo ancla + items).</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_region</code><span>Divide la pantalla: agrega una región anidada (fila/columna).</span></div>
-          <div class="docs-tool"><code>ohana_flow_set_dir</code><span>Cambia la dirección de una región (fila ⇄ columna).</span></div>
-          <div class="docs-tool"><code>ohana_flow_set_layout</code><span>Aplica un preset de layout SaaS (sidebar/topbar/…) a una pantalla.</span></div>
-          <div class="docs-tool"><code>ohana_flow_connect</code><span>Conecta A→B (dirección, etiqueta, lado del puerto).</span></div>
-          <div class="docs-tool"><code>ohana_flow_disconnect</code><span>Quita la conexión A→B.</span></div>
-          <div class="docs-tool"><code>ohana_flow_layout</code><span>Ordena el flujo (layout por capas, LR/TB). Llámalo al final: no posiciones a mano.</span></div>
+          <h3>MCP commands (Moka)</h3>
+          <div class="docs-tool"><code>ohana_flow_read</code><span>Reads the active flow: screens, edges, and globals.</span></div>
+          <div class="docs-tool"><code>ohana_flow_list</code><span>Lists all the project's flows and which one is active.</span></div>
+          <div class="docs-tool"><code>ohana_flow_new</code><span>Creates a new flow (and activates it).</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_screen</code><span>Adds a screen (page/modal/dialog/decision/start/end/subflow).</span></div>
+          <div class="docs-tool"><code>ohana_flow_update_screen</code><span>Edits name/type/context/position; replaces apis and links.</span></div>
+          <div class="docs-tool"><code>ohana_flow_delete_screen</code><span>Deletes a screen and the connections touching it.</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_section</code><span>Adds a region/section (content / empty state) to a screen.</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_component</code><span>Adds a component (icon + detail) into a section.</span></div>
+          <div class="docs-tool"><code>ohana_flow_set_dir</code><span>Changes a region's direction (row ⇄ column).</span></div>
+          <div class="docs-tool"><code>ohana_flow_set_layout</code><span>Applies a SaaS layout preset (sidebar/topbar/…) to a screen.</span></div>
+          <div class="docs-tool"><code>ohana_flow_connect</code><span>Connects A→B (direction, label, port side).</span></div>
+          <div class="docs-tool"><code>ohana_flow_disconnect</code><span>Removes the A→B connection.</span></div>
+          <div class="docs-tool"><code>ohana_flow_layout</code><span>Arranges the flow (layered layout, LR/TB). Call it last: don't position by hand.</span></div>
 
-          <h3>Cómo se conecta</h3>
-          <p>El agente edita <code>.ohana/flow.json</code> con esas herramientas (o tú en el lienzo). Ohana <b>vigila el archivo</b> y refresca el canvas en vivo con un flujo abierto (verás el loader mientras el agente construye). «Exportar al agente» manda el flujo como prompt estructurado a la terminal del tab.</p>
+          <h3>How it connects</h3>
+          <p>The agent edits <code>.ohana/flow.json</code> with those tools (or you do, on the canvas). Ohana <b>watches the file</b> and refreshes the canvas live while a flow is open (you'll see the loader while the agent builds). "Export to the agent" sends the flow as a structured prompt to the tab's terminal.</p>
         </section>
 
-        <!-- ── COMENTARIOS & DISEÑO ── -->
+        <!-- ── COMMENTS & DESIGN ── -->
         <section data-sec="review" hidden>
-          <h2>Comentarios &amp; Diseño</h2>
-          <p class="docs-lead">El módulo de revisión: comentarios estilo Figma anclados al prototipo, y un <code>design.md</code> como fuente de verdad del diseño. Ambos son legibles y editables por el agente.</p>
+          <h2>Comments &amp; Design</h2>
+          <p class="docs-lead">The review module: Figma-style comments anchored to the prototype, and a <code>design.md</code> as the design source of truth. Both are readable and editable by the agent.</p>
 
-          <h3>Cómo funciona</h3>
+          <h3>How it works</h3>
           <ul>
-            <li><b>Comentarios:</b> pins numerados anclados a un elemento del prototipo (por su <code>data-ai-id</code> o un selector). Hilos con respuestas, resolver/reabrir. Viven en <code>.ohana/findings.json</code>.</li>
-            <li><b>Diseño:</b> <code>design.md</code> guarda tokens, principios, voz, patrones y decisiones del prototipo. Se ve y edita en el panel Design; es lo que el agente lee antes de tocar la UI para mantener consistencia.</li>
+            <li><b>Comments:</b> numbered pins anchored to a prototype element (by its <code>data-ai-id</code> or a selector). Threads with replies, resolve/reopen. They live in <code>.ohana/findings.json</code>.</li>
+            <li><b>Design:</b> <code>design.md</code> holds the prototype's tokens, principles, voice, patterns, and decisions. You view and edit it in the Design panel; it's what the agent reads before touching the UI to keep things consistent.</li>
           </ul>
 
-          <h3>Comandos MCP (Comentarios)</h3>
-          <div class="docs-tool"><code>ohana_status</code><span>Qué prototipo está abierto y resumen de comentarios.</span></div>
-          <div class="docs-tool"><code>ohana_list_comments</code><span>Lista comentarios (filtra por estado).</span></div>
-          <div class="docs-tool"><code>ohana_create_comment</code><span>Crea un comentario anclado a un elemento.</span></div>
-          <div class="docs-tool"><code>ohana_reply</code><span>Responde un hilo (y opcionalmente lo resuelve).</span></div>
-          <div class="docs-tool"><code>ohana_resolve</code><span>Resuelve o reabre un hilo.</span></div>
-          <div class="docs-tool"><code>ohana_delete</code><span>Elimina un comentario.</span></div>
+          <h3>MCP commands (Comments)</h3>
+          <div class="docs-tool"><code>ohana_status</code><span>Which prototype is open and a summary of comments.</span></div>
+          <div class="docs-tool"><code>ohana_list_comments</code><span>Lists comments (filters by status).</span></div>
+          <div class="docs-tool"><code>ohana_create_comment</code><span>Creates a comment anchored to an element.</span></div>
+          <div class="docs-tool"><code>ohana_reply</code><span>Replies to a thread (and optionally resolves it).</span></div>
+          <div class="docs-tool"><code>ohana_resolve</code><span>Resolves or reopens a thread.</span></div>
+          <div class="docs-tool"><code>ohana_delete</code><span>Deletes a comment.</span></div>
 
-          <h3>Comandos MCP (Diseño)</h3>
-          <div class="docs-tool"><code>ohana_read_design</code><span>Lee design.md (fuente de verdad del diseño).</span></div>
-          <div class="docs-tool"><code>ohana_update_design</code><span>Reescribe design.md (aparece en vivo en el panel).</span></div>
-          <div class="docs-tool"><code>ohana_init_design</code><span>Crea design.md desde una plantilla si no existe.</span></div>
+          <h3>MCP commands (Design)</h3>
+          <div class="docs-tool"><code>ohana_read_design</code><span>Reads design.md (the design source of truth).</span></div>
+          <div class="docs-tool"><code>ohana_update_design</code><span>Rewrites design.md (appears live in the panel).</span></div>
+          <div class="docs-tool"><code>ohana_init_design</code><span>Creates design.md from a template if it doesn't exist.</span></div>
 
-          <h3>Cómo se conecta</h3>
-          <p>Ohana vigila <code>findings.json</code> y <code>design.md</code>. Cuando el agente comenta, responde, resuelve o actualiza el diseño, el cambio aparece en vivo en la app (pins y panel Design).</p>
+          <h3>How it connects</h3>
+          <p>Ohana watches <code>findings.json</code> and <code>design.md</code>. When the agent comments, replies, resolves, or updates the design, the change appears live in the app (pins and Design panel).</p>
         </section>
 
-        <!-- ── CÓMO SE CONECTA (arquitectura) ── -->
+        <!-- ── HOW IT CONNECTS (architecture) ── -->
         <section data-sec="connect" hidden>
-          <h2>Cómo se conecta todo</h2>
-          <p class="docs-lead">Ohana es agente-nativa: toda la app se puede gestionar desde la terminal. El «CLI» no es un binario — es la terminal embebida (una por tab) corriendo tu agente, conectada a la app por MCP y por archivos en <code>.ohana/</code>.</p>
+          <h2>How it all connects</h2>
+          <p class="docs-lead">Ohana is agent-native: the whole app can be managed from the terminal. The "CLI" isn't a binary — it's the embedded terminal (one per tab) running your agent, connected to the app via MCP and files in <code>.ohana/</code>.</p>
 
-          <h3>La terminal por tab</h3>
+          <h3>The per-tab terminal</h3>
           <ul>
-            <li>Cada tab tiene su propio shell. El <code>cwd</code> es la <b>raíz del repo</b> (tab de repo) o la <b>carpeta del archivo</b> (tab de prototipo).</li>
-            <li>En tabs de prototipo, el shell expone <code>$OHANA_FILE</code> y <code>$OHANA_FILE_NAME</code> para que el agente sepa exactamente sobre qué archivo trabajar, aunque haya hermanos en la misma carpeta.</li>
+            <li>Each tab has its own shell. The <code>cwd</code> is the <b>repo root</b> (repo tab) or the <b>file's folder</b> (prototype tab).</li>
+            <li>In prototype tabs, the shell exposes <code>$OHANA_FILE</code> and <code>$OHANA_FILE_NAME</code> so the agent knows exactly which file to work on, even when there are siblings in the same folder.</li>
           </ul>
 
-          <h3>El puente</h3>
+          <h3>The bridge</h3>
           <ul>
-            <li>El servidor MCP lee <code>~/.ohana/active.json</code> (que Ohana escribe al activar un tab) para ubicar el <code>.ohana/</code> del proyecto activo.</li>
-            <li>Archivos puente en <code>.ohana/</code>: <code>findings.json</code> (comentarios) · <code>design.md</code> (diseño) · <code>flow.json</code> (Moka) · <code>commands.json</code> (acciones agente→app).</li>
-            <li><b>Bidireccional:</b> el agente <b>lee</b> el estado (vía MCP) y <b>maneja</b> la app — escribe en <code>commands.json</code> acciones que Ohana ejecuta sobre el preview (click, type, assert, screenshot, ejecutar un flujo de pasos).</li>
+            <li>The MCP server reads <code>~/.ohana/active.json</code> (which Ohana writes when a tab is activated) to locate the active project's <code>.ohana/</code>.</li>
+            <li>Bridge files in <code>.ohana/</code>: <code>findings.json</code> (comments) · <code>design.md</code> (design) · <code>flow.json</code> (Moka) · <code>commands.json</code> (agent→app actions).</li>
+            <li><b>Bidirectional:</b> the agent <b>reads</b> the state (via MCP) and <b>drives</b> the app — it writes actions to <code>commands.json</code> that Ohana runs on the preview (click, type, assert, screenshot, run a step sequence).</li>
           </ul>
 
-          <pre>  Terminal (por tab)            Ohana (app)
+          <pre>  Terminal (per tab)            Ohana (app)
   ┌───────────────┐            ┌──────────────────┐
-  │   Tu agente   │── MCP ────▶│  herramientas    │
+  │  Your agent   │── MCP ────▶│  tools           │
   │   ($OHANA_FILE)│◀───────────│  ohana_*         │
   └──────┬────────┘            └────────┬─────────┘
-         │  lee / escribe                │ vigila (watch)
+         │  reads / writes              │ watches
          ▼                               ▼
      .ohana/  findings.json · design.md · flow.json · commands.json
          │                               │
-         └──────── cambios en vivo ──────┘
-            (pins, panel Design, canvas Moka, acciones sobre el preview)</pre>
+         └──────── live changes ─────────┘
+            (pins, Design panel, Moka canvas, actions on the preview)</pre>
         </section>
 
-        <!-- ── REFERENCIA MCP ── -->
+        <!-- ── MCP REFERENCE ── -->
         <section data-sec="mcpref" hidden>
-          <h2>Referencia MCP — <code>ohana-comments</code> v0.3</h2>
-          <p class="docs-lead">31 herramientas — <b>paridad con la UI de Moka</b>. El agente las ve al reiniciar la sesión MCP (reabrir la terminal del tab / reiniciar el agente).</p>
+          <h2>MCP Reference — <code>ohana-comments</code> v0.5.0</h2>
+          <p class="docs-lead">30 tools — <b>parity with Moka's UI</b>. The agent sees them when the MCP session restarts (reopen the tab's terminal / restart the agent).</p>
 
-          <h3>Estado</h3>
-          <div class="docs-tool"><code>ohana_status</code><span>Prototipo abierto + resumen de comentarios.</span></div>
+          <h3>Status</h3>
+          <div class="docs-tool"><code>ohana_status</code><span>Open prototype + summary of comments.</span></div>
 
-          <h3>Comentarios</h3>
-          <div class="docs-tool"><code>ohana_list_comments</code><span>Listar (filtra por estado).</span></div>
-          <div class="docs-tool"><code>ohana_create_comment</code><span>Crear anclado a un elemento.</span></div>
-          <div class="docs-tool"><code>ohana_reply</code><span>Responder (y opcionalmente resolver).</span></div>
-          <div class="docs-tool"><code>ohana_resolve</code><span>Resolver / reabrir.</span></div>
-          <div class="docs-tool"><code>ohana_delete</code><span>Eliminar.</span></div>
+          <h3>Comments</h3>
+          <div class="docs-tool"><code>ohana_list_comments</code><span>List (filters by status).</span></div>
+          <div class="docs-tool"><code>ohana_create_comment</code><span>Create anchored to an element.</span></div>
+          <div class="docs-tool"><code>ohana_reply</code><span>Reply (and optionally resolve).</span></div>
+          <div class="docs-tool"><code>ohana_resolve</code><span>Resolve / reopen.</span></div>
+          <div class="docs-tool"><code>ohana_delete</code><span>Delete.</span></div>
 
-          <h3>Diseño</h3>
-          <div class="docs-tool"><code>ohana_read_design</code><span>Leer design.md.</span></div>
-          <div class="docs-tool"><code>ohana_update_design</code><span>Reescribir design.md.</span></div>
-          <div class="docs-tool"><code>ohana_init_design</code><span>Crear desde plantilla.</span></div>
+          <h3>Design</h3>
+          <div class="docs-tool"><code>ohana_read_design</code><span>Read design.md.</span></div>
+          <div class="docs-tool"><code>ohana_update_design</code><span>Rewrite design.md.</span></div>
+          <div class="docs-tool"><code>ohana_init_design</code><span>Create from a template.</span></div>
 
           <h3>Moka</h3>
-          <div class="docs-tool"><code>ohana_flow_read</code><span>Leer flujo activo.</span></div>
-          <div class="docs-tool"><code>ohana_flow_list</code><span>Listar flujos.</span></div>
-          <div class="docs-tool"><code>ohana_flow_new</code><span>Crear flujo.</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_screen</code><span>Agregar pantalla.</span></div>
-          <div class="docs-tool"><code>ohana_flow_update_screen</code><span>Editar pantalla.</span></div>
-          <div class="docs-tool"><code>ohana_flow_delete_screen</code><span>Borrar pantalla.</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_block</code><span>Agregar bloque a una región.</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_region</code><span>Dividir en sub-región (fila/col).</span></div>
-          <div class="docs-tool"><code>ohana_flow_set_dir</code><span>Dirección de una región.</span></div>
-          <div class="docs-tool"><code>ohana_flow_set_layout</code><span>Aplicar preset de layout SaaS.</span></div>
-          <div class="docs-tool"><code>ohana_flow_guide</code><span>Convenciones para armar sitemaps/flows ordenados.</span></div>
-          <div class="docs-tool"><code>ohana_sitemap_add_page</code><span>Sitemap: página bajo un padre (conecta + ordena).</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_step</code><span>User flow: siguiente paso (conecta en secuencia).</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_branch</code><span>User flow: rama de una decisión (con label).</span></div>
-          <div class="docs-tool"><code>ohana_flow_set_board</code><span>Cambiar tablero: sitemap ⇄ user flow (y reordenar).</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_section</code><span>Agregar sección tipada (contenido / empty state) a una pantalla.</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_component</code><span>Agregar un componente (con ícono + detalle) a una sección.</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_note</code><span>Agregar una nota (sticky) al canvas.</span></div>
-          <div class="docs-tool"><code>ohana_flow_add_label</code><span>Agregar un título de sección al canvas.</span></div>
-          <div class="docs-tool"><code>ohana_flow_connect</code><span>Conectar A→B (dirección, etiqueta, <b>color</b>: normal/positivo/negativo).</span></div>
-          <div class="docs-tool"><code>ohana_flow_disconnect</code><span>Desconectar A→B.</span></div>
-          <div class="docs-tool"><code>ohana_flow_layout</code><span>Ordenar (layout por capas).</span></div>
+          <div class="docs-tool"><code>ohana_flow_read</code><span>Read the active flow.</span></div>
+          <div class="docs-tool"><code>ohana_flow_list</code><span>List flows.</span></div>
+          <div class="docs-tool"><code>ohana_flow_new</code><span>Create a flow.</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_screen</code><span>Add a screen.</span></div>
+          <div class="docs-tool"><code>ohana_flow_update_screen</code><span>Edit a screen.</span></div>
+          <div class="docs-tool"><code>ohana_flow_delete_screen</code><span>Delete a screen.</span></div>
+          <div class="docs-tool"><code>ohana_flow_set_proto</code><span>Link the board to its HTML prototype ("View prototype").</span></div>
+          <div class="docs-tool"><code>ohana_flow_set_dir</code><span>Direction of a region.</span></div>
+          <div class="docs-tool"><code>ohana_flow_set_layout</code><span>Apply a SaaS layout preset.</span></div>
+          <div class="docs-tool"><code>ohana_flow_guide</code><span>Conventions for building tidy sitemaps/flows.</span></div>
+          <div class="docs-tool"><code>ohana_sitemap_add_page</code><span>Sitemap: page under a parent (connects + arranges).</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_step</code><span>User flow: next step (connects in sequence).</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_branch</code><span>User flow: branch off a decision (with label).</span></div>
+          <div class="docs-tool"><code>ohana_flow_set_board</code><span>Switch board: sitemap ⇄ user flow (and re-arrange).</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_section</code><span>Add a typed section (content / empty state) to a screen.</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_component</code><span>Add a component (with icon + detail) to a section.</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_note</code><span>Add a note (sticky) to the canvas.</span></div>
+          <div class="docs-tool"><code>ohana_flow_add_label</code><span>Add a section title to the canvas.</span></div>
+          <div class="docs-tool"><code>ohana_flow_connect</code><span>Connect A→B (direction, label, <b>color</b>: normal/positive/negative).</span></div>
+          <div class="docs-tool"><code>ohana_flow_disconnect</code><span>Disconnect A→B.</span></div>
+          <div class="docs-tool"><code>ohana_flow_layout</code><span>Arrange (layered layout).</span></div>
         </section>
 
       </div>
@@ -435,12 +434,12 @@
   <div style="display:flex; gap:10px; margin-top:4px;">
     <button id="btn-empty-open" style="display:flex; align-items:center; gap:6px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-      Abrir
+      Open
     </button>
   </div>
   <button id="btn-empty-tutorial" style="margin-top:14px; display:inline-flex; align-items:center; gap:6px; background:transparent; border:none; color:var(--text-m); font-size:12px; cursor:pointer; opacity:0.85;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    Ver tutorial interactivo
+    Watch interactive tutorial
   </button>
 </div>
 
@@ -456,7 +455,7 @@
     <button class="g-btn" id="btn-inspector" data-tip="Inspector  ⇧⌘I">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
     </button>
-    <button class="g-btn" id="btn-probe" data-tip="¿Qué endpoint llena esto?">
+    <button class="g-btn" id="btn-probe" data-tip="Which endpoint fills this?">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><line x1="11" y1="7" x2="11" y2="11"/><line x1="11" y1="11" x2="14" y2="13"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></svg>
     </button>
   </div>
@@ -474,37 +473,37 @@
 
   <!-- Moka tools (only visible in Moka/Flow mode): select/move ⇄ hand -->
   <div class="tb-group tb-flow-only" id="flow-tool-group">
-    <button class="g-btn active" id="flow-tool-pointer" data-tip="Seleccionar / mover  V" data-icon="pointer"></button>
-    <button class="g-btn" id="flow-tool-hand" data-tip="Mover el lienzo  H · Espacio" data-icon="hand"></button>
+    <button class="g-btn active" id="flow-tool-pointer" data-tip="Select / move  V" data-icon="pointer"></button>
+    <button class="g-btn" id="flow-tool-hand" data-tip="Move the canvas  H · Space" data-icon="hand"></button>
   </div>
 
   <div class="tb-sep tb-flow-only"></div>
 
   <!-- Moka actions (only visible in Moka/Flow mode) -->
   <div class="tb-group tb-flow-only" id="flow-actions">
-    <button class="g-btn" id="flow-generate" data-tip="Generar con IA" data-icon="sparkle"></button>
-    <button class="g-btn" id="flow-add" data-tip="Agregar pantalla" data-icon="squarePlus"></button>
-    <button class="g-btn" id="flow-frame" data-tip="Agregar sección / frame" data-icon="frame"></button>
-    <button class="g-btn" id="flow-note" data-tip="Agregar nota" data-icon="note"></button>
-    <button class="g-btn" id="flow-label" data-tip="Agregar título de sección" data-icon="heading"></button>
+    <button class="g-btn" id="flow-generate" data-tip="Generate with AI" data-icon="sparkle"></button>
+    <button class="g-btn" id="flow-add" data-tip="Add screen" data-icon="squarePlus"></button>
+    <button class="g-btn" id="flow-frame" data-tip="Add section / frame" data-icon="frame"></button>
+    <button class="g-btn" id="flow-note" data-tip="Add note" data-icon="note"></button>
+    <button class="g-btn" id="flow-label" data-tip="Add section title" data-icon="heading"></button>
   </div>
 
   <!-- Markdown text tools (only while editing a .md in the reader) -->
   <div class="tb-group tb-md-only" id="tb-md">
-    <button class="g-btn tb-h" data-md="h1" data-tip="Título 1">H1</button>
-    <button class="g-btn tb-h" data-md="h2" data-tip="Título 2">H2</button>
-    <button class="g-btn tb-h" data-md="h3" data-tip="Título 3">H3</button>
+    <button class="g-btn tb-h" data-md="h1" data-tip="Heading 1">H1</button>
+    <button class="g-btn tb-h" data-md="h2" data-tip="Heading 2">H2</button>
+    <button class="g-btn tb-h" data-md="h3" data-tip="Heading 3">H3</button>
   </div>
   <div class="tb-sep tb-md-only"></div>
   <div class="tb-group tb-md-only">
-    <button class="g-btn" data-md="bold" data-tip="Negrita  ⌘B" data-icon="bold"></button>
-    <button class="g-btn" data-md="italic" data-tip="Cursiva  ⌘I" data-icon="italic"></button>
-    <button class="g-btn" data-md="code" data-tip="Código" data-icon="code"></button>
+    <button class="g-btn" data-md="bold" data-tip="Bold  ⌘B" data-icon="bold"></button>
+    <button class="g-btn" data-md="italic" data-tip="Italic  ⌘I" data-icon="italic"></button>
+    <button class="g-btn" data-md="code" data-tip="Code" data-icon="code"></button>
   </div>
   <div class="tb-sep tb-md-only"></div>
   <div class="tb-group tb-md-only">
-    <button class="g-btn" data-md="ul" data-tip="Lista" data-icon="listBullet"></button>
-    <button class="g-btn" data-md="ol" data-tip="Lista numerada" data-icon="listOrdered"></button>
+    <button class="g-btn" data-md="ul" data-tip="List" data-icon="listBullet"></button>
+    <button class="g-btn" data-md="ol" data-tip="Numbered list" data-icon="listOrdered"></button>
     <button class="g-btn" data-md="quote" data-tip="Cita" data-icon="quote"></button>
   </div>
 </div>
@@ -539,7 +538,7 @@
       <span class="fp-badge" id="fp-count">0</span>
     </span>
     <span style="flex:1"></span>
-    <button class="fp-close" id="fp-docs" title="Cómo funciona — Comentarios &amp; Diseño">
+    <button class="fp-close" id="fp-docs" title="How it works — Comments &amp; Design">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </button>
     <button class="fp-close" id="fp-close" data-icon="x"></button>
@@ -591,7 +590,7 @@
     </div>
     <div class="thread-actions">
       <span id="thread-status-slot"></span>
-      <button class="cmt-btn agent" id="thread-fix" title="Manda este comentario como tarea a la terminal de esta pestaña">Pedir al agente</button>
+      <button class="cmt-btn agent" id="thread-fix" title="Send this comment as a task to this tab's terminal">Ask the agent</button>
       <button class="cmt-btn ghost" id="thread-resolve">Resolve</button>
       <button class="cmt-btn ghost" id="thread-delete">Delete</button>
       <button class="cmt-btn primary" id="thread-reply-btn">Reply</button>
@@ -643,13 +642,13 @@
     <button class="dp-close" id="ip-close" data-icon="x"></button>
   </div>
   <div class="ip-target" id="ip-target">—</div>
-  <div class="ip-api" id="ip-api" style="display:none;" title="Endpoint que llena este elemento — clic para ver la respuesta"></div>
-  <div class="ip-ds-hint" id="ip-ds-hint" style="display:none;">⚠ Componente del sistema — el cambio se ve en el preview; en el código se aplica por variante/prop, no como CSS suelto.</div>
+  <div class="ip-api" id="ip-api" style="display:none;" title="Endpoint that fills this element — click to see the response"></div>
+  <div class="ip-ds-hint" id="ip-ds-hint" style="display:none;">⚠ System component — the change shows in the preview; in code it's applied per variant/prop, not as loose CSS.</div>
 
   <div class="ip-body" id="ip-body">
     <!-- Design-system component (shown only when the element matches components.json) -->
     <section class="ip-sec hidden" id="ip-sec-component">
-      <div class="ip-sec-title">Componente · <span id="ip-comp-name"></span></div>
+      <div class="ip-sec-title">Component · <span id="ip-comp-name"></span></div>
       <div class="ip-fields" id="ip-component"></div>
       <div id="ip-comp-note"></div>
     </section>
@@ -662,31 +661,31 @@
 
     <!-- Text -->
     <section class="ip-sec" id="ip-sec-text">
-      <div class="ip-sec-title">Texto</div>
+      <div class="ip-sec-title">Text</div>
       <textarea class="ip-textarea" id="ip-text" rows="2" spellcheck="false"></textarea>
     </section>
 
     <!-- Spacing (box model) -->
     <section class="ip-sec">
-      <div class="ip-sec-title">Espaciado</div>
+      <div class="ip-sec-title">Spacing</div>
       <div id="ip-boxmodel"></div>
     </section>
 
     <!-- Common styles -->
     <section class="ip-sec">
-      <div class="ip-sec-title">Estilos</div>
+      <div class="ip-sec-title">Styles</div>
       <div class="ip-fields" id="ip-styles"></div>
     </section>
 
     <!-- Tokens from design.md (read-only reference) -->
     <section class="ip-sec" id="ip-sec-vars">
-      <div class="ip-sec-title">Tokens <span class="ip-hint">(de design.md)</span></div>
+      <div class="ip-sec-title">Tokens <span class="ip-hint">(from design.md)</span></div>
       <div id="ip-vars"></div>
     </section>
 
     <!-- Raw CSS -->
     <section class="ip-sec">
-      <div class="ip-sec-title">CSS inline (crudo)</div>
+      <div class="ip-sec-title">Inline CSS (raw)</div>
       <textarea class="ip-textarea mono" id="ip-raw" rows="3" spellcheck="false" placeholder="color: red; padding: 8px;"></textarea>
     </section>
   </div>
@@ -694,8 +693,8 @@
   <div class="ip-footer">
     <button class="cmt-btn ghost" id="ip-reset">Reset</button>
     <span class="spacer" style="flex:1"></span>
-    <button class="cmt-btn ghost" id="ip-send" title="Copiar la instrucción al portapapeles">Copiar</button>
-    <button class="cmt-btn primary" id="ip-apply" title="Mandar los cambios a la terminal de esta pestaña para que el agente los escriba en el código">Aplicar al código</button>
+    <button class="cmt-btn ghost" id="ip-send" title="Copy the instruction to the clipboard">Copy</button>
+    <button class="cmt-btn primary" id="ip-apply" title="Send the changes to this tab's terminal so the agent writes them into the code">Apply to code</button>
   </div>
 </div>
 
@@ -716,15 +715,15 @@
       <span class="rd-name" id="rd-name">repo</span>
       <button class="rd-close" id="rd-close" data-icon="x"></button>
     </div>
-    <label class="rd-label">Comando a ejecutar</label>
+    <label class="rd-label">Command to run</label>
     <input id="rd-command" class="rd-input mono" spellcheck="false" />
     <div class="rd-scripts" id="rd-scripts"></div>
-    <label class="rd-label">URL esperada</label>
+    <label class="rd-label">Expected URL</label>
     <input id="rd-url" class="rd-input mono" spellcheck="false" />
     <div class="rd-actions">
-      <button class="cmt-btn ghost" id="rd-connect">Ya corre → conectar</button>
+      <button class="cmt-btn ghost" id="rd-connect">Already running → connect</button>
       <span style="flex:1"></span>
-      <button class="cmt-btn primary" id="rd-run">Ejecutar ▸</button>
+      <button class="cmt-btn primary" id="rd-run">Run ▸</button>
     </div>
   </div>
 </div>
@@ -746,29 +745,29 @@
   <div class="ctx-head">
     <span class="ctx-title">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;"><path d="M5 12h14"/><path d="M5 12a7 7 0 017-7 7 7 0 017 7"/><path d="M5 12a7 7 0 007 7 7 7 0 007-7"/></svg>
-      Red
+      Network
     </span>
     <span style="flex:1"></span>
-    <button class="ctx-hbtn" id="np-cache" title="Limpiar caché y cookies del preview" data-icon="trash"></button>
-    <button class="ctx-hbtn" id="np-clear" title="Limpiar la lista" data-icon="eraser"></button>
-    <button class="ctx-hbtn" id="np-close" title="Cerrar" data-icon="x"></button>
+    <button class="ctx-hbtn" id="np-cache" title="Clear the preview's cache and cookies" data-icon="trash"></button>
+    <button class="ctx-hbtn" id="np-clear" title="Clear the list" data-icon="eraser"></button>
+    <button class="ctx-hbtn" id="np-close" title="Close" data-icon="x"></button>
   </div>
   <div class="np-filter">
     <button class="np-tab active" data-f="api">API</button>
-    <button class="np-tab" data-f="all">Todo</button>
-    <button class="np-tab" data-f="console">Consola</button>
+    <button class="np-tab" data-f="all">All</button>
+    <button class="np-tab" data-f="console">Console</button>
     <span style="flex:1"></span>
-    <button class="np-probe" id="np-probe" title="Haz clic en una sección del preview para ver qué endpoint la llena">¿Qué llena esto?</button>
+    <button class="np-probe" id="np-probe" title="Click a section of the preview to see which endpoint fills it">What fills this?</button>
   </div>
   <div class="np-search-wrap" id="np-search-wrap">
-    <input id="np-search" class="np-search" spellcheck="false" placeholder="Buscar URL…" />
+    <input id="np-search" class="np-search" spellcheck="false" placeholder="Search URL…" />
   </div>
   <div class="np-mocks" id="np-mocks" style="display:none;">
-    <span id="np-mocks-label">0 endpoints mockeados</span>
-    <button id="np-mocks-clear">Limpiar</button>
+    <span id="np-mocks-label">0 mocked endpoints</span>
+    <button id="np-mocks-clear">Clear</button>
   </div>
   <div class="ctx-body">
-    <div id="np-empty" class="ctx-empty">Aquí aparecen las llamadas de tu app.<br><br>Navega el preview o recarga (⌘R) para capturarlas. Luego haz clic en una para ver su respuesta o <b>mockearla</b> (devolver el JSON que tú quieras).</div>
+    <div id="np-empty" class="ctx-empty">Your app's requests show up here.<br><br>Navigate the preview or reload (⌘R) to capture them. Then click one to see its response or <b>mock it</b> (return whatever JSON you want).</div>
     <div id="np-list" class="np-list"></div>
   </div>
   <div id="np-preview" class="ctx-preview">
@@ -776,22 +775,22 @@
       <button class="ctx-back" id="np-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
       <span class="ctx-preview-name" id="np-prev-name"></span>
       <span style="flex:1"></span>
-      <button class="ctx-back" id="np-copy" title="Copiar URL del BE" data-icon="dup"></button>
+      <button class="ctx-back" id="np-copy" title="Copy the backend URL" data-icon="dup"></button>
     </div>
     <div class="np-force" id="np-force">
-      <span class="np-force-label">Respuesta de este endpoint</span>
-      <p class="np-help"><b>1.</b> Edita el JSON (o usa un relleno) &nbsp;<b>2.</b> Aplicar mock &nbsp;<b>3.</b> el preview se recarga solo. «Quitar» vuelve a lo real.</p>
-      <textarea id="np-mock-body" class="np-mock-ta" spellcheck="false" placeholder='Escribe o pega el JSON que quieres que devuelva…'></textarea>
+      <span class="np-force-label">Response for this endpoint</span>
+      <p class="np-help"><b>1.</b> Edit the JSON (or use a preset) &nbsp;<b>2.</b> Apply mock &nbsp;<b>3.</b> the preview reloads on its own. "Remove" restores the real one.</p>
+      <textarea id="np-mock-body" class="np-mock-ta" spellcheck="false" placeholder='Type or paste the JSON you want it to return…'></textarea>
       <div class="np-fill-row">
-        <span class="np-fill-label">Rellenar:</span>
-        <button class="np-fill" data-fill="real">Usar la real</button>
-        <button class="np-fill" data-fill="empty">Vacío</button>
-        <button class="np-fill" data-fill="many">Muchas filas</button>
+        <span class="np-fill-label">Fill:</span>
+        <button class="np-fill" data-fill="real">Use the real one</button>
+        <button class="np-fill" data-fill="empty">Empty</button>
+        <button class="np-fill" data-fill="many">Many rows</button>
       </div>
       <div class="np-status-row">
         <span class="np-status-label">Status</span>
         <select id="np-status" class="np-status-sel">
-          <option value="">200 (por defecto)</option>
+          <option value="">200 (default)</option>
           <option value="200">200 · OK</option>
           <option value="201">201 · Created</option>
           <option value="204">204 · No Content</option>
@@ -808,11 +807,11 @@
         </select>
       </div>
       <div class="np-apply-row">
-        <button id="np-mock-apply" class="cmt-btn primary">Aplicar mock</button>
-        <button id="np-mock-remove" class="cmt-btn ghost">Quitar</button>
+        <button id="np-mock-apply" class="cmt-btn primary">Apply mock</button>
+        <button id="np-mock-remove" class="cmt-btn ghost">Remove</button>
       </div>
-      <label class="np-loading-row"><input type="checkbox" id="np-loading" /> Cargando (nunca responde)</label>
-      <div class="np-force-desc" id="np-force-desc">Sin simular — respuesta real del endpoint.</div>
+      <label class="np-loading-row"><input type="checkbox" id="np-loading" /> Loading (never responds)</label>
+      <div class="np-force-desc" id="np-force-desc">Not simulated — the endpoint's real response.</div>
     </div>
     <pre class="ctx-preview-body" id="np-prev-body"></pre>
   </div>
@@ -822,24 +821,24 @@
   <div class="ctx-head">
     <span class="ctx-title">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      Componentes
+      Components
     </span>
     <span style="flex:1"></span>
-    <button class="ctx-hbtn" id="cp-refresh" title="Refrescar" data-icon="refresh"></button>
-    <button class="ctx-hbtn" id="cp-close" title="Cerrar" data-icon="x"></button>
+    <button class="ctx-hbtn" id="cp-refresh" title="Refresh" data-icon="refresh"></button>
+    <button class="ctx-hbtn" id="cp-close" title="Close" data-icon="x"></button>
   </div>
   <div class="ctx-body">
     <div class="cp-sb-row">
-      <input id="cp-sb-url" class="cp-sb-input" placeholder="Storybook para previews — ej. localhost:6006" />
-      <button id="cp-sb-set" class="cp-sb-btn">Conectar</button>
+      <input id="cp-sb-url" class="cp-sb-input" placeholder="Storybook for previews — e.g. localhost:6006" />
+      <button id="cp-sb-set" class="cp-sb-btn">Connect</button>
     </div>
     <div id="cp-source" class="cp-source"></div>
     <div id="cp-empty" class="ctx-empty">
-      <div>No se encontraron componentes para este tab.</div>
-      <div style="margin-top:8px;">Si abriste una URL (localhost), Ohana no sabe en qué carpeta del disco está el repo. Elige la carpeta del proyecto (donde está su <b>node_modules</b> / design system) y los detecta solo.</div>
-      <button id="cp-pick" class="cmt-btn agent" style="margin-top:14px;">Elegir carpeta del proyecto…</button>
+      <div>No components found for this tab.</div>
+      <div style="margin-top:8px;">If you opened a URL (localhost), Ohana doesn't know which folder on disk the repo is in. Choose the project folder (where its <b>node_modules</b> / design system live) and it detects them on its own.</div>
+      <button id="cp-pick" class="cmt-btn agent" style="margin-top:14px;">Choose project folder…</button>
       <div id="cp-picked" class="cp-source" style="margin-top:10px;"></div>
-      <div style="margin-top:14px;font-size:10px;opacity:0.7;">Busca, en orden: <b>.ohana/config.json</b> · <b>components.json</b> · design system en <b>node_modules</b> · <b>Storybook</b> · carpeta de componentes.</div>
+      <div style="margin-top:14px;font-size:10px;opacity:0.7;">It looks, in order, for: <b>.ohana/config.json</b> · <b>components.json</b> · a design system in <b>node_modules</b> · <b>Storybook</b> · a components folder.</div>
     </div>
     <div id="cp-list" class="cp-list"></div>
   </div>
@@ -849,16 +848,16 @@
   <div class="ctx-head">
     <span class="ctx-title">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15z"/></svg>
-      Contexto
+      Context
     </span>
     <span style="flex:1"></span>
-    <button class="ctx-hbtn" id="ctx-refresh" title="Refrescar">
+    <button class="ctx-hbtn" id="ctx-refresh" title="Refresh">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
     </button>
-    <button class="ctx-hbtn" id="ctx-close" title="Cerrar" data-icon="x"></button>
+    <button class="ctx-hbtn" id="ctx-close" title="Close" data-icon="x"></button>
   </div>
   <div class="ctx-body">
-    <div id="ctx-empty" class="ctx-empty">Abre un archivo o repo para ver su contexto.</div>
+    <div id="ctx-empty" class="ctx-empty">Open a file or repo to see its context.</div>
     <div id="ctx-list" class="ctx-list"></div>
   </div>
   <div id="ctx-preview" class="ctx-preview">
@@ -872,10 +871,10 @@
   </div>
 </div>
 
-<!-- ─── Unified "Abrir" modal ─── -->
+<!-- ─── Unified "Open" modal ─── -->
 <div id="open-dialog" class="open-overlay">
   <div class="open-card">
-    <h3>¿Qué quieres abrir?</h3>
+    <h3>What do you want to open?</h3>
     <div class="open-choices">
       <button class="open-opt" id="od-url">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.07 0l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.07 0l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
@@ -883,7 +882,7 @@
       </button>
       <button class="open-opt" id="od-file">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-        <span>Proyecto</span>
+        <span>Project</span>
       </button>
       <button class="open-opt" id="od-repo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -891,7 +890,7 @@
       </button>
     </div>
     <input id="od-url-input" class="open-url-input" spellcheck="false" placeholder="localhost:3000" />
-    <p class="open-hint">Proyecto: tu espacio de trabajo (carpeta o .html) · Repo: corre su dev server (localhost) · URL: cualquier dirección</p>
+    <p class="open-hint">Project: your workspace (folder or .html) · Repo: runs its dev server (localhost) · URL: any address</p>
   </div>
 </div>
 

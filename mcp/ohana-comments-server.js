@@ -14,13 +14,15 @@
  * (findings.json, flow.json, design.md). Ohana watches those files live.
  *
  * Project model (Ohana ≥0.8): a PROJECT = a folder workspace scaffolded as
- *   prototipos/  (HTML prototypes — «A prototipo» builds here)
- *   planes/     (implementation plans written by agents)
- *   handoff/    (handoff docs — what gets exported to a repo)
- *   design/     (design.md, voice&tone, rubrics)
- *   .ohana/     (flow.json = the Moka boards / "flujos")
+ *   prototypes/  (HTML prototypes — "To prototype" builds here)
+ *   plans/       (implementation plans written by agents)
+ *   handoff/     (handoff docs — what gets exported to a repo)
+ *   design/      (design.md, voice&tone, rubrics)
+ *   .ohana/      (flow.json = the Moka boards / "flows")
+ * Projects created before the English migration use prototipos/ and planes/ —
+ * workspaceDirs() resolves the real names; ohana_status reports them.
  * Boards belong to the project; a board can link its prototype via `proto`
- * (rel path, e.g. "prototipos/mercado.html"). Write artifacts to those folders.
+ * (rel path, e.g. "prototypes/market.html"). Write artifacts to those folders.
  *
  * Transport: stdio, newline-delimited JSON-RPC 2.0 (MCP). Zero dependencies.
  * IMPORTANT: stdout is reserved for protocol messages — logs go to stderr.
@@ -53,10 +55,10 @@ function log(...args) {
 
 // ─── Data access ───────────────────────────────────────────────────
 const NO_PROJECT_MSG =
-  "Ohana no tiene ningún proyecto abierto anclado a una carpeta, así que no hay dónde " +
-  "escribir el flujo. Pídele al usuario que en Ohana use «Abrir → Proyecto» y elija una carpeta " +
-  "(un tab de solo-URL no basta: no tiene carpeta en disco). Cuando lo haga, reintenta. " +
-  "NO escribas ningún archivo a ciegas mientras tanto.";
+  "Ohana has no open project anchored to a folder, so there's nowhere to " +
+  "write the flow. Ask the user to use \"Open → Project\" in Ohana and pick a folder " +
+  "(a URL-only tab isn't enough: it has no folder on disk). Once they do, retry. " +
+  "Do NOT write any file blindly in the meantime.";
 
 function resolveActive() {
   if (!fs.existsSync(ACTIVE_FILE)) {
@@ -92,36 +94,43 @@ function designPath(active) {
   throw new Error("No project directory for the active prototype.");
 }
 
+// Workspace folder names: English for new projects, legacy Spanish
+// (prototipos/planes) for projects scaffolded before the English migration.
+function workspaceDirs(root) {
+  const pick = (es, en) => { try { return fs.existsSync(path.join(root, es)) ? es : en; } catch (e) { return en; } };
+  return { prototypes: pick("prototipos", "prototypes"), plans: pick("planes", "plans") };
+}
+
 function designTemplate(name) {
   const today = new Date().toISOString().slice(0, 10);
   return `# Design — ${name}
 
-> Fuente de verdad del diseño de este prototipo.
+> Design source of truth for this prototype.
 
-## Principios
+## Principles
 -
 
 ## Tokens
 
 ### Color
-| Token | Valor | Uso |
-|-------|-------|-----|
-|       |       |     |
+| Token | Value | Usage |
+|-------|-------|-------|
+|       |       |       |
 
-### Tipografía
+### Typography
 - Display:
 - Body:
 
 ### Spacing & radius
 -
 
-## Voz y tono
+## Voice & tone
 -
 
-## Patrones de componentes
+## Component patterns
 -
 
-## Decisiones
+## Decisions
 - ${today} —
 `;
 }
@@ -169,7 +178,7 @@ function publicComment(c, idx) {
 // tab's flow), unless a flowId is given. Ohana watches flow.json and reloads
 // the canvas live when in Moka mode.
 const FLOW_KINDS = ["page", "modal", "dialog", "decision", "start", "end", "subflow"];
-const FLOW_STATUSES = ["todo", "wip", "done"]; // por construir | en progreso | listo
+const FLOW_STATUSES = ["todo", "wip", "done"]; // to build | in progress | done
 
 function flowPath(active) {
   if (active.findingsFile) return path.join(path.dirname(active.findingsFile), "flow.json");
@@ -193,13 +202,13 @@ function readFlowDoc(active) {
     // Never rebuild over a broken file — the next write would silently destroy
     // every flow. Mirror the app (it refuses too): back it up and surface it.
     try { fs.copyFileSync(f, f + ".bak"); } catch (e) {}
-    throw new Error("flow.json está corrupto (JSON inválido). NO lo sobrescribas: hay un respaldo en flow.json.bak — corrígelo a mano o avisa al usuario para restaurarlo desde Ohana.");
+    throw new Error("flow.json is corrupt (invalid JSON). Do NOT overwrite it: there's a backup at flow.json.bak — fix it by hand or tell the user to restore it from Ohana.");
   }
   if (doc && Array.isArray(doc.flows) && doc.flows.length) {
     doc.globals = (doc.globals && typeof doc.globals === "object") ? doc.globals : {};
     doc.tabActive = (doc.tabActive && typeof doc.tabActive === "object") ? doc.tabActive : {};
     doc.flows.forEach((fl) => {
-      fl.id = fl.id || genId("s"); fl.name = fl.name || "Flujo";
+      fl.id = fl.id || genId("s"); fl.name = fl.name || "Flow";
       fl.screens = Array.isArray(fl.screens) ? fl.screens : [];
       fl.edges = Array.isArray(fl.edges) ? fl.edges : [];
     });
@@ -211,7 +220,7 @@ function readFlowDoc(active) {
   }
   // legacy single-flow or empty file → wrap into the multi-flow shape
   const fl = {
-    id: genId("s"), name: "Flujo principal", src: active.src || active.currentFile || undefined,
+    id: genId("s"), name: "Main flow", src: active.src || active.currentFile || undefined,
     screens: (doc && Array.isArray(doc.screens)) ? doc.screens : [],
     edges: (doc && Array.isArray(doc.edges)) ? doc.edges : [],
   };
@@ -248,7 +257,7 @@ function targetFlow(doc, args, active) {
       doc.tabActive[src] = pick.id;
       return pick;
     }
-    const fl = { id: genId("s"), name: "Flujo 1", src: src, screens: [], edges: [] };
+    const fl = { id: genId("s"), name: "Flow 1", src: src, screens: [], edges: [] };
     doc.flows.push(fl);
     doc.active = fl.id;
     doc.tabActive[src] = fl.id; // so the UI switches to this flow on reload
@@ -282,48 +291,49 @@ function ensureHandles(fl) {
   fl.pmax = max;
 }
 function newScreen(name, kind) {
-  return { id: genId("s"), name: name || "Pantalla", kind: (FLOW_KINDS.indexOf(kind) !== -1 ? kind : "page"), status: "todo", x: 0, y: 0, apis: [], links: [], blocks: [] };
+  return { id: genId("s"), name: name || "Screen", kind: (FLOW_KINDS.indexOf(kind) !== -1 ? kind : "page"), status: "todo", x: 0, y: 0, apis: [], links: [], blocks: [] };
 }
 // The conventions any agent should follow to build ordered sitemaps / user flows.
 const MOKA_GUIDE = [
-  "# Cómo armar Sitemaps y User Flows en Moka",
+  "# How to build Sitemaps and User Flows in Moka",
   "",
-  "Moka acomoda las tarjetas automáticamente: NO pongas coordenadas (x/y). Tú expresas la ESTRUCTURA y Moka la ordena.",
+  "Moka arranges the cards automatically: do NOT set coordinates (x/y). You express the STRUCTURE and Moka lays it out.",
   "",
-  "## Sitemap (arquitectura de navegación)",
-  "Es una JERARQUÍA vertical: páginas de nivel 1 y, debajo, sus hijas de nivel 2/3.",
-  "- Usa `ohana_sitemap_add_page({ name })` para una página de nivel 1 (sin `parent`).",
-  "- Usa `ohana_sitemap_add_page({ parent, name })` para colgar una hija de su padre (conecta padre→hija sola).",
-  "- Las hermanas comparten el mismo `parent`. El layout es un árbol vertical (TB).",
+  "## Sitemap (navigation architecture)",
+  "It's a vertical HIERARCHY: level-1 pages and, below them, their level-2/3 children.",
+  "- Use `ohana_sitemap_add_page({ name })` for a level-1 page (no `parent`).",
+  "- Use `ohana_sitemap_add_page({ parent, name })` to hang a child off its parent (auto-connects parent→child).",
+  "- Siblings share the same `parent`. The layout is a vertical tree (TB).",
   "",
-  "## User Flow (secuencia de tareas)",
-  "Es una SECUENCIA horizontal: paso 1 → 2 → 3, con ramas en decisiones.",
-  "- EMPIEZA con una tarjeta `kind:\"start\"` (Inicio) y TERMINA cada camino con `kind:\"end\"` (Fin). Así el export entiende dónde empieza y termina la experiencia.",
-  "- Usa `ohana_flow_add_step({ after, name, kind })` para el siguiente paso (conecta en orden, izq→der).",
-  "- Para una bifurcación: crea un paso con `kind:\"decision\"` (rombo con salidas Sí/No ya resueltas) y luego `ohana_flow_add_branch({ from, label, name })` por cada salida (label Sí/No).",
-  "- Tipos de nodo del flujo (úsalos en `add_step`/`add_branch` con `kind`): `decision` (rombo con salidas Sí/verde y No/rojo) y `subflow` (enlaza a otro flujo del proyecto). Las pantallas reales van como `page`/`modal`/`dialog`.",
-  "- Las salidas de color marcan el camino: VERDE = positivo (Sí/Éxito), ROJO = negativo (No/Error), AZUL = conexión normal (el flujo sigue). Conecta desde la salida correcta y el color/etiqueta queda guardado en el edge para que se entienda la lógica.",
-  "- Modales/diálogos: `kind:\"modal\"`/`\"dialog\"`; si llevan a otra parte, encadénalos con add_step/connect.",
-  "- `kind:\"subflow\"` enlaza a OTRO flujo del proyecto: vincúlalo con `ohana_flow_update_screen({ id, flowRef: \"<id del flujo>\" })`.",
+  "## User Flow (task sequence)",
+  "It's a horizontal SEQUENCE: step 1 → 2 → 3, with branches at decisions.",
+  "- START with a `kind:\"start\"` card (Start) and END each path with a `kind:\"end\"` card (End). That way the export knows where the experience begins and ends.",
+  "- Use `ohana_flow_add_step({ after, name, kind })` for the next step (connects in order, left→right).",
+  "- For a branch: create a step with `kind:\"decision\"` (diamond with predefined Yes/No outputs), then call `ohana_flow_add_branch({ from, label, name })` for each output (label Yes/No).",
+  "- Flow node types (use them in `add_step`/`add_branch` via `kind`): `decision` (diamond with Yes/green and No/red outputs) and `subflow` (links to another flow in the project). Real screens go as `page`/`modal`/`dialog`.",
+  "- The colored outputs mark the path: GREEN = positive (Yes/Success), RED = negative (No/Error), BLUE = normal connection (the flow continues). Connect from the right output and the color/label is saved on the edge so the logic is clear.",
+  "- Modals/dialogs: `kind:\"modal\"`/`\"dialog\"`; if they lead somewhere, chain them with add_step/connect.",
+  "- `kind:\"subflow\"` links to ANOTHER flow in the project: link it with `ohana_flow_update_screen({ id, flowRef: \"<flow id>\" })`.",
   "",
-  "## Contenido de una pantalla (jerarquía)",
-  "Página → REGIONES → SECCIONES → COMPONENTES.",
-  "- Las REGIONES definen el layout de la tarjeta. Aplica un preset con `ohana_flow_set_layout` (builtin o un layout del proyecto creado en el grid painter), o créalas con `ohana_flow_add_section` SIN `region` (p. ej. Header / Body / Footer).",
-  "- Las SECCIONES son organismos UI dentro de una región: `ohana_flow_add_section({ screenId, name, region })`.",
-  "- Los COMPONENTES (botones, tablas, badges…) van dentro de secciones: `ohana_flow_add_component({ screenId, section, name })`.",
-  "- Conexiones: salen de páginas o de componentes (`ohana_flow_connect` con `fromComponent`) y SIEMPRE llegan a la tarjeta destino, nunca a un componente.",
+  "## Screen content (hierarchy)",
+  "Page → REGIONS → SECTIONS → COMPONENTS.",
+  "- REGIONS define the card's layout. Apply a preset with `ohana_flow_set_layout` (a builtin or a project layout created in the grid painter), or create them with `ohana_flow_add_section` WITHOUT `region` (e.g. Header / Body / Footer).",
+  "- SECTIONS are UI organisms inside a region: `ohana_flow_add_section({ screenId, name, region })`.",
+  "- COMPONENTS (buttons, tables, badges…) go inside sections: `ohana_flow_add_component({ screenId, section, name })`.",
+  "- Connections: they leave from pages or from components (`ohana_flow_connect` with `fromComponent`) and ALWAYS land on the target card, never on a component.",
   "",
-  "## Regla de oro",
-  "Construye con estas tools de intención (traen la conexión y el orden incluidos). Evita posicionar a mano. Si usas `ohana_flow_add_screen`/`connect` directo, llama `ohana_flow_layout` al final.",
+  "## Golden rule",
+  "Build with these intent tools (they bring the connection and ordering built in). Avoid positioning by hand. If you use `ohana_flow_add_screen`/`connect` directly, call `ohana_flow_layout` at the end.",
   "",
-  "## Estructura del proyecto (dónde va cada artefacto)",
-  "Un proyecto de Ohana es una carpeta con este esqueleto — escribe cada cosa en su casa:",
-  "- `prototipos/` — prototipos HTML (un archivo autocontenido por flujo; Tailwind/Alpine/Lucide por CDN).",
-  "- `planes/` — planes de implementación en .md (escribe aquí tus planes antes de ejecutar).",
-  "- `handoff/` — documentación de handoff (lo que se exporta a un repositorio).",
-  "- `design/` — sistema de diseño (voz y tono, rúbricas); `design.md` en la raíz también cuenta.",
-  "- `.ohana/flow.json` — los flujos/boards de Moka (usa las tools, no lo edites a mano).",
-  "Al construir el prototipo de un flujo, enlázalo con `ohana_flow_set_proto({ path: \"prototipos/<slug>.html\" })` para que Ohana muestre «Ver prototipo» en el board.",
+  "## Project structure (where each artifact goes)",
+  "An Ohana project is a folder with this skeleton — write each thing in its home:",
+  "- `prototypes/` — HTML prototypes (one self-contained file per flow; Tailwind/Alpine/Lucide via CDN).",
+  "- `plans/` — implementation plans in .md (write your plans here before executing).",
+  "- `handoff/` — handoff documentation (what gets exported to a repository).",
+  "- `design/` — design system (voice & tone, rubrics); `design.md` at the root counts too.",
+  "- `.ohana/flow.json` — Moka's flows/boards (use the tools, don't edit it by hand).",
+  "Projects created before the English migration use `prototipos/` and `planes/` instead — `ohana_status` reports the real folder names (structure.dirs); ALWAYS write into the folders it reports.",
+  "When you build the prototype for a flow, link it with `ohana_flow_set_proto({ path: \"<prototypes-dir>/<slug>.html\" })` so Ohana shows a \"View prototype\" button on the board.",
 ].join("\n");
 // Layout tree helpers (mirror the app): a screen's content is a nestable
 // row/col container tree. Migrate legacy flat `blocks` on read.
@@ -368,12 +378,12 @@ function findBlock(s, bid) {
 // region structure with empty named regions; existing blocks move to the first.
 const BUILTIN_LAYOUTS = {
   vert: { dir: "col", children: [] },
-  sidebar: { dir: "row", children: [{ dir: "col", name: "Navegación", grow: 28, children: [] }, { dir: "col", name: "Contenido", grow: 72, children: [] }] },
-  topbar: { dir: "col", children: [{ dir: "row", name: "Barra superior", grow: 14, children: [] }, { dir: "col", name: "Contenido", grow: 86, children: [] }] },
-  topsidebar: { dir: "col", children: [{ dir: "row", name: "Barra superior", grow: 14, children: [] }, { dir: "row", grow: 86, children: [{ dir: "col", name: "Navegación", grow: 26, children: [] }, { dir: "col", name: "Contenido", grow: 74, children: [] }] }] },
-  subpanel: { dir: "row", children: [{ dir: "col", name: "Navegación", grow: 20, children: [] }, { dir: "col", name: "Subpanel", grow: 26, children: [] }, { dir: "col", name: "Contenido", grow: 54, children: [] }] },
-  masterdetail: { dir: "row", children: [{ dir: "col", name: "Lista", grow: 36, children: [] }, { dir: "col", name: "Detalle", grow: 64, children: [] }] },
-  twocol: { dir: "row", children: [{ dir: "col", name: "Columna 1", grow: 50, children: [] }, { dir: "col", name: "Columna 2", grow: 50, children: [] }] },
+  sidebar: { dir: "row", children: [{ dir: "col", name: "Navigation", grow: 28, children: [] }, { dir: "col", name: "Content", grow: 72, children: [] }] },
+  topbar: { dir: "col", children: [{ dir: "row", name: "Top bar", grow: 14, children: [] }, { dir: "col", name: "Content", grow: 86, children: [] }] },
+  topsidebar: { dir: "col", children: [{ dir: "row", name: "Top bar", grow: 14, children: [] }, { dir: "row", grow: 86, children: [{ dir: "col", name: "Navigation", grow: 26, children: [] }, { dir: "col", name: "Content", grow: 74, children: [] }] }] },
+  subpanel: { dir: "row", children: [{ dir: "col", name: "Navigation", grow: 20, children: [] }, { dir: "col", name: "Subpanel", grow: 26, children: [] }, { dir: "col", name: "Content", grow: 54, children: [] }] },
+  masterdetail: { dir: "row", children: [{ dir: "col", name: "List", grow: 36, children: [] }, { dir: "col", name: "Detail", grow: 64, children: [] }] },
+  twocol: { dir: "row", children: [{ dir: "col", name: "Column 1", grow: 50, children: [] }, { dir: "col", name: "Column 2", grow: 50, children: [] }] },
 };
 function cloneTreeFresh(node) {
   const c = { cid: genId("c"), dir: node.dir === "row" ? "row" : "col", children: (node.children || []).map(cloneTreeFresh) };
@@ -523,7 +533,7 @@ const TOOLS = [
   {
     name: "ohana_status",
     description:
-      "Show the active Ohana project: its folder, workspace structure (boards/flujos, prototipos, planes, handoff, design) and a summary of its comments. Call this FIRST to know where to write each artifact.",
+      "Show the active Ohana project: its folder, workspace structure (boards, prototypes, plans, handoff, design) and a summary of its comments. Call this FIRST to know where to write each artifact.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     handler: () => {
       const active = resolveActive();
@@ -541,6 +551,7 @@ const TOOLS = [
       };
       let boards = [];
       try { const { doc } = readFlowDoc(active); boards = (doc.flows || []).map((f) => ({ id: f.id, name: f.name, board: f.board === "sitemap" ? "sitemap" : "userflow", screens: (f.screens || []).length, proto: f.proto || null })); } catch (e) {}
+      const wd = workspaceDirs(dir);
       return {
         projectDir: dir,
         currentFile: active.currentFile,
@@ -548,11 +559,12 @@ const TOOLS = [
         mode: active.mode,
         updatedAt: active.updatedAt,
         structure: {
-          flujos: boards,                                     // Moka boards (.ohana/flow.json)
-          prototipos: listMd("prototipos", [".html", ".htm"]), // build prototypes here
-          planes: listMd("planes", [".md"]),                  // write implementation plans here
-          handoff: listMd("handoff", [".md"]),                // handoff docs (what ships to a repo)
-          design: listMd("design", [".md"]),                  // design system docs (design.md at root too)
+          dirs: wd,                                            // REAL folder names — write into these
+          flows: boards,                                       // Moka boards (.ohana/flow.json)
+          prototypes: listMd(wd.prototypes, [".html", ".htm"]), // build prototypes here
+          plans: listMd(wd.plans, [".md"]),                    // write implementation plans here
+          handoff: listMd("handoff", [".md"]),                 // handoff docs (what ships to a repo)
+          design: listMd("design", [".md"]),                   // design system docs (design.md at root too)
         },
         comments: { total: comments.length, open, resolved },
       };
@@ -811,8 +823,8 @@ const TOOLS = [
       }
       const out = {
         flowId: fl.id, name: fl.name, active: doc.active,
-        board: fl.board === "sitemap" ? "sitemap" : "userflow", // sitemap=jerarquía (TB), userflow=secuencia (LR)
-        proto: fl.proto || null, // linked prototype (rel path, e.g. "prototipos/x.html")
+        board: fl.board === "sitemap" ? "sitemap" : "userflow", // sitemap=hierarchy (TB), userflow=sequence (LR)
+        proto: fl.proto || null, // linked prototype (rel path, e.g. "prototypes/x.html")
         screens: screens,
         edges: (fl.edges || []).map(publicEdge),
       };
@@ -849,7 +861,7 @@ const TOOLS = [
     handler: (args) => {
       const active = resolveActive();
       const { doc, path: fp } = readFlowDoc(active);
-      const fl = { id: genId("s"), name: args.name || "Flujo", board: args.board === "sitemap" ? "sitemap" : "userflow", src: active.src || active.currentFile || undefined, screens: [], edges: [] };
+      const fl = { id: genId("s"), name: args.name || "Flow", board: args.board === "sitemap" ? "sitemap" : "userflow", src: active.src || active.currentFile || undefined, screens: [], edges: [] };
       doc.flows.push(fl);
       if (args.activate !== false) doc.active = fl.id;
       writeFlowDoc(active, doc, fp);
@@ -859,11 +871,11 @@ const TOOLS = [
   {
     name: "ohana_flow_set_proto",
     description:
-      "Link a Moka board to its HTML prototype (rel path inside the project, e.g. 'prototipos/mercado.html'). Ohana shows a «Ver prototipo» button on the board. Call this after building the prototype for a flow.",
+      "Link a Moka board to its HTML prototype (rel path inside the project, e.g. 'prototypes/market.html' — use the prototypes folder ohana_status reports in structure.dirs). Ohana shows a \"View prototype\" button on the board. Call this after building the prototype for a flow.",
     inputSchema: {
       type: "object",
       properties: {
-        path: { type: "string", description: "Prototype path relative to the project root (put prototypes in prototipos/)." },
+        path: { type: "string", description: "Prototype path relative to the project root (put prototypes in the folder ohana_status reports in structure.dirs — prototypes/ on new projects)." },
         flowId: { type: "string", description: "Target flow (default: active)." },
       },
       required: ["path"],
@@ -887,7 +899,7 @@ const TOOLS = [
       properties: {
         name: { type: "string", description: "Screen title (for a decision, the question)." },
         kind: { type: "string", enum: FLOW_KINDS, description: "Screen type (default: page)." },
-        status: { type: "string", enum: FLOW_STATUSES, description: "Build status: todo (por construir) | wip (en progreso) | done (listo). Default: todo." },
+        status: { type: "string", enum: FLOW_STATUSES, description: "Build status: todo (to build) | wip (in progress) | done. Default: todo." },
         desc: { type: "string", description: "Context of this screen." },
         flowRef: { type: "string", description: "For kind:\"subflow\": id of the project flow this card links to." },
         x: { type: "number", description: "Canvas X (optional; auto if omitted)." },
@@ -905,7 +917,7 @@ const TOOLS = [
       const status = FLOW_STATUSES.indexOf(args.status) !== -1 ? args.status : "todo";
       const n = fl.screens.length;
       const s = {
-        id: genId("s"), name: args.name || "Pantalla", kind: kind, status: status, desc: args.desc || "",
+        id: genId("s"), name: args.name || "Screen", kind: kind, status: status, desc: args.desc || "",
         x: typeof args.x === "number" ? args.x : 80 + (n % 4) * 300,
         y: typeof args.y === "number" ? args.y : 80 + Math.floor(n / 4) * 240,
         apis: [], links: [], blocks: [],
@@ -1074,7 +1086,7 @@ const TOOLS = [
   {
     name: "ohana_flow_connect",
     description:
-      "Connect two screens (from → to), or a COMPONENT to a screen via fromComponent (dotted edge; connections always LAND on the target card, never on a component). dir: fwd (default) | back | both. label = the interaction (e.g. 'Sí'/'No'); color: positive (green) | negative (red). No-op-safe. You never set coordinates — for clean structure rules (tree for sitemaps, spine for user flows) call ohana_flow_guide.",
+      "Connect two screens (from → to), or a COMPONENT to a screen via fromComponent (dotted edge; connections always LAND on the target card, never on a component). dir: fwd (default) | back | both. label = the interaction (e.g. 'Yes'/'No'); color: positive (green) | negative (red). No-op-safe. You never set coordinates — for clean structure rules (tree for sitemaps, spine for user flows) call ohana_flow_guide.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1084,7 +1096,7 @@ const TOOLS = [
         label: { type: "string", description: "Edge label (interaction/validation)." },
         dir: { type: "string", enum: ["fwd", "back", "both"], description: "Arrow direction (default: fwd)." },
         fromSide: { type: "string", enum: ["top", "right", "bottom", "left"], description: "Port side on the source (default: right)." },
-        color: { type: "string", enum: ["normal", "positive", "negative"], description: "Semantic color of the path: normal (blue), positive (green — Sí/Éxito), negative (red — No/Error)." },
+        color: { type: "string", enum: ["normal", "positive", "negative"], description: "Semantic color of the path: normal (blue), positive (green — Yes/Success), negative (red — No/Error)." },
         flowId: { type: "string", description: "Target flow (default: active)." },
       },
       required: ["from", "to"],
@@ -1217,7 +1229,7 @@ const TOOLS = [
       properties: {
         name: { type: "string", description: "Step name." },
         after: { type: "string", description: "Screen id or name this step follows. Omit for the first step." },
-        kind: { type: "string", enum: FLOW_KINDS, description: "Step type (default: page). decision = rombo con salidas Sí/No · subflow = enlaza a otro flujo del proyecto · start/end = inicio y fin del camino." },
+        kind: { type: "string", enum: FLOW_KINDS, description: "Step type (default: page). decision = diamond with Yes/No outputs · subflow = links to another flow in the project · start/end = the beginning and end of the path." },
         label: { type: "string", description: "Edge label (the trigger), optional." },
         flowId: { type: "string", description: "Target flow (default: active)." },
       },
@@ -1242,13 +1254,13 @@ const TOOLS = [
   {
     name: "ohana_flow_add_branch",
     description:
-      "USER FLOW: from a screen (typically a `decision`), add a branch outcome and connect it with a label (e.g. 'Sí' / 'No'). Use one call per outcome. Re-tidies horizontally. from = the screen id or name to branch from.",
+      "USER FLOW: from a screen (typically a `decision`), add a branch outcome and connect it with a label (e.g. 'Yes' / 'No'). Use one call per outcome. Re-tidies horizontally. from = the screen id or name to branch from.",
     inputSchema: {
       type: "object",
       properties: {
         from: { type: "string", description: "Screen id or name to branch from." },
         name: { type: "string", description: "Outcome screen name." },
-        label: { type: "string", description: "Branch label (e.g. Sí / No)." },
+        label: { type: "string", description: "Branch label (e.g. Yes / No)." },
         kind: { type: "string", enum: FLOW_KINDS, description: "Outcome type (default: page)." },
         flowId: { type: "string", description: "Target flow (default: active)." },
       },
@@ -1286,7 +1298,7 @@ const TOOLS = [
   },
   {
     name: "ohana_flow_add_section",
-    description: "Add a named container to a screen. Hierarchy: Página → REGIONES → SECCIONES → COMPONENTES. Without `region` it creates a root-level container (= a REGION, e.g. Header/Body/Footer); pass `region` (name or cid) to nest a SECTION inside that region. variant: content (default) or empty (empty state). Returns containerId to drop components into.",
+    description: "Add a named container to a screen. Hierarchy: Page → REGIONS → SECTIONS → COMPONENTS. Without `region` it creates a root-level container (= a REGION, e.g. Header/Body/Footer); pass `region` (name or cid) to nest a SECTION inside that region. variant: content (default) or empty (empty state). Returns containerId to drop components into.",
     inputSchema: { type: "object", properties: { screenId: { type: "string" }, name: { type: "string" }, region: { type: "string", description: "Region name or cid to nest the section in. Omit to create a region at the card root." }, variant: { type: "string", enum: ["content", "empty"] }, flowId: { type: "string" } }, required: ["screenId", "name"], additionalProperties: false },
     handler: (args) => {
       const active = resolveActive();
@@ -1303,7 +1315,7 @@ const TOOLS = [
         if (!reg) throw new Error("Region not found: " + args.region);
         host = reg;
       }
-      const sec = { cid: genId("c"), dir: "col", name: args.name || "Sección", children: [] };
+      const sec = { cid: genId("c"), dir: "col", name: args.name || "Section", children: [] };
       if (args.variant) sec.variant = args.variant;
       host.children.push(sec);
       writeFlowDoc(active, doc, fp);
@@ -1312,7 +1324,7 @@ const TOOLS = [
   },
   {
     name: "ohana_flow_add_component",
-    description: "Add a COMPONENT into a screen's section (Button, Data table, Chart, Acordeón, etc.). Give the section by name or containerId; if omitted, uses the first section (or root). icon is a Lucide-style key. desc is the detail (what it says / how it looks / behaves); items are sub-elements.",
+    description: "Add a COMPONENT into a screen's section (Button, Data table, Chart, Accordion, etc.). Give the section by name or containerId; if omitted, uses the first section (or root). icon is a Lucide-style key. desc is the detail (what it says / how it looks / behaves); items are sub-elements.",
     inputSchema: { type: "object", properties: { screenId: { type: "string" }, section: { type: "string", description: "Section name or containerId." }, name: { type: "string" }, icon: { type: "string" }, desc: { type: "string" }, items: { type: "array", items: { type: "string" } }, flowId: { type: "string" } }, required: ["screenId", "name"], additionalProperties: false },
     handler: (args) => {
       const active = resolveActive();
@@ -1377,12 +1389,12 @@ function validateToolArgs(tool, args) {
   const sch = tool.inputSchema || {};
   const props = sch.properties || {};
   (sch.required || []).forEach((k) => {
-    if (args[k] === undefined || args[k] === null) throw new Error("Falta el argumento requerido: " + k);
+    if (args[k] === undefined || args[k] === null) throw new Error("Missing required argument: " + k);
   });
   Object.keys(args || {}).forEach((k) => {
     const p = props[k];
     if (p && Array.isArray(p.enum) && args[k] !== undefined && p.enum.indexOf(args[k]) === -1) {
-      throw new Error("Valor inválido para " + k + ": \"" + args[k] + "\" (esperado: " + p.enum.join(" | ") + ")");
+      throw new Error("Invalid value for " + k + ": \"" + args[k] + "\" (expected: " + p.enum.join(" | ") + ")");
     }
   });
 }

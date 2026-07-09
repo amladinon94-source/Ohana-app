@@ -10,6 +10,7 @@ const {
   protocol,
   session,
   Notification,
+  webContents,
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -54,14 +55,14 @@ let currentFilePath = null;
 let fileWatcher = null;
 let devServerProcess = null;
 let repoDir = null;
-// «Nuevo prototipo»: carpeta elegida por el usuario que aún no tiene HTML ni es
-// repo. Debe anclar active.json (y por tanto el MCP) igual que un file/repo, o
-// Moka no tendría dónde escribir flow.json.
+// "New prototype": a folder the user picked that doesn't have HTML yet and
+// isn't a repo. It must anchor active.json (and therefore the MCP) just like a
+// file/repo, or Moka would have nowhere to write flow.json.
 let newProtoDir = null;
-// Identificador de "dueño" del tab activo, EXACTAMENTE el mismo string que el
-// renderer usa como `tab.src` (ruta del .html, URL del repo, o carpeta del
-// prototipo nuevo). El MCP lo usa para que el flujo que crea el agente quede
-// con el mismo dueño que la UI filtra — si no, el flujo es huérfano/invisible.
+// "Owner" identifier of the active tab — EXACTLY the same string the renderer
+// uses as `tab.src` (the .html path, the repo URL, or the new prototype's
+// folder). The MCP uses it so the flow the agent creates ends up with the same
+// owner the UI filters by — otherwise the flow is orphaned/invisible.
 let activeTabSrc = null;
 let sourceWatcher = null;
 let currentMode = "html"; // "html" | "react"
@@ -113,6 +114,11 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, "renderer.html"));
+
+  // MCP targeting follows FOCUS: ~/.ohana/active.json is shared by every Ohana
+  // instance (dev + installed), so the window the user last focused claims it.
+  // Guarded: an empty instance must not null out another instance's context.
+  mainWindow.on("focus", () => { if (getProjectDir() || activeTabSrc) writeActiveProject(); });
 
   // Open file from CLI argument
   const fileArg = process.argv.find(
@@ -209,7 +215,7 @@ function ensureTutorialCopy() {
   // Seed on first use, and RESEED when the bundled tutorial is newer (version
   // marker changed). Practice edits are disposable; a stale tutorial that hides
   // new features is worse than losing them.
-  const VER = "<!-- ohana-onboarding v2 -->";
+  const VER = "<!-- ohana-onboarding v3 -->"; // v3: English tutorial — reseed stale Spanish copies
   let seed = !fs.existsSync(dest);
   if (!seed) {
     try { seed = fs.readFileSync(dest, "utf-8").indexOf(VER) === -1; } catch (e) {}
@@ -237,8 +243,8 @@ ipcMain.handle("app:openOnboarding", () => {
 // it just returns the path so the renderer can run repo detection.
 async function openFileOrFolderDialog() {
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
-    title: "Abrir archivo HTML o carpeta",
-    buttonLabel: "Abrir",
+    title: "Open HTML file or folder",
+    buttonLabel: "Open",
     filters: [{ name: "HTML", extensions: ["html", "htm"] }],
     properties: ["openFile", "openDirectory"],
   });
@@ -280,8 +286,8 @@ ipcMain.handle("tab:syncContext", (_, { kind, dir, url, src } = {}) => {
     if (sourceWatcher) { sourceWatcher.close(); sourceWatcher = null; }
     watchFindings(); // context is now null → this tears down the previous project's watchers
   } else {
-    // kind:"none" → «Nuevo prototipo»: ancla la carpeta elegida para que Moka y
-    // el MCP tengan dónde vivir, aunque todavía no exista ningún .html.
+    // kind:"none" → "New prototype": anchor the chosen folder so Moka and the
+    // MCP have somewhere to live, even though no .html exists yet.
     repoDir = null;
     currentFilePath = null;
     newProtoDir = dir || null;
@@ -338,12 +344,13 @@ ipcMain.handle("context:read", (_, filePath) => {
 ipcMain.handle("project:scan", (_, dir) => {
   const res = { dir: dir || null, boards: [], prototypes: [], plans: [], handoff: [], design: [], markdown: [] };
   if (!dir || !fs.existsSync(dir)) return res;
+  res.dirs = workspaceDirs(dir); // folder names writers should target (legacy Spanish or English)
   try {
     const fp = path.join(dir, ".ohana", "flow.json");
     if (fs.existsSync(fp)) {
       const doc = JSON.parse(fs.readFileSync(fp, "utf-8"));
       (doc.flows || []).forEach((fl) => res.boards.push({
-        id: fl.id, name: fl.name || "Flujo",
+        id: fl.id, name: fl.name || "Flow",
         board: fl.board === "sitemap" ? "sitemap" : "userflow",
         screens: Array.isArray(fl.screens) ? fl.screens.length : 0,
         src: fl.src || null,
@@ -375,12 +382,20 @@ ipcMain.handle("project:scan", (_, dir) => {
   [res.prototypes, res.plans, res.handoff, res.design, res.markdown].forEach((a) => a.sort((x, y) => x.rel.localeCompare(y.rel)));
   return res;
 });
+// Workspace folder names. New projects scaffold in English; projects created
+// before the English migration keep their Spanish folders (the scan matches
+// both spellings, and every writer must follow the existing folder).
+function workspaceDirs(dir) {
+  const pick = (es, en) => { try { return fs.existsSync(path.join(dir, es)) ? es : en; } catch (e) { return en; } };
+  return { prototypes: pick("prototipos", "prototypes"), plans: pick("planes", "plans") };
+}
 // Scaffold a folder into a project workspace (idempotent, never destructive):
-//   prototipos/  planes/  handoff/  design/  +  .ohana/ (flujos → .ohana/flow.json)
+//   prototypes/  plans/  handoff/  design/  +  .ohana/ (flows → .ohana/flow.json)
 ipcMain.handle("project:init", (_, dir) => {
   try {
     if (!dir || !fs.existsSync(dir)) return false;
-    ["prototipos", "planes", "handoff", "design", ".ohana"].forEach((n) => {
+    const wd = workspaceDirs(dir);
+    [wd.prototypes, wd.plans, "handoff", "design", ".ohana"].forEach((n) => {
       const p = path.join(dir, n);
       if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
     });
@@ -424,89 +439,96 @@ ipcMain.handle("project:duplicateFile", (_, filePath) => {
   } catch (e) { return false; }
 });
 
-// ─── Network capture (devtools amables) ──────────────────────────────
-// Attach CDP to the active preview webview and surface a focused, friendly view
-// of its requests — with response bodies on demand for "¿qué endpoint llena
-// esto?". Only one preview webview is live at a time (it's recreated per tab).
-let netDebuggee = null;
-const netRequests = new Map(); // requestId -> {requestId,url,method,type,status,mimeType,size,failed}
-const consoleEntries = [];     // {level:"warning"|"error", text}
-let _netSendT = null;
-function sendNet() {
-  if (_netSendT) return;
-  _netSendT = setTimeout(() => {
-    _netSendT = null;
+// ─── Network capture (friendly devtools) ─────────────────────────────
+// Attach CDP to EVERY preview webview and keep a separate buffer per
+// webContents: each tab owns its own network/console log (tabs keep their
+// webviews alive across switches, so a single global debuggee would mix
+// tabs' traffic and go blind on switch-back).
+const netByWc = new Map(); // wcId -> { requests: Map, console: [], _netT, _conT }
+const NET_MAX_REQUESTS = 500;
+function netBuffers(wcId) {
+  let b = netByWc.get(wcId);
+  if (!b) { b = { requests: new Map(), console: [], _netT: null, _conT: null }; netByWc.set(wcId, b); }
+  return b;
+}
+function sendNet(wcId) {
+  const b = netBuffers(wcId);
+  if (b._netT) return;
+  b._netT = setTimeout(() => {
+    b._netT = null;
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send("net:list", Array.from(netRequests.values()));
+      mainWindow.webContents.send("net:list", { wcId, list: Array.from(b.requests.values()) });
     }
   }, 180);
 }
-let _conSendT = null;
-function sendConsole() {
-  if (_conSendT) return;
-  _conSendT = setTimeout(() => {
-    _conSendT = null;
+function sendConsole(wcId) {
+  const b = netBuffers(wcId);
+  if (b._conT) return;
+  b._conT = setTimeout(() => {
+    b._conT = null;
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send("console:list", consoleEntries.slice(-200));
+      mainWindow.webContents.send("console:list", { wcId, list: b.console.slice(-200) });
     }
   }, 180);
 }
-function pushConsole(level, text) {
-  consoleEntries.push({ level, text: String(text || "").slice(0, 2000) });
-  if (consoleEntries.length > 300) consoleEntries.splice(0, consoleEntries.length - 300);
-  sendConsole();
+function pushConsole(wcId, level, text) {
+  const b = netBuffers(wcId);
+  b.console.push({ level, text: String(text || "").slice(0, 2000) });
+  if (b.console.length > 300) b.console.splice(0, b.console.length - 300);
+  sendConsole(wcId);
 }
 function consoleArgsText(args) {
   return (args || []).map((a) => (a.value !== undefined ? String(a.value) : (a.description || a.unserializableValue || a.type || ""))).join(" ");
 }
 function attachNet(contents) {
   try {
-    if (netDebuggee && !netDebuggee.isDestroyed() && netDebuggee !== contents) {
-      try { netDebuggee.debugger.detach(); } catch (e) {}
-    }
-    netDebuggee = contents;
-    netRequests.clear();
-    consoleEntries.length = 0;
+    const wcId = contents.id;
+    netBuffers(wcId);
     if (!contents.debugger.isAttached()) contents.debugger.attach("1.3");
     contents.debugger.sendCommand("Network.enable").catch(() => {});
     contents.debugger.sendCommand("Runtime.enable").catch(() => {});
     contents.debugger.sendCommand("Log.enable").catch(() => {});
     contents.debugger.on("message", (_e, method, params) => {
+      const b = netBuffers(wcId);
       if (method === "Runtime.consoleAPICalled") {
-        if (params.type === "error" || params.type === "assert") pushConsole("error", consoleArgsText(params.args));
-        else if (params.type === "warning") pushConsole("warning", consoleArgsText(params.args));
+        if (params.type === "error" || params.type === "assert") pushConsole(wcId, "error", consoleArgsText(params.args));
+        else if (params.type === "warning") pushConsole(wcId, "warning", consoleArgsText(params.args));
         return;
       }
       if (method === "Runtime.exceptionThrown") {
         const d = params.exceptionDetails || {};
-        pushConsole("error", (d.exception && (d.exception.description || d.exception.value)) || d.text || "Excepción no controlada");
+        pushConsole(wcId, "error", (d.exception && (d.exception.description || d.exception.value)) || d.text || "Uncaught exception");
         return;
       }
       if (method === "Log.entryAdded") {
         const en = params.entry || {};
-        if (en.level === "error" || en.level === "warning") pushConsole(en.level, en.text || "");
+        if (en.level === "error" || en.level === "warning") pushConsole(wcId, en.level, en.text || "");
         return;
       }
       if (method === "Network.requestWillBeSent") {
-        netRequests.set(params.requestId, {
+        if (b.requests.size >= NET_MAX_REQUESTS) { // cap long-running tabs (polling apps)
+          const oldest = b.requests.keys().next().value;
+          if (oldest !== undefined) b.requests.delete(oldest);
+        }
+        b.requests.set(params.requestId, {
           requestId: params.requestId, url: params.request.url, method: params.request.method,
           type: params.type || "", status: null, mimeType: "", size: 0, failed: null,
         });
       } else if (method === "Network.responseReceived") {
-        const r = netRequests.get(params.requestId);
+        const r = b.requests.get(params.requestId);
         if (r) { r.status = params.response.status; r.mimeType = params.response.mimeType; if (params.type) r.type = params.type; }
-        sendNet();
+        sendNet(wcId);
       } else if (method === "Network.loadingFinished") {
-        const r = netRequests.get(params.requestId);
+        const r = b.requests.get(params.requestId);
         if (r && params.encodedDataLength) r.size = params.encodedDataLength;
-        sendNet();
+        sendNet(wcId);
       } else if (method === "Network.loadingFailed") {
-        const r = netRequests.get(params.requestId);
+        const r = b.requests.get(params.requestId);
         if (r) { r.status = -1; r.failed = params.errorText || "failed"; }
-        sendNet();
+        sendNet(wcId);
       }
     });
-    contents.debugger.on("detach", () => { if (netDebuggee === contents) netDebuggee = null; });
+    contents.on("destroyed", () => { netByWc.delete(wcId); });
   } catch (e) {}
 }
 app.on("web-contents-created", (_e, contents) => {
@@ -528,16 +550,23 @@ app.whenReady().then(() => {
   try {
     session.fromPartition("persist:viewer").on("will-download", (e, item) => {
       e.preventDefault();
-      try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("toast:show", "Descarga bloqueada: " + (item.getFilename() || "archivo")); } catch (err) {}
+      try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("toast:show", "Download blocked: " + (item.getFilename() || "file")); } catch (err) {}
     });
   } catch (e) {}
 });
-ipcMain.handle("net:getBody", async (_e, requestId) => {
-  if (!netDebuggee || netDebuggee.isDestroyed()) return null;
-  try { return await netDebuggee.debugger.sendCommand("Network.getResponseBody", { requestId }); }
+ipcMain.handle("net:getBody", async (_e, data) => {
+  const { wcId, requestId } = data || {};
+  const wc = wcId ? webContents.fromId(wcId) : null;
+  if (!wc || wc.isDestroyed() || !wc.debugger.isAttached()) return null;
+  try { return await wc.debugger.sendCommand("Network.getResponseBody", { requestId }); }
   catch (e) { return null; }
 });
-ipcMain.handle("net:clear", () => { netRequests.clear(); consoleEntries.length = 0; sendNet(); sendConsole(); return true; });
+ipcMain.handle("net:clear", (_e, wcId) => {
+  const b = netBuffers(wcId);
+  b.requests.clear(); b.console.length = 0;
+  sendNet(wcId); sendConsole(wcId);
+  return true;
+});
 ipcMain.handle("cache:clear", async () => {
   try {
     const vs = session.fromPartition("persist:viewer");
@@ -840,8 +869,8 @@ ipcMain.handle("storybook:index", async (_, base) => {
 ipcMain.handle("dialog:pickFolder", async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return null;
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
-    title: "Elegir la carpeta del proyecto / design system",
-    buttonLabel: "Usar esta carpeta",
+    title: "Choose the project / design system folder",
+    buttonLabel: "Use this folder",
     properties: ["openDirectory"],
   });
   if (canceled || !filePaths.length) return null;
@@ -1140,7 +1169,7 @@ function startDevServer(dir, command, preferredUrl) {
 
     proc.on("exit", (code) => {
       if (!urlFound) reject(new Error(code === 127
-        ? "No encontré el comando para levantar el dev server (exit 127) — ¿está instalado el package manager del repo (npm/yarn/pnpm)?"
+        ? "Couldn't find the command to start the dev server (exit 127) — is the repo's package manager installed (npm/yarn/pnpm)?"
         : "Dev server exited with code " + code));
       devServerProcess = null;
     });
@@ -1311,33 +1340,33 @@ function designTemplate(name) {
   const today = new Date().toISOString().slice(0, 10);
   return `# Design — ${name}
 
-> Fuente de verdad del diseño de este prototipo. Ohana y Claude lo leen para
-> mantener consistencia. Mantenlo corto y accionable.
+> Source of truth for this prototype's design. Ohana and Claude read it to keep
+> things consistent. Keep it short and actionable.
 
-## Principios
+## Principles
 -
 
 ## Tokens
 
 ### Color
-| Token | Valor | Uso |
-|-------|-------|-----|
-|       |       |     |
+| Token | Value | Usage |
+|-------|-------|-------|
+|       |       |       |
 
-### Tipografía
+### Typography
 - Display:
 - Body:
 
 ### Spacing & radius
 -
 
-## Voz y tono
+## Voice & tone
 -
 
-## Patrones de componentes
+## Component patterns
 -
 
-## Decisiones
+## Decisions
 - ${today} —
 `;
 }
@@ -1383,6 +1412,8 @@ let findingsWatcher = null;
 let commandsWatcher = null;
 let designWatcher = null;
 let flowWatcher = null;
+let projectWatcher = null;
+let _projChangedT = null;
 function watchFindings() {
   if (findingsWatcher) { findingsWatcher.close(); findingsWatcher = null; }
   if (commandsWatcher) { commandsWatcher.close(); commandsWatcher = null; }
@@ -1390,6 +1421,7 @@ function watchFindings() {
   // and stale watchers from the previous project would keep firing its events.
   if (flowWatcher) { flowWatcher.close(); flowWatcher = null; }
   if (designWatcher) { designWatcher.close(); designWatcher = null; }
+  if (projectWatcher) { projectWatcher.close(); projectWatcher = null; }
   const ohanaDir = getOhanaDir();
   if (!ohanaDir) return;
 
@@ -1424,7 +1456,7 @@ function watchFindings() {
     mainWindow.webContents.send("ohana:commandsUpdated");
   });
 
-  // Watch flow.json — Flow mode (maquetación); Claude or the user edits it,
+  // Watch flow.json — Flow mode (layout); Claude or the user edits it,
   // Ohana auto-reloads the canvas.
   if (flowWatcher) flowWatcher.close();
   const flowPath = path.join(ohanaDir, "flow.json");
@@ -1439,6 +1471,37 @@ function watchFindings() {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("flow:updated", content);
     } catch (e) {}
   });
+
+  // Watch the project tree so the navigator stays live: added/removed prototypes
+  // (.html) and docs (.md) anywhere in the project, plus the agent-written docs
+  // in .ohana/handoff and .ohana/plans (the scan lists those explicitly). Only
+  // add/unlink matter — content changes don't alter the navigator's lists.
+  const projDir = path.dirname(ohanaDir);
+  const projPing = () => {
+    if (_projChangedT) return;
+    _projChangedT = setTimeout(() => {
+      _projChangedT = null;
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("project:changed");
+    }, 250);
+  };
+  projectWatcher = chokidar.watch(projDir, {
+    persistent: true,
+    ignoreInitial: true,
+    depth: 3, // mirror project:scan's walk depth
+    ignored: (p) => {
+      const rel = path.relative(projDir, p);
+      if (!rel || rel.startsWith("..")) return false;
+      const parts = rel.split(path.sep);
+      // Descend into .ohana only for handoff/ and plans/ (flow.json has its own watcher).
+      if (parts[0] === ".ohana") return !(parts.length === 1 || parts[1] === "handoff" || parts[1] === "plans");
+      return parts.some((s) => s.startsWith(".") || s === "node_modules");
+    },
+    awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 60 },
+  });
+  const projRelevant = (p) => /\.(html?|md)$/i.test(p);
+  projectWatcher.on("add", (p) => { if (projRelevant(p)) projPing(); });
+  projectWatcher.on("unlink", (p) => { if (projRelevant(p)) projPing(); });
+  projectWatcher.on("unlinkDir", projPing);
 
   // Watch design.md (next to the prototype) for external edits (e.g. Claude)
   if (designWatcher) designWatcher.close();
@@ -1565,7 +1628,7 @@ function buildMenu() {
       label: "File",
       submenu: [
         {
-          label: "Abrir…",
+          label: "Open…",
           accelerator: "CmdOrCtrl+O",
           click: () => { if (mainWindow) mainWindow.webContents.send("view:openDialog"); },
         },

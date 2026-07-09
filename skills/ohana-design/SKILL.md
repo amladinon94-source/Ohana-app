@@ -1,6 +1,6 @@
 ---
 name: ohana-design
-description: Read and maintain design.md — the design source of truth (tokens, principles, voice & tone, component patterns, decisions) for the prototype currently open in the Ohana HTML previewer. Use when the user asks to update the design system, record a design decision, check the tokens/principles, keep the UI consistent, or set up design.md. Triggers: "actualiza el design.md", "qué dice el sistema de diseño", "registra esta decisión de diseño", "cuáles son los tokens", "mantén la consistencia visual del prototipo".
+description: Read and maintain design.md — the design source of truth (tokens, principles, voice & tone, component patterns, decisions) for the prototype currently open in the Ohana HTML previewer. Use when the user asks to update the design system, record a design decision, check the tokens/principles, keep the UI consistent, or set up design.md. Triggers: "update design.md", "what does the design system say", "record this design decision", "what are the tokens", "keep the prototype visually consistent".
 ---
 
 # Ohana Design Notes (design.md)
@@ -48,18 +48,18 @@ If the MCP server isn't connected, read `~/.ohana/active.json` → open its `des
 ```markdown
 # Design — <project>
 
-## Principios          ← 3–6 reglas que guían el diseño
+## Principles          ← 3–6 rules that guide the design
 ## Tokens
-### Color              ← tabla: token | valor (#hex) | uso
-### Tipografía         ← display / body / escala
+### Color              ← table: token | value (#hex) | usage
+### Typography         ← display / body / scale
 ### Spacing & radius
-## Voz y tono          ← cómo hablan los textos del producto
-## Patrones de componentes  ← botones, inputs, cards, estados
-## Decisiones          ← bitácora fechada: "- 2026-06-22 — X porque Y"
+## Voice & tone        ← how the product's copy speaks
+## Component patterns  ← buttons, inputs, cards, states
+## Decisions          ← dated log: "- 2026-06-22 — X because Y"
 ```
 
 Tips:
 - In the Color table, put real hex values — Ohana renders a swatch next to each.
-- Append to **Decisiones** (don't rewrite history) when a choice is made; date it.
+- Append to **Decisions** (don't rewrite history) when a choice is made; date it.
 - Be specific and actionable. If a comment thread resolves into a rule, fold it in here.
 - If `design.md` doesn't exist, offer to create it with `ohana_init_design`.

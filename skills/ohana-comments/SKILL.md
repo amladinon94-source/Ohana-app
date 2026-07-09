@@ -1,6 +1,6 @@
 ---
 name: ohana-comments
-description: Create, read, reply to and resolve Figma-style comments on the prototype currently open in the Ohana HTML previewer. Use when the user asks to leave a comment, review comments, reply to feedback, resolve threads, or otherwise manage comments/findings on what they have open in Ohana. Triggers: "comenta en Ohana", "deja un comentario", "responde el comentario", "resuelve el hilo", "qué comentarios hay", "revisa los comentarios del prototipo".
+description: Create, read, reply to and resolve Figma-style comments on the prototype currently open in the Ohana HTML previewer. Use when the user asks to leave a comment, review comments, reply to feedback, resolve threads, or otherwise manage comments/findings on what they have open in Ohana. Triggers: "comment in Ohana", "leave a comment", "reply to the comment", "resolve the thread", "what comments are there", "review the prototype's comments".
 ---
 
 # Ohana Comments
@@ -56,11 +56,11 @@ If the MCP server is not available, read `~/.ohana/active.json` → open its
   "author": "Claude",
   "authorType": "agent",
   "anchor": { "aiId": "hero-cta", "selector": "button.cta", "label": "hero-cta" },
-  "message": "El contraste del CTA está por debajo de AA.",
+  "message": "The CTA contrast is below AA.",
   "status": "open",
   "createdAt": "<ISO>",
   "replies": [
-    { "author": "Ana", "authorType": "person", "message": "Dale, súbelo", "at": "<ISO>" }
+    { "author": "Ana", "authorType": "person", "message": "Sounds good, bump it up", "at": "<ISO>" }
   ]
 }
 ```
