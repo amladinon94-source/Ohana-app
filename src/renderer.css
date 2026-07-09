@@ -2143,6 +2143,13 @@
   /* "+ Component" — secondary add inside a section (lighter than "+ Section") */
   .fl-add-comp { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); width: 100%; margin-top: 5px; padding: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-d); background: transparent; border: 1px dashed rgba(255,255,255,0.14); border-radius: var(--r-xs); cursor: default; flex-shrink: 0; box-sizing: border-box; }
   .fl-add-comp:hover { border-color: var(--accent-ring); color: var(--accent-strong); background: var(--accent-bg); }
+  /* Empty-state: a visible, toggleable STATE on screens, regions, and sections. */
+  .fl-variant-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--warning, #f5a623); background: rgba(245,166,35,0.12); border-radius: 999px; flex-shrink: 0; }
+  .fl-variant-tag svg { width: 11px; height: 11px; }
+  .fl-cont.variant-empty > .fl-body { border: 1px dashed rgba(245,166,35,0.35); border-radius: var(--r-sm); }
+  .flow-screen.variant-empty .fs-layout-host { opacity: 0.85; }
+  /* ✓ on toggleable menu items (variant / component-field switches) */
+  .fm-check { margin-left: auto; padding-left: var(--sp-4); color: var(--accent-strong); font-weight: 700; }
   .fl-add-comp svg { width: 11px; height: 11px; }
   .fl-div { flex: 0 0 6px; align-self: stretch; border-radius: 3px; position: relative; }
   .fl-div.dir-row { cursor: col-resize; }

@@ -5939,12 +5939,13 @@
       wireScreenEl(el, s);
       return el;
     }
-    el.className = "flow-screen status-" + st + (flowSel.has(s.id) ? " selected" : "") + dimCls;
+    el.className = "flow-screen status-" + st + (flowSel.has(s.id) ? " selected" : "") + (s.variant === "empty" ? " variant-empty" : "") + dimCls;
     el.style.width = (s.w || SCREEN_W) + "px";
     el.innerHTML =
       '<div class="fs-head">' +
         '<div class="fs-htop"><span class="fs-badge">' + escapeHtml(k.label) + '</span>' +
         '<button class="fs-status fs-status-' + st + '" title="Status: ' + FLOW_STATUS[st].label + ' (click to change)"><span class="fs-status-ic">' + FLOW_STATUS[st].icon + '</span>' + FLOW_STATUS[st].label + '</button>' +
+        (s.variant === "empty" ? '<span class="fl-variant-tag" title="Empty state — toggle it from the ⋯ menu">' + FI.secEmpty + '<span>Empty</span></span>' : '') +
         '<span class="fs-hspace"></span>' +
         '<button class="fs-layout-btn" title="Screen layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="9" y1="9" x2="21" y2="9"/></svg></button>' +
         '<button class="fs-link-btn' + ((s.links && s.links.length) ? " on" : "") + '" title="Links to views / redirects">' + FI.link + '</button>' +
@@ -5963,11 +5964,11 @@
     // as you add blocks instead of clipping/overflowing.
     if (s.h) host.style.minHeight = s.h + "px";
     if (!s.layout.children.length) {
-      // Collapsed (estado 1): just head + name + context. A "Construir" tab (hover,
+      // Collapsed (state 1): just head + name + context. A "Build" tab (hover,
       // sliding out from behind the bottom edge) seeds Header / Body / Footer.
       el.classList.add("collapsed");
       const build = document.createElement("button");
-      build.className = "fs-build"; build.innerHTML = FI.workflow + "<span>Construir</span>";
+      build.className = "fs-build"; build.innerHTML = FI.workflow + "<span>Build</span>";
       build.addEventListener("mousedown", (e) => e.stopPropagation());
       build.addEventListener("click", (e) => { e.stopPropagation(); seedDefaultLayout(s); });
       el.appendChild(build);
@@ -6005,7 +6006,7 @@
     const el = document.createElement("div");
     const empty = cont.children.length === 0;
     const level = contLevel(s, cont, parent);
-    el.className = "fl-cont lvl-" + level + (empty ? " empty" : "");
+    el.className = "fl-cont lvl-" + level + (empty ? " empty" : "") + (cont.variant === "empty" ? " variant-empty" : "");
     el.dataset.cid = cont.cid;
     el.__fnode = cont; el.__fparent = parent; el.__fscreen = s; el.__editing = editing; // for the floating toolbar
     if (cont.grow) { el.style.flexGrow = cont.grow; } // basis comes from CSS (per parent direction)
@@ -6018,6 +6019,10 @@
       nm.addEventListener("mousedown", (e) => e.stopPropagation());
       nm.addEventListener("input", () => { cont.name = nm.value; saveFlow(); });
       head.appendChild(nm);
+      if (cont.variant === "empty") { // the variant is a visible state, not a hidden flag
+        const tag = document.createElement("span"); tag.className = "fl-variant-tag"; tag.title = "Empty state — toggle it from the ⋯ menu"; tag.innerHTML = FI.secEmpty + "<span>Empty</span>";
+        head.appendChild(tag);
+      }
       const mb = document.createElement("button"); mb.className = "fl-sec-menu"; mb.title = isRegion ? "Region options" : "Section options"; mb.innerHTML = FI.dots;
       mb.addEventListener("mousedown", (e) => e.stopPropagation());
       mb.addEventListener("click", (e) => { e.stopPropagation(); (isRegion ? openRegionMenu : openSectionMenu)(s, cont, parent, mb.getBoundingClientRect()); });
@@ -6040,7 +6045,7 @@
     } else if (!editing && s && level === "region") {
       const add = document.createElement("button"); add.className = "fl-add-section"; add.innerHTML = FI.plus + "<span>Section</span>";
       add.addEventListener("mousedown", (e) => e.stopPropagation());
-      add.addEventListener("click", (e) => { e.stopPropagation(); openBlockPalette(s, add.getBoundingClientRect(), cont, "section"); });
+      add.addEventListener("click", (e) => { e.stopPropagation(); quickAddSection(s, cont); });
       el.appendChild(add);
     }
     // (Regions are only added/changed from the layout — there's no "+ Region" here.)
@@ -6298,7 +6303,7 @@
         ? actBtn("cols", FL_ICON.row, "Columns") + actBtn("rows", FL_ICON.col, "Rows") + actBtn("region", FL_ICON.split, "Region") + (parent ? '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "") : "")
         : actBtn("block", FI.plus, "Block");
     } else {
-      flowActBar.innerHTML = actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + actBtn("global", FI.diamond, node.globalId ? "Detach" : "Global") + '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "");
+      flowActBar.innerHTML = actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + actBtn("global", FI.diamond, node.globalId ? "Detach" : "Global") + actBtn("opts", FI.dots, "") + '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "");
     }
     const vr = host.getBoundingClientRect(), r = el.getBoundingClientRect();
     flowActBar.style.left = (r.left - vr.left + r.width / 2) + "px";
@@ -6314,6 +6319,7 @@
       else if (a === "region") node.children.push({ cid: genCid(), dir: node.dir === "row" ? "col" : "row", children: [] });
       else if (a === "del" && parent) { const i = parent.children.indexOf(node); if (i !== -1) parent.children.splice(i, 1); }
     } else {
+      if (a === "opts") { openBlockOptsMenu(s, node, flowActBar.getBoundingClientRect()); return; }
       const arr = parent.children, bi = arr.indexOf(node);
       if (a === "del") arr.splice(bi, 1);
       else if (a === "up" && bi > 0) { arr[bi] = arr[bi - 1]; arr[bi - 1] = node; }
@@ -6359,6 +6365,42 @@
     });
     return d;
   }
+  // Effective visibility of a block's optional fields (title / description /
+  // elements). undefined = auto: show only when there's real content.
+  function blockFieldVis(bc) {
+    return {
+      title: bc.showTitle !== undefined ? !!bc.showTitle : (!bc.type || !!(bc.title && bc.title !== bc.type)),
+      desc: bc.showDesc !== undefined ? !!bc.showDesc : !!bc.desc,
+      items: bc.showItems !== undefined ? !!bc.showItems : !!((bc.items || []).length),
+    };
+  }
+  // The block's meatball: switches for what this component card shows.
+  function openBlockOptsMenu(s, blk, rect) {
+    const bc = blockContent(blk);
+    const paint = () => {
+      const fx = blockFieldVis(bc);
+      const sw = (a, icon, label, on) => '<div class="fm-item" data-a="' + a + '">' + icon + '<span>' + label + '</span>' + (on ? '<span class="fm-check">✓</span>' : '') + '</div>';
+      flowMenu.classList.remove("palette");
+      flowMenu.innerHTML =
+        '<div class="fm-label">This component shows</div>' +
+        sw("title", FI.edit, "Custom title", fx.title) +
+        sw("desc", FI.fileText, "Description", fx.desc) +
+        sw("items", FI.menu, "Elements", fx.items);
+      flowMenu.style.left = Math.min(rect.left, window.innerWidth - 210) + "px";
+      flowMenu.style.top = (rect.bottom + 6) + "px";
+      flowMenu.classList.add("visible");
+      flowMenu.querySelectorAll("[data-a]").forEach((it) => it.onclick = (e) => {
+        e.stopPropagation();
+        const a = it.dataset.a, cur = blockFieldVis(bc);
+        if (a === "title") { bc.showTitle = !cur.title; if (bc.showTitle && !bc.title) bc.title = bc.type || ""; }
+        else if (a === "desc") bc.showDesc = !cur.desc;
+        else if (a === "items") { bc.showItems = !cur.items; if (bc.showItems) bc.items = bc.items || []; }
+        saveFlow(); renderFlow();
+        paint(); // keep the menu open — flipping several switches in a row is the normal case
+      });
+    };
+    paint();
+  }
   function buildBlockNode(s, blk, parent) {
     const bc = blockContent(blk), isG = !!blk.globalId;
     const el = document.createElement("div");
@@ -6366,18 +6408,23 @@
     el.dataset.bid = blk.bid || "";
     el.__fnode = blk; el.__fparent = parent; el.__fscreen = s; el.__editing = false; // for the floating toolbar
     if (blk.grow) { el.style.flexGrow = blk.grow; }
+    // Compact by default: a fresh component is just its blue type label. Title,
+    // description, and elements appear when they have content (legacy blocks)
+    // or when their switch is flipped in the block's ⋯ menu (tri-state:
+    // undefined = auto-by-content, true/false = the user's explicit choice).
+    const fx = blockFieldVis(bc);
     el.innerHTML =
       '<button class="fb-port" title="Connect block"></button>' +
       (isG ? '<div class="fb-global">Global · ' + globalCount(blk.globalId) + ' use' + (globalCount(blk.globalId) === 1 ? "" : "s") + '</div>' : '') +
       (bc.type ? '<div class="fb-type">' + (FI[bc.icon] || FI[iconForType(bc.type)] || FI.diamond) + '<span>' + escapeHtml(bc.type) + '</span></div>' : '') +
-      '<div class="fb-title" contenteditable="true" spellcheck="false">' + escapeHtml(bc.title || "Block") + '</div>' +
-      '<div class="fb-desc" contenteditable="true" spellcheck="false" data-ph="Description…">' + escapeHtml(bc.desc || "") + '</div>' +
-      '<div class="fb-items">' +
+      (fx.title ? '<div class="fb-title" contenteditable="true" spellcheck="false">' + escapeHtml(bc.title || "Block") + '</div>' : '') +
+      (fx.desc ? '<div class="fb-desc" contenteditable="true" spellcheck="false" data-ph="Description…">' + escapeHtml(bc.desc || "") + '</div>' : '') +
+      (fx.items ? '<div class="fb-items">' +
         (bc.items || []).map((it, j) => '<div class="fb-item" data-ii="' + j + '"><span class="fb-item-dot"></span><span class="fb-item-txt" contenteditable="true" spellcheck="false">' + escapeHtml(it) + '</span><button class="fb-item-x" data-ii="' + j + '" title="Remove">' + FI.x + '</button></div>').join("") +
       '</div>' +
-      '<button class="fb-add-item">' + FI.plus + ' Element</button>';
+      '<button class="fb-add-item">' + FI.plus + ' Element</button>' : '');
     const t = el.querySelector(".fb-title"), dd = el.querySelector(".fb-desc");
-    const sync = () => { bc.title = t.textContent; if (dd) bc.desc = dd.textContent; saveFlow(); };
+    const sync = () => { if (t) bc.title = t.textContent; if (dd) bc.desc = dd.textContent; saveFlow(); };
     [t, dd].forEach((n) => { if (!n) return; n.addEventListener("input", sync); n.addEventListener("mousedown", (e) => e.stopPropagation()); });
     el.querySelectorAll(".fb-item").forEach((iEl) => {
       const ii = parseInt(iEl.dataset.ii, 10), txt = iEl.querySelector(".fb-item-txt");
@@ -6388,8 +6435,10 @@
       x.addEventListener("click", (e) => { e.stopPropagation(); bc.items.splice(ii, 1); saveFlow(); renderFlow(); });
     });
     const ai = el.querySelector(".fb-add-item");
-    ai.addEventListener("mousedown", (e) => e.stopPropagation());
-    ai.addEventListener("click", (e) => { e.stopPropagation(); bc.items = bc.items || []; bc.items.push("Elemento"); saveFlow(); renderFlow(); });
+    if (ai) {
+      ai.addEventListener("mousedown", (e) => e.stopPropagation());
+      ai.addEventListener("click", (e) => { e.stopPropagation(); bc.items = bc.items || []; bc.items.push("Element"); saveFlow(); renderFlow(); });
+    }
     const bp = el.querySelector(".fb-port");
     if (bp) bp.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startBlockConnect(s.id, blk.bid); });
     return el;
@@ -6930,6 +6979,7 @@
         Object.keys(FLOW_KINDS).map((key) => '<button class="fm-kind fm-kind-ic' + (key === k ? " on" : "") + '" data-kind="' + key + '" title="' + escapeHtml(FLOW_KINDS[key].label) + '" style="--fs-accent:' + FLOW_KINDS[key].color + '">' + FLOW_KINDS[key].icon + '</button>').join("") +
       '</div><div class="fm-sep"></div>' +
       (k === "subflow" ? '<div class="fm-item" data-act="link">' + FI.workflow + ' Link flow…</div>' : '<div class="fm-item" data-act="gen">' + FI.sparkle + ' Generate content with AI</div>') +
+      '<div class="fm-item" data-act="variant">' + FI.secEmpty + ' <span>' + (s.variant === "empty" ? "Mark as content" : "Mark as empty state") + '</span>' + (s.variant === "empty" ? '<span class="fm-check">✓</span>' : '') + '</div>' +
       '<div class="fm-item" data-act="dup">' + FI.dup + ' Duplicate</div>' +
       '<div class="fm-sep"></div>' +
       '<div class="fm-item" data-act="docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> How Moka works</div>' +
@@ -6944,7 +6994,8 @@
       if (act === "gen") { openScreenGen(s); return; }
       if (act === "link") { closeFlowMenu(); openSubflowPicker(s, rect); return; }
       if (act === "docs") { closeFlowMenu(); openDocs("moka"); return; }
-      if (act === "del") { flow.screens = flow.screens.filter((x) => x.id !== s.id); flow.edges = flow.edges.filter((e) => e.from !== s.id && e.to !== s.id); }
+      if (act === "variant") { s.variant = s.variant === "empty" ? "content" : "empty"; }
+      else if (act === "del") { flow.screens = flow.screens.filter((x) => x.id !== s.id); flow.edges = flow.edges.filter((e) => e.from !== s.id && e.to !== s.id); }
       else if (act === "dup") { const c = JSON.parse(JSON.stringify(s)); c.id = flowGenId(); c.x = (s.x || 0) + 40; c.y = (s.y || 0) + 40; c.name = (s.name || "") + " copy"; flow.screens.push(c); }
       saveFlow(); renderFlow(); closeFlowMenu();
     });
@@ -6998,11 +7049,8 @@
     const c = BASE_COMPONENTS.find((x) => x.name.toLowerCase() === lo);
     return c ? c.icon : (LEGACY_COMPONENT_ICONS[lo] || null);
   }
-  // Section variants — a section (layout region) can be typed by its purpose.
-  const SECTION_VARIANTS = [
-    { name: "Content section", icon: "secContent", variant: "content" },
-    { name: "Empty state section", icon: "secEmpty", variant: "empty" },
-  ];
+  // Section variants live on the section itself (variant: "content" | "empty"),
+  // toggled from its ⋯ menu — there's no upfront type picker anymore.
   // Icon choices offered when creating your own component.
   const ICON_CHOICES = ["cube", "accordion", "alert", "avatar", "badge", "breadcrumb", "button", "buttonGroup", "calendar", "carousel", "chart", "checkbox", "collapsible", "search", "menu", "table", "datePicker", "box", "fileText", "comment", "eye", "link", "db", "sparkle", "note", "heading"];
   // Create a personal (global) component: name + icon. Calls onCreate(comp) when done.
@@ -7039,9 +7087,26 @@
     flowMenu.querySelectorAll("[data-i]").forEach((it) => it.onclick = () => { const a = actions[+it.dataset.i]; closeFlowMenu(); if (a && a.fn) a.fn(); });
   }
   // Section ⋯ menu — turn the section into a component, or delete it.
+  // One click = one section, ready to name. No type picker: the common case is
+  // a content section, and "empty state" is a PROPERTY you flip from the
+  // section's ⋯ menu (the old picker forced an upfront choice and left the
+  // section named after the menu item).
+  function quickAddSection(s, region) {
+    ensureLayout(s);
+    const target = (region && isCont(region)) ? region : s.layout;
+    const sec = { cid: genCid(), dir: "col", name: "", variant: "content", children: [] };
+    target.children.push(sec);
+    saveFlow(); renderFlow();
+    setTimeout(() => { // type the name right away — the input is focused for you
+      const nm = flowNodes.querySelector('.fl-cont[data-cid="' + sec.cid + '"] .fl-name');
+      if (nm) nm.focus();
+    }, 0);
+  }
   function openSectionMenu(s, cont, parent, rect) {
     flowMenu.classList.remove("palette");
+    const isEmptyVar = cont.variant === "empty";
     flowMenu.innerHTML =
+      '<div class="fm-item" data-a="variant">' + FI.secEmpty + '<span>' + (isEmptyVar ? "Mark as content" : "Mark as empty state") + '</span>' + (isEmptyVar ? '<span class="fm-check">✓</span>' : '') + '</div>' +
       '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Turn into component</span></div>' +
       '<div class="fm-sep"></div>' +
       '<div class="fm-item danger" data-a="del">' + FI.trash + '<span>Delete section</span></div>';
@@ -7050,6 +7115,7 @@
     flowMenu.classList.add("visible");
     flowMenu.querySelectorAll("[data-a]").forEach((it) => it.onclick = () => {
       const a = it.dataset.a;
+      if (a === "variant") { cont.variant = isEmptyVar ? "content" : "empty"; saveFlow(); renderFlow(); closeFlowMenu(); return; }
       if (parent && isCont(parent)) {
         const idx = parent.children.indexOf(cont);
         if (idx !== -1) {
@@ -7065,10 +7131,15 @@
       closeFlowMenu();
     });
   }
-  // Region ⋯ menu — turn the region into a single component, or delete it.
+  // Region ⋯ menu — insert a reusable global section, turn the region into a
+  // single component, or delete it.
   function openRegionMenu(s, cont, parent, rect) {
     flowMenu.classList.remove("palette");
+    const hasGlobals = Object.keys(flowGlobals()).length > 0;
+    const isEmptyVar = cont.variant === "empty";
     flowMenu.innerHTML =
+      '<div class="fm-item" data-a="variant">' + FI.secEmpty + '<span>' + (isEmptyVar ? "Mark as content" : "Mark as empty state") + '</span>' + (isEmptyVar ? '<span class="fm-check">✓</span>' : '') + '</div>' +
+      (hasGlobals ? '<div class="fm-item" data-a="global">' + FI.diamond + '<span>Insert global section…</span></div>' : '') +
       '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Turn into component</span></div>' +
       '<div class="fm-sep"></div>' +
       '<div class="fm-item danger" data-a="del">' + FI.trash + '<span>Delete region</span></div>';
@@ -7077,6 +7148,8 @@
     flowMenu.classList.add("visible");
     flowMenu.querySelectorAll("[data-a]").forEach((it) => it.onclick = () => {
       const a = it.dataset.a;
+      if (a === "variant") { cont.variant = isEmptyVar ? "content" : "empty"; saveFlow(); renderFlow(); closeFlowMenu(); return; }
+      if (a === "global") { openBlockPalette(s, rect, cont, "section"); return; } // palette now lists globals only
       if (parent && isCont(parent)) {
         const idx = parent.children.indexOf(cont);
         if (idx !== -1) {
@@ -7105,7 +7178,6 @@
     const list = flowMenu.querySelector("#fm-list");
     const cont = () => { ensureLayout(s); return (targetCont && isCont(targetCont)) ? targetCont : s.layout; };
     const addBlock = (b) => { cont().children.push(b); saveFlow(); renderFlow(); closeFlowMenu(); };
-    const addSection = (v) => { cont().children.push({ dir: "col", name: v.name, variant: v.variant, children: [] }); saveFlow(); renderFlow(); closeFlowMenu(); };
     const compToBlock = (c) => ({
       type: c.name || "Component", title: c.name || "Component", icon: "cube",
       desc: c.import || c.use || "",
@@ -7126,9 +7198,8 @@
         if (fc.length) h += '<div class="fm-label">Project components</div>' + fc.map((c) => item('data-ci="' + comps.indexOf(c) + '"', "cube", c.name || "")).join("");
         h += '<div class="fm-sep"></div>' + item('data-new="1"', "plus", "Create component…");
       } else {
-        // Screen level → sections (layout regions with a purpose) + reusable globals
-        const sv = SECTION_VARIANTS.filter((v) => match(v.name));
-        if (sv.length) h += '<div class="fm-label">Sections</div>' + sv.map((v) => item('data-sec="' + SECTION_VARIANTS.indexOf(v) + '"', v.icon, v.name)).join("");
+        // Region level → reusable global sections ("+ Section" creates directly;
+        // this palette only opens from the region ⋯ menu to insert a global).
         const globals = flowGlobals();
         const gids = Object.keys(globals).filter((id) => match(globals[id].title));
         if (gids.length) h += '<div class="fm-label">Global sections</div>' + gids.map((id) => item('data-gid="' + id + '"', "diamond", globals[id].title || "Global")).join("");
@@ -7139,7 +7210,6 @@
         if (d.comp !== undefined) { const c = BASE_COMPONENTS[+d.comp]; addBlock({ type: c.name, icon: c.icon, title: c.name, desc: "", items: [] }); }
         else if (d.uc !== undefined) { const c = userComponents[+d.uc]; addBlock({ type: c.name, icon: c.icon, title: c.name, desc: "", items: [] }); }
         else if (d.ci !== undefined) { const c = comps[+d.ci]; if (c) addBlock(compToBlock(c)); }
-        else if (d.sec !== undefined) { addSection(SECTION_VARIANTS[+d.sec]); }
         else if (d.gid !== undefined) { addBlock({ globalId: d.gid }); }
         else if (d.new !== undefined) { openComponentCreator(rect, (comp) => addBlock({ type: comp.name, icon: comp.icon, title: comp.name, desc: "", items: [] })); }
       });
