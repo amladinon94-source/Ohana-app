@@ -52,7 +52,10 @@ Terminal:                           Ohana:
 
 Turn on comment mode (💬 button or `⇧⌘M`), click on any element, and
 type. A numbered pin stays anchored to the element (via `data-ai-id` or a CSS selector).
-The **Comments** panel (`⇧⌘F`) lists the threads; each one supports replies and resolving.
+Pins belong to the view you're looking at: they appear and hide as you navigate the
+prototype, a thread opens right next to its pin (Figma-style), and you can **drag a pin**
+onto another element to move the comment. The **Comments** panel (`⇧⌘F`) lists every
+thread; each one supports replies and resolving.
 
 Comments live in `.ohana/findings.json`, next to the prototype. Ohana watches that
 file, so any change — yours or the agent's — shows up live.
@@ -61,8 +64,10 @@ file, so any change — yours or the agent's — shows up live.
 
 `design.md` is the **design source of truth**: tokens, principles, voice and tone,
 patterns, and a decisions log. It lives in the **Design** section of the project
-navigator: markdown preview + WYSIWYG editing (you edit right on the render), with color
-swatches in the token tables. Your agent reads it before touching the UI and keeps it up to date.
+navigator: markdown preview (with color swatches in the token tables) plus a real
+WYSIWYG editor — headings, lists, tasks, quotes, tables with a size picker, and code
+blocks with a clickable language chip, all driven from the floating toolbar. Your agent
+reads it before touching the UI and keeps it up to date.
 
 ## Projects — the workspace
 
@@ -91,10 +96,15 @@ agent reads and writes.
   **Start/End** (they mark the journey), and **Subflow** (links to another flow in the project).
 - **Page → Regions → Sections → Components** — regions define the card's layout
   (Header/Body/Footer, a classic preset, or your own drawn in the **layout
-  editor**, grid-style); inside them go sections (named organisms) and, within those, components
-  from a catalog (Button, Data table, Chart, Accordion…), from your personal library, or from your
-  design system (in repos). You annotate the detail for each one. A component can
+  editor**, grid-style); inside them go sections (named organisms, with an optional
+  description and reorderable in place) and, within those, components from a catalog
+  (Button, Data table, Chart, Accordion…), from your personal library (editable), or from
+  your design system (in repos). Components stay compact — title, description, and
+  elements switch on from their ⋯ menu when they carry real detail. A component can
   **connect to another page** (dashed edge) and become **global** (reused across screens).
+- **Empty state as a state** — mark any screen, region, or section as an empty state
+  from its ⋯ menu (agents pass `variant: "empty"`); Moka shows an amber tag so the
+  states you owe the design are always visible.
 - **Flows belong to the project** — every board in the folder lives together in the navigator.
 - **"To prototype"** — links the flow to an HTML file in `prototypes/` and the agent builds it;
   "View prototype" opens it in the same project so you can iterate.

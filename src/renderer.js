@@ -239,7 +239,10 @@
       hidePreviewLoader();
       updateZoom();
       syncInspectorVisual();
-      webview.executeJavaScript(PINS_SCRIPT).then(() => syncPins()).catch(() => {});
+      // Tab switch → reload THIS prototype's findings from disk (comments are
+      // per project; pins must exist as soon as you open it, not only after
+      // the panel opens or the file changes).
+      webview.executeJavaScript(PINS_SCRIPT).then(() => loadFindings()).catch(() => {});
     } else {
       showPreviewLoader(); // slow prototype/dev-server load → the app's bento breathes meanwhile
     }
@@ -286,7 +289,7 @@
       try { t.wcId = wv.getWebContentsId(); } catch (e) {} // per-tab network capture key
       if (wv === webview) { hidePreviewError(); hidePreviewLoader(); }
       wv.executeJavaScript(INSPECTOR_SCRIPT).catch(() => {});
-      wv.executeJavaScript(PINS_SCRIPT).then(() => { if (wv === webview) syncPins(); }).catch(() => {});
+      wv.executeJavaScript(PINS_SCRIPT).then(() => { if (wv === webview) loadFindings(); }).catch(() => {});
       if (wv !== webview) return; // background tab \u2014 don't touch active UI
       webviewReady = true;
       syncInspectorVisual();
@@ -302,6 +305,19 @@
     // Pin clicks bridged out via console.log (only the visible webview can be
     // clicked, but bind to wv regardless).
     wv.addEventListener("console-message", (e) => {
+      if (e.message && e.message.indexOf("__OHANA_PIN_MOVE__") === 0) {
+        // Pin dragged onto another element → re-anchor the comment there.
+        try {
+          const mv = JSON.parse(e.message.slice("__OHANA_PIN_MOVE__".length));
+          const f = findingsData[parseInt(mv.id, 10)];
+          if (f) {
+            f.anchor = { aiId: mv.aiId || null, selector: mv.selector || null, label: mv.label || mv.aiId || mv.selector || "element" };
+            saveFindings(); syncPins(); renderFindings();
+            showToast("Comment moved to " + (f.anchor.label || "element"), "check");
+          }
+        } catch (err) {}
+        return;
+      }
       if (e.message && e.message.indexOf("__OHANA_PIN__") === 0) {
         const idx = parseInt(e.message.slice("__OHANA_PIN__".length), 10);
         if (!isNaN(idx)) openThread(idx);
@@ -1473,20 +1489,67 @@
             'transition:transform 0.1s ease;opacity:' + (resolved ? '0.8' : '1') + ';';
           b.textContent = p.num;
           b.title = (p.author || 'Comment') + ': ' + (p.preview || '');
-          b.addEventListener('mouseenter', function(){ b.style.transform = 'scale(1.15)'; });
+          b.addEventListener('mouseenter', function(){ if (!p._drag) b.style.transform = 'scale(1.15)'; });
           b.addEventListener('mouseleave', function(){ b.style.transform = 'scale(1)'; });
-          b.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); console.log('__OHANA_PIN__' + p.id); });
+          // Click = open the thread. Drag = move the pin: on drop it re-anchors
+          // to the element under the cursor (Figma-style move).
+          b.addEventListener('mousedown', function(ev){
+            ev.stopPropagation(); ev.preventDefault();
+            var sx = ev.clientX, sy = ev.clientY, moved = false;
+            function mv(e){
+              if (!moved && Math.hypot(e.clientX - sx, e.clientY - sy) > 6){ moved = true; p._drag = true; b.style.opacity = '0.75'; b.style.transform = 'scale(1.15)'; }
+              if (moved){ b.style.left = (e.clientX - 13) + 'px'; b.style.top = (e.clientY - 13) + 'px'; }
+            }
+            function up(e){
+              document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+              if (!moved){ console.log('__OHANA_PIN__' + p.id); return; }
+              p._drag = false; b.style.opacity = ''; b.style.transform = 'scale(1)';
+              b.style.pointerEvents = 'none';
+              var t = document.elementFromPoint(e.clientX, e.clientY);
+              b.style.pointerEvents = 'auto';
+              if (!t || t === document.documentElement || t === document.body){ return; } // dropped on nothing → snap back to its anchor
+              var aiId = null, node = t;
+              while (node && node !== document.documentElement){ if (node.dataset && node.dataset.aiId){ aiId = node.dataset.aiId; break; } node = node.parentElement; }
+              var anchorEl = aiId ? node : t;
+              function sel(el){
+                if (!el || el.nodeType !== 1) return '';
+                if (el.id) return '#' + CSS.escape(el.id);
+                var parts = [];
+                while (el && el.nodeType === 1 && el !== document.body){
+                  var part = el.tagName.toLowerCase();
+                  var pp = el.parentElement;
+                  if (pp){ var sibs = Array.prototype.filter.call(pp.children, function(c){ return c.tagName === el.tagName; }); if (sibs.length > 1) part += ':nth-of-type(' + (sibs.indexOf(el) + 1) + ')'; }
+                  parts.unshift(part); el = pp;
+                }
+                return parts.join(' > ');
+              }
+              var tag = anchorEl.tagName.toLowerCase();
+              var label = aiId ? aiId : (tag + (anchorEl.id ? '#' + anchorEl.id : (anchorEl.className && typeof anchorEl.className === 'string' && anchorEl.className.trim() ? '.' + anchorEl.className.trim().split(/\\s+/)[0] : '')));
+              console.log('__OHANA_PIN_MOVE__' + JSON.stringify({ id: p.id, aiId: aiId, selector: sel(anchorEl), label: label }));
+            }
+            document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+          });
           layer.appendChild(b);
           p._el = b;
         });
       };
       window.__ohanaHidePins = function(hide){ layer.style.display = hide ? 'none' : 'block'; };
+      // A pin belongs to the VIEW you're looking at: if its anchor is hidden
+      // (display:none / zero-size — e.g. another SPA screen), the pin hides too
+      // instead of collapsing to the top-left corner. It reappears as you navigate.
+      function visibleRect(t){
+        var r = t.getBoundingClientRect();
+        if (r.width <= 0 && r.height <= 0) return null;
+        try { var st = getComputedStyle(t); if (st.display === 'none' || st.visibility === 'hidden') return null; } catch(e){}
+        return r;
+      }
       function positionAll(){
         for (var i = 0; i < pins.length; i++){
           var p = pins[i]; if (!p._el) continue;
+          if (p._drag) continue; // being dragged — follows the cursor, not the anchor
           var t = resolveEl(p);
-          if (!t){ p._el.style.display = 'none'; continue; }
-          var r = t.getBoundingClientRect();
+          var r = t && visibleRect(t);
+          if (!r){ p._el.style.display = 'none'; continue; }
           p._el.style.display = 'flex';
           p._el.style.left = (r.left - 6) + 'px';
           p._el.style.top = (r.top - 6) + 'px';
@@ -1817,12 +1880,18 @@
         `);
         if (rectStr) {
           const r = JSON.parse(rectStr);
-          const wvRect = webview.getBoundingClientRect();
-          const zf = currentZoom / 100;
-          const pinX = wvRect.left + (r.x + r.w) * zf;
-          const pinY = wvRect.top + r.y * zf;
-          left = pinX + 16;
-          top = Math.max(60, pinY);
+          // A hidden anchor (another SPA view) has a zero rect → keep the default
+          // side position instead of jumping to the top-left corner.
+          if (r.w > 0 || r.h > 0) {
+            const wvRect = webview.getBoundingClientRect();
+            const zf = currentZoom / 100;
+            // Figma-style: the card opens NEXT TO THE PIN (element's top-left),
+            // left-aligned to it — not off the element's far right edge.
+            const pinX = wvRect.left + r.x * zf;
+            const pinY = wvRect.top + r.y * zf;
+            left = pinX + 28;
+            top = Math.max(60, pinY - 6);
+          }
         }
       } catch (e) {}
     }
@@ -4133,6 +4202,7 @@
   function hideProjReader() {
     const r = document.getElementById("proj-reader"); if (r) r.classList.remove("visible");
     document.body.classList.remove("md-reading", "md-editing"); // toolbar context back to the artifact
+    if (typeof destroyReaderEditor === "function") destroyReaderEditor();
   }
   // Scan cache — the disk walk (project:scan) + tags.json read are expensive to
   // run on every tab switch / flow:updated burst. We cache the manifest per dir
@@ -4519,6 +4589,7 @@
     tabs.forEach((x) => { if (x.wv) x.wv.classList.add("wv-hidden"); }); // reader is HTML; hide native webviews behind it
     const at = activeTab(); if (at) { at.artifact = { kind: "md", path: p, rel: rel || null }; saveSession(); }
     renderProjectNav();
+    destroyReaderEditor(); // fresh doc → fresh editor
     prPath = p; prRel = rel || name; prDirty = false; prSource = "";
     document.getElementById("pr-name").textContent = name || p.split("/").pop();
     document.getElementById("pr-project").textContent = at ? (at.name || "") : ""; // project name, like Moka's topbar
@@ -4532,46 +4603,192 @@
     prSource = content != null ? content : "";
     body.innerHTML = content != null ? renderMarkdown(prSource) : "Couldn't read the file.";
   }
+  // ── WYSIWYG engine: Toast UI Editor (vendored, dark theme) ──
+  // Real ProseMirror-based editing with a full toolbar (paragraph/heading
+  // switcher, code block you can actually leave, lists, tables) and a solid
+  // markdown round-trip. Replaces the old contenteditable+execCommand engine,
+  // which had no "normal text" tool and trapped the caret inside code marks.
+  let prEditor = null;
+  function destroyReaderEditor() {
+    if (prEditor) { try { prEditor.destroy(); } catch (e) {} prEditor = null; }
+    if (_langObs) { _langObs.disconnect(); _langObs = null; }
+    document.querySelectorAll(".mlang-list").forEach((n) => n.remove());
+    const host = document.getElementById("pr-editor"); if (host) host.innerHTML = "";
+  }
+  // ── Code block language chooser (fully Ohana) ──
+  // Clicking the chip on a code block opens our own menu: filter as you type,
+  // click to apply. The language writes straight into the ProseMirror node's
+  // attrs, so it serializes as the markdown fence info (```js) — agents set
+  // the same field just by writing the block; this menu is the human's side.
+  const CODE_LANGS = ["text", "js", "ts", "jsx", "tsx", "html", "css", "json", "bash", "python", "sql", "yaml", "markdown", "java", "go", "rust", "php", "ruby", "swift", "kotlin", "c", "cpp", "csharp"];
+  let _langObs = null; // (kept name for destroy symmetry — now unused observers)
+  function setCodeBlockLang(preEl, lang) {
+    try {
+      const view = prEditor.wwEditor.view;
+      const $pos = view.state.doc.resolve(view.posAtDOM(preEl, 0));
+      for (let d = $pos.depth; d > 0; d--) {
+        const n = $pos.node(d);
+        if (n.type.name === "codeBlock") {
+          view.dispatch(view.state.tr.setNodeMarkup($pos.before(d), null, Object.assign({}, n.attrs, { language: lang || null })));
+          prDirty = true;
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+  function watchCodeLangPopup(host) {
+    host.addEventListener("click", (e) => {
+      const pre = e.target.closest(".toastui-editor-ww-code-block");
+      if (!pre || !prEditor) return;
+      const r = pre.getBoundingClientRect();
+      if (e.clientX < r.right - 110 || e.clientY > r.top + 34) return; // only the chip zone (top-right)
+      e.preventDefault(); e.stopPropagation();
+      openCodeLangMenu(pre);
+    }, true);
+  }
+  function openCodeLangMenu(preEl) {
+    document.querySelectorAll(".mlang-list").forEach((n) => n.remove());
+    const r = preEl.getBoundingClientRect();
+    const list = document.createElement("div"); list.className = "pn-menu mlang-list";
+    list.innerHTML = '<input class="fm-search mlang-input" placeholder="Language…" spellcheck="false" /><div class="mlang-items"></div>';
+    document.body.appendChild(list);
+    list.style.left = Math.min(r.right - 150, window.innerWidth - 170) + "px";
+    list.style.top = (r.top + 34) + "px";
+    const input = list.querySelector(".mlang-input");
+    const items = list.querySelector(".mlang-items");
+    const current = (preEl.dataset.language || "text").toLowerCase();
+    const cleanup = () => { list.remove(); document.removeEventListener("mousedown", out, true); };
+    const out = (e) => { if (!list.contains(e.target)) cleanup(); };
+    const apply = (lang) => { setCodeBlockLang(preEl, lang === "text" ? "" : lang); cleanup(); };
+    const paint = () => {
+      const q = (input.value || "").toLowerCase().trim();
+      const matches = CODE_LANGS.filter((l) => !q || l.indexOf(q) !== -1).slice(0, 8);
+      items.innerHTML = matches.map((l) => '<div class="fm-item" data-lang="' + l + '"><span>' + l + '</span>' + (l === current ? '<span class="fm-check">✓</span>' : '') + '</div>').join("");
+      items.querySelectorAll("[data-lang]").forEach((it) => {
+        it.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); apply(it.dataset.lang); });
+      });
+    };
+    input.addEventListener("input", paint);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { const first = items.querySelector("[data-lang]"); apply(first ? first.dataset.lang : input.value.trim()); }
+      if (e.key === "Escape") cleanup();
+    });
+    setTimeout(() => { input.focus(); document.addEventListener("mousedown", out, true); }, 0);
+    paint();
+  }
   function setReaderMode(mode) {
     const reader = document.getElementById("proj-reader");
     const body = document.getElementById("pr-body");
+    const host = document.getElementById("pr-editor");
     reader.classList.toggle("mode-edit", mode === "edit");
     document.getElementById("pr-tab-preview").classList.toggle("active", mode !== "edit");
     document.getElementById("pr-tab-edit").classList.toggle("active", mode === "edit");
-    // WYSIWYG: editing happens ON the render itself, never on raw markdown.
-    body.contentEditable = mode === "edit" ? "true" : "false";
-    document.body.classList.toggle("md-editing", mode === "edit"); // toolbar shows the markdown text tools
-    if (mode === "edit") { try { document.execCommand("styleWithCSS", false, false); } catch (e) {} setTimeout(() => body.focus(), 0); }
-  }
-  // Markdown text tools (toolbar, edit mode): headings, bold/italic/code, lists, quote.
-  function mdCmd(a) {
-    const body = document.getElementById("pr-body"); body.focus();
-    const block = () => (document.queryCommandValue("formatBlock") || "").toLowerCase();
-    if (a === "h1" || a === "h2" || a === "h3") document.execCommand("formatBlock", false, block() === a ? "P" : a.toUpperCase());
-    else if (a === "bold") document.execCommand("bold");
-    else if (a === "italic") document.execCommand("italic");
-    else if (a === "ul") document.execCommand("insertUnorderedList");
-    else if (a === "ol") document.execCommand("insertOrderedList");
-    else if (a === "quote") document.execCommand("formatBlock", false, block() === "blockquote" ? "P" : "BLOCKQUOTE");
-    else if (a === "code") {
-      const sel = window.getSelection();
-      if (sel.rangeCount && !sel.isCollapsed) {
-        const r = sel.getRangeAt(0), c = document.createElement("code");
-        try { r.surroundContents(c); } catch (e) { document.execCommand("insertHTML", false, "<code>" + sel.toString().replace(/</g, "&lt;") + "</code>"); }
+    document.body.classList.toggle("md-editing", mode === "edit"); // Ohana's floating toolbar shows the text tools
+    if (mode === "edit") {
+      body.style.display = "none"; host.style.display = "block";
+      if (!prEditor && window.toastui && window.toastui.Editor) {
+        // Chrome-less: no Toast toolbar, no mode switch — the editing surface
+        // only. All tools live in Ohana's own floating toolbar (mdCmd → exec).
+        prEditor = new window.toastui.Editor({
+          el: host,
+          theme: "dark",
+          initialEditType: "wysiwyg",
+          initialValue: prSource || "",
+          height: "100%",
+          usageStatistics: false,
+          autofocus: true,
+          hideModeSwitch: true,
+          toolbarItems: [],
+        });
+        prEditor.on("change", () => { prDirty = true; });
+        window.__ohanaMdEditor = prEditor; // debug/automation handle (agents can drive the editor)
+        // App-wide convention: no spellcheck squiggles in editing surfaces.
+        setTimeout(() => { const pm = host.querySelector(".toastui-editor-ww-container .ProseMirror"); if (pm) pm.setAttribute("spellcheck", "false"); }, 0);
+        watchCodeLangPopup(host); // language suggestions on the code block chip
+      } else if (prEditor) {
+        prEditor.focus();
       }
+    } else {
+      // Leaving edit → serialize once and re-render the preview (the preview
+      // keeps Ohana niceties like color swatches in token tables).
+      if (prEditor) prSource = prEditor.getMarkdown();
+      body.style.display = ""; host.style.display = "none";
+      body.innerHTML = renderMarkdown(prSource || "");
+      if (prDirty) saveReaderDoc();
     }
-    prDirty = true;
+  }
+  async function saveReaderDoc() {
+    if (!prPath || !prDirty) return true;
+    if (prEditor) prSource = prEditor.getMarkdown();
+    const ok = await window.api.projectWriteFile({ path: prPath, content: prSource });
+    if (ok) { prDirty = false; showToast("Saved", "check"); } else showToast("Couldn't save", "warn");
+    return ok;
+  }
+  // Ohana's floating toolbar drives the editor (same buttons as always,
+  // executing real editor commands instead of deprecated execCommand).
+  // ProseMirror state helpers: Toast's own `paragraph` command doesn't
+  // convert code blocks, which was the exact "stuck in code" trap — reach
+  // the ww editor's state to detect and convert reliably.
+  function pmInCodeBlock() {
+    try { return prEditor.wwEditor.view.state.selection.$from.parent.type.name === "codeBlock"; } catch (e) { return false; }
+  }
+  function pmToParagraph() {
+    try {
+      const view = prEditor.wwEditor.view, st = view.state, p = st.schema.nodes.paragraph;
+      view.dispatch(st.tr.setBlockType(st.selection.from, st.selection.to, p));
+      return true;
+    } catch (e) { return false; }
+  }
+  function mdCmd(a) {
+    if (!prEditor) return;
+    if (a === "p") { if (pmInCodeBlock()) pmToParagraph(); else prEditor.exec("paragraph"); }
+    else if (a === "h1" || a === "h2" || a === "h3") { if (pmInCodeBlock()) pmToParagraph(); prEditor.exec("heading", { level: parseInt(a.slice(1), 10) }); }
+    else if (a === "bold") prEditor.exec("bold");
+    else if (a === "italic") prEditor.exec("italic");
+    else if (a === "strike") prEditor.exec("strike");
+    else if (a === "code") prEditor.exec("code");
+    else if (a === "ul") prEditor.exec("bulletList");
+    else if (a === "ol") prEditor.exec("orderedList");
+    else if (a === "task") prEditor.exec("taskList");
+    else if (a === "quote") prEditor.exec("blockQuote");
+    else if (a === "codeblock") { if (pmInCodeBlock()) pmToParagraph(); else prEditor.exec("codeBlock"); } // real toggle: in → out
+    else if (a === "table") { openTableSizePicker(); return; } // grid picker → addTable with the chosen size
+    else if (a === "hr") prEditor.exec("hr");
+    prEditor.focus();
   }
   document.querySelectorAll("#toolbar [data-md]").forEach((b) => {
     b.addEventListener("mousedown", (e) => e.preventDefault()); // keep the text selection alive
     b.addEventListener("click", () => mdCmd(b.dataset.md));
   });
-  async function saveReaderDoc() {
-    if (!prPath || !prDirty) return true;
-    prSource = htmlToMd(document.getElementById("pr-body"));
-    const ok = await window.api.projectWriteFile({ path: prPath, content: prSource });
-    if (ok) { prDirty = false; showToast("Saved", "check"); } else showToast("Couldn't save", "warn");
-    return ok;
+  // Table size picker — the classic hover-a-grid chooser, in Ohana's own menu
+  // voice (Toast's toolbar had one; ours lives on the floating toolbar).
+  function openTableSizePicker() {
+    const btn = document.querySelector('#toolbar [data-md="table"]'); if (!btn || !prEditor) return;
+    document.querySelectorAll(".md-table-pick").forEach((n) => n.remove());
+    const MAXC = 8, MAXR = 6;
+    const pop = document.createElement("div"); pop.className = "pn-menu md-table-pick";
+    let h = '<div class="mtp-grid" style="grid-template-columns:repeat(' + MAXC + ',16px)">';
+    for (let r = 1; r <= MAXR; r++) for (let c = 1; c <= MAXC; c++) h += '<span class="mtp-cell" data-r="' + r + '" data-c="' + c + '"></span>';
+    h += '</div><div class="mtp-label">2 × 3</div>';
+    pop.innerHTML = h;
+    document.body.appendChild(pop);
+    const br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+    pop.style.left = Math.min(Math.max(8, br.left + br.width / 2 - pr.width / 2), window.innerWidth - pr.width - 8) + "px";
+    pop.style.top = Math.max(8, br.top - pr.height - 10) + "px"; // floats above the toolbar
+    const label = pop.querySelector(".mtp-label");
+    const paint = (R, C) => { pop.querySelectorAll(".mtp-cell").forEach((el) => el.classList.toggle("on", +el.dataset.r <= R && +el.dataset.c <= C)); label.textContent = R + " × " + C; };
+    pop.querySelectorAll(".mtp-cell").forEach((el) => {
+      el.addEventListener("mouseenter", () => paint(+el.dataset.r, +el.dataset.c));
+      el.addEventListener("mousedown", (e) => e.preventDefault()); // keep the editor selection
+      el.addEventListener("click", () => {
+        prEditor.exec("addTable", { rowCount: +el.dataset.r, columnCount: +el.dataset.c });
+        prEditor.focus(); pop.remove();
+      });
+    });
+    paint(2, 3);
+    const out = (e) => { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener("mousedown", out, true); } };
+    setTimeout(() => document.addEventListener("mousedown", out, true), 0);
   }
   document.getElementById("pn-body").addEventListener("click", (e) => {
     // Collapsed rail → click an icon to expand.
@@ -5245,6 +5462,9 @@
     x:     LI('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
     plus:  LI('<path d="M5 12h14"/><path d="M12 5v14"/>'),
     check: LI('<path d="M20 6 9 17l-5-5"/>'),
+    strike: LI('<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/>'),
+    codeBlock: LI('<path d="m10 9-3 3 3 3"/><path d="m14 15 3-3-3-3"/><rect width="18" height="18" x="3" y="3" rx="2"/>'),
+    minus: LI('<path d="M5 12h14"/>'),
     dots:  LI('<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>'),
     // actions
     trash: LI('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>'),
@@ -5513,8 +5733,15 @@
   const flowMini = document.getElementById("flow-minimap");
 
   function flowGenId() { return "s" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
+  let _flowWcT = null;
   function flowApplyView() {
     flowNodes.style.transform = "translate(" + flowView.x + "px," + flowView.y + "px) scale(" + flowView.s + ")";
+    // Promote the layer only WHILE panning/zooming; release on idle so the
+    // browser re-rasters at the final scale (a permanent will-change kept the
+    // cached raster and the canvas looked low-res after zooming).
+    flowNodes.style.willChange = "transform";
+    if (_flowWcT) clearTimeout(_flowWcT);
+    _flowWcT = setTimeout(() => { if (!flowNodes.classList.contains("glide")) flowNodes.style.willChange = "auto"; }, 220);
     const z = document.getElementById("flow-zoom"); if (z) z.textContent = Math.round(flowView.s * 100) + "%";
     scheduleCull();      // virtualize (zoom-in) or redraw the canvas overview (zoom-out)
     renderMinimap();
@@ -5622,7 +5849,7 @@
   }
   // Portable guide for any agent (Claude/Codex/…) reading the project folder.
   // Versioned: bump MOKA_GUIDE_V when the template changes so stale copies regenerate.
-  const MOKA_GUIDE_V = "<!-- moka-guide v4 -->"; // v4: workspace folder names resolved per project
+  const MOKA_GUIDE_V = "<!-- moka-guide v5 -->"; // v5: empty-state as a per-node state + section descriptions
   async function ensureMokaGuide() {
     try {
       const existing = await window.api.ohanaReadFile("MOKA.md");
@@ -5660,7 +5887,9 @@
         "Hierarchy: Page → REGIONS → SECTIONS → COMPONENTS.",
         "- REGIONS define the card's layout (Header/Body/Footer or a preset: `ohana_flow_set_layout` accepts builtins and project layouts created in the grid painter).",
         "- SECTIONS are UI organisms inside a region (`ohana_flow_add_section({ screenId, name, region })`; without `region` it creates a root region).",
-        "- COMPONENTS (Button, Data table, Chart, Accordion, etc.) go inside sections (`ohana_flow_add_component`). Each one carries its detail (title/description/elements): what it says, how it looks, how it works.",
+        "- COMPONENTS (Button, Data table, Chart, Accordion, etc.) go inside sections (`ohana_flow_add_component`). Cards render compact (just the type); add title/description/elements only when they carry real detail.",
+        "- SECTIONS can carry a `desc` (context for the organism) — `ohana_flow_add_section({ screenId, name, region, desc })`.",
+        "- EMPTY STATE is a per-node STATE, not a type: `variant: \"empty\"` on add_screen/update_screen/add_section marks a screen, region, or section as an empty state (amber tag in Moka). Design empty states deliberately.",
         "In `flow.json` the layout is a tree: containers (regions/sections) with leaf blocks (components). Connections leave from pages or components and always land on the destination card, never on a component.",
         "",
         "## Referring to a screen",
@@ -5750,7 +5979,7 @@
   // those are applied without a rebuild). If it's unchanged, we keep the element.
   const _screenSig = {};
   function screenSig(s) {
-    return s.kind + "|" + screenStatus(s) + "|" + flowFilter + "|" + (s.w || "") + "|" +
+    return s.kind + "|" + screenStatus(s) + "|" + (s.variant || "") + "|" + flowFilter + "|" + (s.w || "") + "|" +
       JSON.stringify({ n: s.name, d: s.desc, a: s.apis, l: s.links, ly: s.layout, h: s.handle });
   }
   function renderFlow() {
@@ -5888,9 +6117,12 @@
     // Free sides keep a plain (blue) connector so the node can still branch normally.
     const freePorts = outs ? portsFor(["top", "right", "bottom", "left"].filter((sd) => !outs.some((o) => o.side === sd))) : ports;
     // Decision node — a diamond with an editable question + Yes/No outputs.
+    // Empty-state is a per-node STATE: every kind carries the class + a floating tag.
+    const varCls = s.variant === "empty" ? " variant-empty" : "";
+    const varTag = s.variant === "empty" ? '<span class="fl-variant-tag floating" title="Empty state — toggle it from the ⋯ menu">' + FI.secEmpty + '<span>Empty</span></span>' : '';
     if (s.kind === "decision") {
-      el.className = "flow-screen decision status-" + st + (flowSel.has(s.id) ? " selected" : "") + dimCls;
-      el.innerHTML =
+      el.className = "flow-screen decision status-" + st + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
+      el.innerHTML = varTag +
         '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<div class="fs-diamond"><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="Decision?">' + escapeHtml(s.name || "") + '</div></div>' +
         outsHtml + freePorts;
@@ -5898,9 +6130,9 @@
       return el;
     }
     if (TERMINAL_KINDS[s.kind]) { // Start / End — terminator pill marking start/end of the experience
-      el.className = "flow-screen terminal term-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + dimCls;
+      el.className = "flow-screen terminal term-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
       el.style.setProperty("--fs-accent", k.color);
-      el.innerHTML =
+      el.innerHTML = varTag +
         '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<div class="fs-term"><span class="fs-term-ic">' + k.icon + '</span><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="' + escapeHtml(k.label) + '">' + escapeHtml(s.name || "") + '</div></div>' +
         ports;
@@ -5909,9 +6141,9 @@
     }
     if (s.kind === "subflow") { // links to another flow in the project (click to open it)
       const target = (flowDoc.flows || []).find((f) => f.id === s.flowRef);
-      el.className = "flow-screen compact ck-subflow" + (flowSel.has(s.id) ? " selected" : "") + dimCls;
+      el.className = "flow-screen compact ck-subflow" + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
       el.style.setProperty("--fs-accent", k.color);
-      el.innerHTML =
+      el.innerHTML = varTag +
         '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<button class="fs-cnode fs-subflow" title="' + (target ? "Open linked flow" : "Link a flow from the project") + '">' +
           '<span class="fs-cnode-ic">' + k.icon + '</span>' +
@@ -5930,21 +6162,22 @@
       return el;
     }
     if (COMPACT_KINDS[s.kind]) { // (compact flow nodes)
-      el.className = "flow-screen compact ck-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + dimCls;
+      el.className = "flow-screen compact ck-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
       el.style.setProperty("--fs-accent", k.color);
-      el.innerHTML =
+      el.innerHTML = varTag +
         '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<div class="fs-cnode"><span class="fs-cnode-ic">' + k.icon + '</span><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="' + escapeHtml(k.label) + '">' + escapeHtml(s.name || "") + '</div></div>' +
         (outs ? outsHtml + freePorts : ports);
       wireScreenEl(el, s);
       return el;
     }
-    el.className = "flow-screen status-" + st + (flowSel.has(s.id) ? " selected" : "") + dimCls;
+    el.className = "flow-screen status-" + st + (flowSel.has(s.id) ? " selected" : "") + varCls + dimCls;
     el.style.width = (s.w || SCREEN_W) + "px";
     el.innerHTML =
       '<div class="fs-head">' +
         '<div class="fs-htop"><span class="fs-badge">' + escapeHtml(k.label) + '</span>' +
         '<button class="fs-status fs-status-' + st + '" title="Status: ' + FLOW_STATUS[st].label + ' (click to change)"><span class="fs-status-ic">' + FLOW_STATUS[st].icon + '</span>' + FLOW_STATUS[st].label + '</button>' +
+        (s.variant === "empty" ? '<span class="fl-variant-tag" title="Empty state — toggle it from the ⋯ menu">' + FI.secEmpty + '<span>Empty</span></span>' : '') +
         '<span class="fs-hspace"></span>' +
         '<button class="fs-layout-btn" title="Screen layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="9" y1="9" x2="21" y2="9"/></svg></button>' +
         '<button class="fs-link-btn' + ((s.links && s.links.length) ? " on" : "") + '" title="Links to views / redirects">' + FI.link + '</button>' +
@@ -5963,11 +6196,11 @@
     // as you add blocks instead of clipping/overflowing.
     if (s.h) host.style.minHeight = s.h + "px";
     if (!s.layout.children.length) {
-      // Collapsed (estado 1): just head + name + context. A "Construir" tab (hover,
+      // Collapsed (state 1): just head + name + context. A "Build" tab (hover,
       // sliding out from behind the bottom edge) seeds Header / Body / Footer.
       el.classList.add("collapsed");
       const build = document.createElement("button");
-      build.className = "fs-build"; build.innerHTML = FI.workflow + "<span>Construir</span>";
+      build.className = "fs-build"; build.innerHTML = FI.workflow + "<span>Build</span>";
       build.addEventListener("mousedown", (e) => e.stopPropagation());
       build.addEventListener("click", (e) => { e.stopPropagation(); seedDefaultLayout(s); });
       el.appendChild(build);
@@ -6005,7 +6238,7 @@
     const el = document.createElement("div");
     const empty = cont.children.length === 0;
     const level = contLevel(s, cont, parent);
-    el.className = "fl-cont lvl-" + level + (empty ? " empty" : "");
+    el.className = "fl-cont lvl-" + level + (empty ? " empty" : "") + (cont.variant === "empty" ? " variant-empty" : "");
     el.dataset.cid = cont.cid;
     el.__fnode = cont; el.__fparent = parent; el.__fscreen = s; el.__editing = editing; // for the floating toolbar
     if (cont.grow) { el.style.flexGrow = cont.grow; } // basis comes from CSS (per parent direction)
@@ -6018,11 +6251,25 @@
       nm.addEventListener("mousedown", (e) => e.stopPropagation());
       nm.addEventListener("input", () => { cont.name = nm.value; saveFlow(); });
       head.appendChild(nm);
+      if (cont.variant === "empty") { // the variant is a visible state, not a hidden flag
+        const tag = document.createElement("span"); tag.className = "fl-variant-tag"; tag.title = "Empty state — toggle it from the ⋯ menu"; tag.innerHTML = FI.secEmpty + "<span>Empty</span>";
+        head.appendChild(tag);
+      }
       const mb = document.createElement("button"); mb.className = "fl-sec-menu"; mb.title = isRegion ? "Region options" : "Section options"; mb.innerHTML = FI.dots;
       mb.addEventListener("mousedown", (e) => e.stopPropagation());
       mb.addEventListener("click", (e) => { e.stopPropagation(); (isRegion ? openRegionMenu : openSectionMenu)(s, cont, parent, mb.getBoundingClientRect()); });
       head.appendChild(mb);
       el.appendChild(head);
+      // Description — context for the organism (auto-shown when it has content;
+      // toggled from the ⋯ menu, same tri-state as component fields). Regions
+      // can carry one too (the MCP's add_section desc lands on either level).
+      const descVis = cont.showDesc !== undefined ? !!cont.showDesc : !!cont.desc;
+      if (descVis) {
+        const ds = document.createElement("div"); ds.className = "fl-sec-desc"; ds.contentEditable = "true"; ds.spellcheck = false; ds.dataset.ph = "Description…"; ds.textContent = cont.desc || "";
+        ds.addEventListener("mousedown", (e) => e.stopPropagation());
+        ds.addEventListener("input", () => { cont.desc = ds.textContent; saveFlow(); });
+        el.appendChild(ds);
+      }
     }
     // Body — the children flow here in the container's direction (row/col).
     const body = document.createElement("div"); body.className = "fl-body dir-" + (cont.dir === "row" ? "row" : "col");
@@ -6040,7 +6287,7 @@
     } else if (!editing && s && level === "region") {
       const add = document.createElement("button"); add.className = "fl-add-section"; add.innerHTML = FI.plus + "<span>Section</span>";
       add.addEventListener("mousedown", (e) => e.stopPropagation());
-      add.addEventListener("click", (e) => { e.stopPropagation(); openBlockPalette(s, add.getBoundingClientRect(), cont, "section"); });
+      add.addEventListener("click", (e) => { e.stopPropagation(); quickAddSection(s, cont); });
       el.appendChild(add);
     }
     // (Regions are only added/changed from the layout — there's no "+ Region" here.)
@@ -6293,12 +6540,14 @@
     if (flowActBar.parentElement !== host) host.appendChild(flowActBar);
     _actEl = el;
     if (isCont(node)) {
-      // editor → structure tools; card → only add a block into the region
+      // editor → structure tools; card → add a block; sections also reorder
+      // (move before/after within their region) right from the bar.
+      const isSection = !editing && s && contLevel(s, node, parent) === "section";
       flowActBar.innerHTML = editing
         ? actBtn("cols", FL_ICON.row, "Columns") + actBtn("rows", FL_ICON.col, "Rows") + actBtn("region", FL_ICON.split, "Region") + (parent ? '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "") : "")
-        : actBtn("block", FI.plus, "Block");
+        : (isSection ? actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + '<span class="fl-ab-sep"></span>' : "") + actBtn("block", FI.plus, "Block");
     } else {
-      flowActBar.innerHTML = actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + actBtn("global", FI.diamond, node.globalId ? "Detach" : "Global") + '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "");
+      flowActBar.innerHTML = actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + actBtn("global", FI.diamond, node.globalId ? "Detach" : "Global") + actBtn("opts", FI.dots, "") + '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "");
     }
     const vr = host.getBoundingClientRect(), r = el.getBoundingClientRect();
     flowActBar.style.left = (r.left - vr.left + r.width / 2) + "px";
@@ -6309,11 +6558,16 @@
   function actDo(s, node, parent, a, editing) {
     if (isCont(node)) {
       if (a === "block") { openBlockPalette(s, flowActBar.getBoundingClientRect(), node); return; }
-      if (a === "cols") divideRegion(node, "row");
+      if (a === "up" || a === "down") { // reorder a section within its region
+        const arr = parent && parent.children;
+        if (arr) { const i = arr.indexOf(node), j = a === "up" ? i - 1 : i + 1; if (i !== -1 && j >= 0 && j < arr.length) { arr[i] = arr[j]; arr[j] = node; } }
+      }
+      else if (a === "cols") divideRegion(node, "row");
       else if (a === "rows") divideRegion(node, "col");
       else if (a === "region") node.children.push({ cid: genCid(), dir: node.dir === "row" ? "col" : "row", children: [] });
       else if (a === "del" && parent) { const i = parent.children.indexOf(node); if (i !== -1) parent.children.splice(i, 1); }
     } else {
+      if (a === "opts") { openBlockOptsMenu(s, node, flowActBar.getBoundingClientRect()); return; }
       const arr = parent.children, bi = arr.indexOf(node);
       if (a === "del") arr.splice(bi, 1);
       else if (a === "up" && bi > 0) { arr[bi] = arr[bi - 1]; arr[bi - 1] = node; }
@@ -6359,6 +6613,42 @@
     });
     return d;
   }
+  // Effective visibility of a block's optional fields (title / description /
+  // elements). undefined = auto: show only when there's real content.
+  function blockFieldVis(bc) {
+    return {
+      title: bc.showTitle !== undefined ? !!bc.showTitle : (!bc.type || !!(bc.title && bc.title !== bc.type)),
+      desc: bc.showDesc !== undefined ? !!bc.showDesc : !!bc.desc,
+      items: bc.showItems !== undefined ? !!bc.showItems : !!((bc.items || []).length),
+    };
+  }
+  // The block's meatball: switches for what this component card shows.
+  function openBlockOptsMenu(s, blk, rect) {
+    const bc = blockContent(blk);
+    const paint = () => {
+      const fx = blockFieldVis(bc);
+      const sw = (a, icon, label, on) => '<div class="fm-item" data-a="' + a + '">' + icon + '<span>' + label + '</span>' + (on ? '<span class="fm-check">✓</span>' : '') + '</div>';
+      flowMenu.classList.remove("palette");
+      flowMenu.innerHTML =
+        '<div class="fm-label">This component shows</div>' +
+        sw("title", FI.edit, "Custom title", fx.title) +
+        sw("desc", FI.fileText, "Description", fx.desc) +
+        sw("items", FI.menu, "Elements", fx.items);
+      flowMenu.style.left = Math.min(rect.left, window.innerWidth - 210) + "px";
+      flowMenu.style.top = (rect.bottom + 6) + "px";
+      flowMenu.classList.add("visible");
+      flowMenu.querySelectorAll("[data-a]").forEach((it) => it.onclick = (e) => {
+        e.stopPropagation();
+        const a = it.dataset.a, cur = blockFieldVis(bc);
+        if (a === "title") { bc.showTitle = !cur.title; if (bc.showTitle && !bc.title) bc.title = bc.type || ""; }
+        else if (a === "desc") bc.showDesc = !cur.desc;
+        else if (a === "items") { bc.showItems = !cur.items; if (bc.showItems) bc.items = bc.items || []; }
+        saveFlow(); renderFlow();
+        paint(); // keep the menu open — flipping several switches in a row is the normal case
+      });
+    };
+    paint();
+  }
   function buildBlockNode(s, blk, parent) {
     const bc = blockContent(blk), isG = !!blk.globalId;
     const el = document.createElement("div");
@@ -6366,18 +6656,23 @@
     el.dataset.bid = blk.bid || "";
     el.__fnode = blk; el.__fparent = parent; el.__fscreen = s; el.__editing = false; // for the floating toolbar
     if (blk.grow) { el.style.flexGrow = blk.grow; }
+    // Compact by default: a fresh component is just its blue type label. Title,
+    // description, and elements appear when they have content (legacy blocks)
+    // or when their switch is flipped in the block's ⋯ menu (tri-state:
+    // undefined = auto-by-content, true/false = the user's explicit choice).
+    const fx = blockFieldVis(bc);
     el.innerHTML =
       '<button class="fb-port" title="Connect block"></button>' +
       (isG ? '<div class="fb-global">Global · ' + globalCount(blk.globalId) + ' use' + (globalCount(blk.globalId) === 1 ? "" : "s") + '</div>' : '') +
       (bc.type ? '<div class="fb-type">' + (FI[bc.icon] || FI[iconForType(bc.type)] || FI.diamond) + '<span>' + escapeHtml(bc.type) + '</span></div>' : '') +
-      '<div class="fb-title" contenteditable="true" spellcheck="false">' + escapeHtml(bc.title || "Block") + '</div>' +
-      '<div class="fb-desc" contenteditable="true" spellcheck="false" data-ph="Description…">' + escapeHtml(bc.desc || "") + '</div>' +
-      '<div class="fb-items">' +
+      (fx.title ? '<div class="fb-title" contenteditable="true" spellcheck="false">' + escapeHtml(bc.title || "Block") + '</div>' : '') +
+      (fx.desc ? '<div class="fb-desc" contenteditable="true" spellcheck="false" data-ph="Description…">' + escapeHtml(bc.desc || "") + '</div>' : '') +
+      (fx.items ? '<div class="fb-items">' +
         (bc.items || []).map((it, j) => '<div class="fb-item" data-ii="' + j + '"><span class="fb-item-dot"></span><span class="fb-item-txt" contenteditable="true" spellcheck="false">' + escapeHtml(it) + '</span><button class="fb-item-x" data-ii="' + j + '" title="Remove">' + FI.x + '</button></div>').join("") +
       '</div>' +
-      '<button class="fb-add-item">' + FI.plus + ' Element</button>';
+      '<button class="fb-add-item">' + FI.plus + ' Element</button>' : '');
     const t = el.querySelector(".fb-title"), dd = el.querySelector(".fb-desc");
-    const sync = () => { bc.title = t.textContent; if (dd) bc.desc = dd.textContent; saveFlow(); };
+    const sync = () => { if (t) bc.title = t.textContent; if (dd) bc.desc = dd.textContent; saveFlow(); };
     [t, dd].forEach((n) => { if (!n) return; n.addEventListener("input", sync); n.addEventListener("mousedown", (e) => e.stopPropagation()); });
     el.querySelectorAll(".fb-item").forEach((iEl) => {
       const ii = parseInt(iEl.dataset.ii, 10), txt = iEl.querySelector(".fb-item-txt");
@@ -6388,8 +6683,10 @@
       x.addEventListener("click", (e) => { e.stopPropagation(); bc.items.splice(ii, 1); saveFlow(); renderFlow(); });
     });
     const ai = el.querySelector(".fb-add-item");
-    ai.addEventListener("mousedown", (e) => e.stopPropagation());
-    ai.addEventListener("click", (e) => { e.stopPropagation(); bc.items = bc.items || []; bc.items.push("Elemento"); saveFlow(); renderFlow(); });
+    if (ai) {
+      ai.addEventListener("mousedown", (e) => e.stopPropagation());
+      ai.addEventListener("click", (e) => { e.stopPropagation(); bc.items = bc.items || []; bc.items.push("Element"); saveFlow(); renderFlow(); });
+    }
     const bp = el.querySelector(".fb-port");
     if (bp) bp.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startBlockConnect(s.id, blk.bid); });
     return el;
@@ -6479,7 +6776,8 @@
     const lh = el.querySelector(".fs-layout-host");
     if (lh) {
       lh.addEventListener("mouseover", (e) => {
-        const tgt = e.target.closest(".fs-block"); // only blocks float a bar; regions use their inline "+ Bloque"
+        // Blocks and sections float a bar (sections: reorder + add); regions keep their inline "+ Section".
+        const tgt = e.target.closest(".fs-block, .fl-cont.lvl-section");
         if (tgt && tgt.__fnode) { if (_actHideT) { clearTimeout(_actHideT); _actHideT = null; } if (tgt !== _actEl) showActBarFor(tgt); }
         else if (!e.target.closest(".fl-actbar")) { _actHideT = _actHideT || setTimeout(hideActBar, 160); }
       });
@@ -6737,6 +7035,11 @@
   // its own context. Endpoint chips render on the card with the db icon.
   function openApiEditor(s, rect) {
     s.apis = s.apis || [];
+    // Live card refresh while typing — the popover lives OUTSIDE the card, so
+    // re-rendering the card never steals focus. Without this the chips kept
+    // showing stale values until something else re-rendered the flow.
+    let _refT = null;
+    const refreshCard = () => { if (_refT) clearTimeout(_refT); _refT = setTimeout(renderFlow, 250); };
     const draw = () => {
       const rows = s.apis.map((a, i) =>
         '<div class="fm-link-row" data-i="' + i + '">' +
@@ -6756,14 +7059,17 @@
         const i = parseInt(row.dataset.i, 10); const a = s.apis[i];
         const u = row.querySelector(".fm-link-url"), c = row.querySelector(".fm-link-ctx");
         [u, c].forEach((n) => n.addEventListener("mousedown", (e) => e.stopPropagation()));
-        u.oninput = () => { a.endpoint = u.value.trim(); saveFlow(); };
-        c.oninput = () => { a.ctx = c.value.trim(); saveFlow(); };
+        u.oninput = () => { a.endpoint = u.value.trim(); saveFlow(); refreshCard(); };
+        c.oninput = () => { a.ctx = c.value.trim(); saveFlow(); refreshCard(); };
         row.querySelector(".fm-link-del").onclick = (e) => { e.stopPropagation(); s.apis.splice(i, 1); saveFlow(); renderFlow(); draw(); };
       });
       const add = flowMenu.querySelector('[data-act="add"]');
       add.onclick = (e) => {
         e.stopPropagation(); s.apis.push({ endpoint: "", ctx: "" }); saveFlow(); renderFlow(); draw();
-        const last = flowMenu.querySelector(".fm-link-row:last-of-type .fm-link-url");
+        // (:last-of-type never matched — the Add item is the last div — so the
+        // fresh row's input was never focused; grab the real last row instead.)
+        const rows2 = flowMenu.querySelectorAll(".fm-link-row");
+        const last = rows2.length ? rows2[rows2.length - 1].querySelector(".fm-link-url") : null;
         if (last) { last.focus(); }
       };
     };
@@ -6776,6 +7082,9 @@
   // each with its own context. Each link shows a blue "connected" dot on the card.
   function openLinksEditor(s, rect) {
     s.links = s.links || [];
+    // Same live card refresh as the API editor (chips went stale while typing).
+    let _refT = null;
+    const refreshCard = () => { if (_refT) clearTimeout(_refT); _refT = setTimeout(renderFlow, 250); };
     const draw = () => {
       const rows = s.links.map((l, i) =>
         '<div class="fm-link-row" data-i="' + i + '">' +
@@ -6797,8 +7106,8 @@
         const i = parseInt(row.dataset.i, 10); const l = s.links[i];
         const u = row.querySelector(".fm-link-url"), c = row.querySelector(".fm-link-ctx");
         [u, c].forEach((n) => n.addEventListener("mousedown", (e) => e.stopPropagation()));
-        u.oninput = () => { l.url = u.value.trim(); saveFlow(); };
-        c.oninput = () => { l.ctx = c.value.trim(); saveFlow(); };
+        u.oninput = () => { l.url = u.value.trim(); saveFlow(); refreshCard(); };
+        c.oninput = () => { l.ctx = c.value.trim(); saveFlow(); refreshCard(); };
         const op = row.querySelector(".fm-link-open");
         if (op) op.onclick = (e) => { e.stopPropagation(); if (l.url) { openLinkedView(l.url); closeFlowMenu(); } };
         row.querySelector(".fm-link-del").onclick = (e) => { e.stopPropagation(); s.links.splice(i, 1); saveFlow(); renderFlow(); draw(); };
@@ -6808,7 +7117,8 @@
         if (act === "addcur") { const at = activeTab(); s.links.push({ url: at ? at.src : "", ctx: "" }); }
         else if (act === "addnew") { s.links.push({ url: "", ctx: "" }); }
         saveFlow(); renderFlow(); draw();
-        const last = flowMenu.querySelector(".fm-link-row:last-of-type .fm-link-url");
+        const rows2 = flowMenu.querySelectorAll(".fm-link-row");
+        const last = rows2.length ? rows2[rows2.length - 1].querySelector(".fm-link-url") : null;
         if (last) { last.focus(); last.select(); }
       });
     };
@@ -6930,6 +7240,7 @@
         Object.keys(FLOW_KINDS).map((key) => '<button class="fm-kind fm-kind-ic' + (key === k ? " on" : "") + '" data-kind="' + key + '" title="' + escapeHtml(FLOW_KINDS[key].label) + '" style="--fs-accent:' + FLOW_KINDS[key].color + '">' + FLOW_KINDS[key].icon + '</button>').join("") +
       '</div><div class="fm-sep"></div>' +
       (k === "subflow" ? '<div class="fm-item" data-act="link">' + FI.workflow + ' Link flow…</div>' : '<div class="fm-item" data-act="gen">' + FI.sparkle + ' Generate content with AI</div>') +
+      '<div class="fm-item" data-act="variant">' + FI.secEmpty + ' <span>' + (s.variant === "empty" ? "Mark as content" : "Mark as empty state") + '</span>' + (s.variant === "empty" ? '<span class="fm-check">✓</span>' : '') + '</div>' +
       '<div class="fm-item" data-act="dup">' + FI.dup + ' Duplicate</div>' +
       '<div class="fm-sep"></div>' +
       '<div class="fm-item" data-act="docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> How Moka works</div>' +
@@ -6944,7 +7255,8 @@
       if (act === "gen") { openScreenGen(s); return; }
       if (act === "link") { closeFlowMenu(); openSubflowPicker(s, rect); return; }
       if (act === "docs") { closeFlowMenu(); openDocs("moka"); return; }
-      if (act === "del") { flow.screens = flow.screens.filter((x) => x.id !== s.id); flow.edges = flow.edges.filter((e) => e.from !== s.id && e.to !== s.id); }
+      if (act === "variant") { s.variant = s.variant === "empty" ? "content" : "empty"; }
+      else if (act === "del") { flow.screens = flow.screens.filter((x) => x.id !== s.id); flow.edges = flow.edges.filter((e) => e.from !== s.id && e.to !== s.id); }
       else if (act === "dup") { const c = JSON.parse(JSON.stringify(s)); c.id = flowGenId(); c.x = (s.x || 0) + 40; c.y = (s.y || 0) + 40; c.name = (s.name || "") + " copy"; flow.screens.push(c); }
       saveFlow(); renderFlow(); closeFlowMenu();
     });
@@ -6998,23 +7310,24 @@
     const c = BASE_COMPONENTS.find((x) => x.name.toLowerCase() === lo);
     return c ? c.icon : (LEGACY_COMPONENT_ICONS[lo] || null);
   }
-  // Section variants — a section (layout region) can be typed by its purpose.
-  const SECTION_VARIANTS = [
-    { name: "Content section", icon: "secContent", variant: "content" },
-    { name: "Empty state section", icon: "secEmpty", variant: "empty" },
-  ];
+  // Section variants live on the section itself (variant: "content" | "empty"),
+  // toggled from its ⋯ menu — there's no upfront type picker anymore.
   // Icon choices offered when creating your own component.
   const ICON_CHOICES = ["cube", "accordion", "alert", "avatar", "badge", "breadcrumb", "button", "buttonGroup", "calendar", "carousel", "chart", "checkbox", "collapsible", "search", "menu", "table", "datePicker", "box", "fileText", "comment", "eye", "link", "db", "sparkle", "note", "heading"];
   // Create a personal (global) component: name + icon. Calls onCreate(comp) when done.
-  function openComponentCreator(rect, onCreate) {
-    let chosen = "cube";
+  // Create OR edit a personal (library) component. Pass `existing` to edit:
+  // prefilled name/icon, Save updates the library entry, and Delete removes it.
+  // Placed blocks are copies — editing the library never rewrites your boards.
+  function openComponentCreator(rect, onCreate, existing) {
+    let chosen = (existing && existing.icon) || "cube";
     flowMenu.classList.remove("palette");
     flowMenu.innerHTML =
-      '<div class="fm-label">New component (saved to your library)</div>' +
-      '<input class="fm-search cc-name" placeholder="Name — e.g. Accordion" spellcheck="false" />' +
+      '<div class="fm-label">' + (existing ? "Edit component" : "New component (saved to your library)") + '</div>' +
+      '<input class="fm-search cc-name" placeholder="Name — e.g. Accordion" spellcheck="false" value="' + escapeHtml(existing ? existing.name || "" : "") + '" />' +
       '<div class="fm-label">Icon</div>' +
-      '<div class="cc-icons">' + ICON_CHOICES.map((k, i) => '<button class="cc-icon' + (i === 0 ? " on" : "") + '" data-k="' + k + '" title="' + k + '">' + FI[k] + '</button>').join("") + '</div>' +
-      '<button class="cc-create">Create component</button>';
+      '<div class="cc-icons">' + ICON_CHOICES.map((k) => '<button class="cc-icon' + (k === chosen ? " on" : "") + '" data-k="' + k + '" title="' + k + '">' + FI[k] + '</button>').join("") + '</div>' +
+      '<button class="cc-create">' + (existing ? "Save changes" : "Create component") + '</button>' +
+      (existing ? '<button class="cc-delete">' + FI.trash + ' Delete from library</button>' : '');
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 260) + "px";
     flowMenu.style.top = Math.min(rect.bottom + 4, window.innerHeight - 300) + "px";
     flowMenu.classList.add("visible");
@@ -7023,10 +7336,21 @@
     flowMenu.querySelectorAll(".cc-icon").forEach((b) => b.onclick = () => { chosen = b.dataset.k; flowMenu.querySelectorAll(".cc-icon").forEach((x) => x.classList.toggle("on", x === b)); });
     const create = () => {
       const name = nameInp.value.trim(); if (!name) { nameInp.focus(); return; }
+      if (existing) {
+        existing.name = name; existing.icon = chosen;
+        saveUserComponents(); closeFlowMenu(); if (onCreate) onCreate(existing);
+        return;
+      }
       const comp = { id: "uc" + Date.now().toString(36), name: name, icon: chosen };
       userComponents.push(comp); saveUserComponents(); closeFlowMenu(); onCreate(comp);
     };
     flowMenu.querySelector(".cc-create").onclick = create;
+    const del = flowMenu.querySelector(".cc-delete");
+    if (del) del.onclick = () => {
+      userComponents = userComponents.filter((c) => c !== existing);
+      saveUserComponents(); closeFlowMenu(); showToast("Component removed from your library", "refresh-cw");
+      if (onCreate) onCreate(null);
+    };
     nameInp.addEventListener("keydown", (e) => { if (e.key === "Enter") create(); });
   }
   // Generic ⋯ menu for a canvas object — actions: [{ label, icon, danger, fn }].
@@ -7039,9 +7363,28 @@
     flowMenu.querySelectorAll("[data-i]").forEach((it) => it.onclick = () => { const a = actions[+it.dataset.i]; closeFlowMenu(); if (a && a.fn) a.fn(); });
   }
   // Section ⋯ menu — turn the section into a component, or delete it.
+  // One click = one section, ready to name. No type picker: the common case is
+  // a content section, and "empty state" is a PROPERTY you flip from the
+  // section's ⋯ menu (the old picker forced an upfront choice and left the
+  // section named after the menu item).
+  function quickAddSection(s, region) {
+    ensureLayout(s);
+    const target = (region && isCont(region)) ? region : s.layout;
+    const sec = { cid: genCid(), dir: "col", name: "", variant: "content", children: [] };
+    target.children.push(sec);
+    saveFlow(); renderFlow();
+    setTimeout(() => { // type the name right away — the input is focused for you
+      const nm = flowNodes.querySelector('.fl-cont[data-cid="' + sec.cid + '"] .fl-name');
+      if (nm) nm.focus();
+    }, 0);
+  }
   function openSectionMenu(s, cont, parent, rect) {
     flowMenu.classList.remove("palette");
+    const isEmptyVar = cont.variant === "empty";
+    const descVis = cont.showDesc !== undefined ? !!cont.showDesc : !!cont.desc;
     flowMenu.innerHTML =
+      '<div class="fm-item" data-a="desc">' + FI.fileText + '<span>Description</span>' + (descVis ? '<span class="fm-check">✓</span>' : '') + '</div>' +
+      '<div class="fm-item" data-a="variant">' + FI.secEmpty + '<span>' + (isEmptyVar ? "Mark as content" : "Mark as empty state") + '</span>' + (isEmptyVar ? '<span class="fm-check">✓</span>' : '') + '</div>' +
       '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Turn into component</span></div>' +
       '<div class="fm-sep"></div>' +
       '<div class="fm-item danger" data-a="del">' + FI.trash + '<span>Delete section</span></div>';
@@ -7050,6 +7393,13 @@
     flowMenu.classList.add("visible");
     flowMenu.querySelectorAll("[data-a]").forEach((it) => it.onclick = () => {
       const a = it.dataset.a;
+      if (a === "variant") { cont.variant = isEmptyVar ? "content" : "empty"; saveFlow(); renderFlow(); closeFlowMenu(); return; }
+      if (a === "desc") {
+        cont.showDesc = !descVis;
+        saveFlow(); renderFlow(); closeFlowMenu();
+        if (cont.showDesc) setTimeout(() => { const d = flowNodes.querySelector('.fl-cont[data-cid="' + cont.cid + '"] .fl-sec-desc'); if (d) d.focus(); }, 0);
+        return;
+      }
       if (parent && isCont(parent)) {
         const idx = parent.children.indexOf(cont);
         if (idx !== -1) {
@@ -7065,10 +7415,15 @@
       closeFlowMenu();
     });
   }
-  // Region ⋯ menu — turn the region into a single component, or delete it.
+  // Region ⋯ menu — insert a reusable global section, turn the region into a
+  // single component, or delete it.
   function openRegionMenu(s, cont, parent, rect) {
     flowMenu.classList.remove("palette");
+    const hasGlobals = Object.keys(flowGlobals()).length > 0;
+    const isEmptyVar = cont.variant === "empty";
     flowMenu.innerHTML =
+      '<div class="fm-item" data-a="variant">' + FI.secEmpty + '<span>' + (isEmptyVar ? "Mark as content" : "Mark as empty state") + '</span>' + (isEmptyVar ? '<span class="fm-check">✓</span>' : '') + '</div>' +
+      (hasGlobals ? '<div class="fm-item" data-a="global">' + FI.diamond + '<span>Insert global section…</span></div>' : '') +
       '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Turn into component</span></div>' +
       '<div class="fm-sep"></div>' +
       '<div class="fm-item danger" data-a="del">' + FI.trash + '<span>Delete region</span></div>';
@@ -7077,6 +7432,8 @@
     flowMenu.classList.add("visible");
     flowMenu.querySelectorAll("[data-a]").forEach((it) => it.onclick = () => {
       const a = it.dataset.a;
+      if (a === "variant") { cont.variant = isEmptyVar ? "content" : "empty"; saveFlow(); renderFlow(); closeFlowMenu(); return; }
+      if (a === "global") { openBlockPalette(s, rect, cont, "section"); return; } // palette now lists globals only
       if (parent && isCont(parent)) {
         const idx = parent.children.indexOf(cont);
         if (idx !== -1) {
@@ -7105,7 +7462,6 @@
     const list = flowMenu.querySelector("#fm-list");
     const cont = () => { ensureLayout(s); return (targetCont && isCont(targetCont)) ? targetCont : s.layout; };
     const addBlock = (b) => { cont().children.push(b); saveFlow(); renderFlow(); closeFlowMenu(); };
-    const addSection = (v) => { cont().children.push({ dir: "col", name: v.name, variant: v.variant, children: [] }); saveFlow(); renderFlow(); closeFlowMenu(); };
     const compToBlock = (c) => ({
       type: c.name || "Component", title: c.name || "Component", icon: "cube",
       desc: c.import || c.use || "",
@@ -7121,25 +7477,29 @@
         const base = BASE_COMPONENTS.filter((c) => match(c.name));
         if (base.length) h += '<div class="fm-label">Components</div>' + base.map((c) => item('data-comp="' + BASE_COMPONENTS.indexOf(c) + '"', c.icon, c.name)).join("");
         const uc = userComponents.filter((c) => match(c.name));
-        if (uc.length) h += '<div class="fm-label">My components</div>' + uc.map((c) => item('data-uc="' + userComponents.indexOf(c) + '"', c.icon, c.name)).join("");
+        // Your library rows carry a hover pencil → edit/delete the component.
+        if (uc.length) h += '<div class="fm-label">My components</div>' + uc.map((c) => '<div class="fm-item" data-uc="' + userComponents.indexOf(c) + '">' + (FI[c.icon] || FI.cube) + '<span>' + escapeHtml(c.name) + '</span><button class="fm-edit" title="Edit component">' + FI.edit + '</button></div>').join("");
         const fc = comps.filter((c) => match(c.name));
         if (fc.length) h += '<div class="fm-label">Project components</div>' + fc.map((c) => item('data-ci="' + comps.indexOf(c) + '"', "cube", c.name || "")).join("");
         h += '<div class="fm-sep"></div>' + item('data-new="1"', "plus", "Create component…");
       } else {
-        // Screen level → sections (layout regions with a purpose) + reusable globals
-        const sv = SECTION_VARIANTS.filter((v) => match(v.name));
-        if (sv.length) h += '<div class="fm-label">Sections</div>' + sv.map((v) => item('data-sec="' + SECTION_VARIANTS.indexOf(v) + '"', v.icon, v.name)).join("");
+        // Region level → reusable global sections ("+ Section" creates directly;
+        // this palette only opens from the region ⋯ menu to insert a global).
         const globals = flowGlobals();
         const gids = Object.keys(globals).filter((id) => match(globals[id].title));
         if (gids.length) h += '<div class="fm-label">Global sections</div>' + gids.map((id) => item('data-gid="' + id + '"', "diamond", globals[id].title || "Global")).join("");
       }
       list.innerHTML = h || '<div class="fm-label">No results</div>';
-      list.querySelectorAll(".fm-item").forEach((it) => it.onclick = () => {
+      list.querySelectorAll(".fm-item").forEach((it) => it.onclick = (ev) => {
         const d = it.dataset;
+        if (d.uc !== undefined && ev.target.closest(".fm-edit")) { // pencil → edit the library entry, then come back to the palette
+          ev.stopPropagation();
+          openComponentCreator(rect, () => openBlockPalette(s, rect, targetCont, mode), userComponents[+d.uc]);
+          return;
+        }
         if (d.comp !== undefined) { const c = BASE_COMPONENTS[+d.comp]; addBlock({ type: c.name, icon: c.icon, title: c.name, desc: "", items: [] }); }
         else if (d.uc !== undefined) { const c = userComponents[+d.uc]; addBlock({ type: c.name, icon: c.icon, title: c.name, desc: "", items: [] }); }
         else if (d.ci !== undefined) { const c = comps[+d.ci]; if (c) addBlock(compToBlock(c)); }
-        else if (d.sec !== undefined) { addSection(SECTION_VARIANTS[+d.sec]); }
         else if (d.gid !== undefined) { addBlock({ globalId: d.gid }); }
         else if (d.new !== undefined) { openComponentCreator(rect, (comp) => addBlock({ type: comp.name, icon: comp.icon, title: comp.name, desc: "", items: [] })); }
       });
@@ -7362,25 +7722,37 @@
     items.forEach((b) => { minX = Math.min(minX, b[0]); minY = Math.min(minY, b[1]); maxX = Math.max(maxX, b[2]); maxY = Math.max(maxY, b[3]); });
     return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
   }
+  // Programmatic view jumps (fit / center) GLIDE; manual pan/zoom stays 1:1.
+  let _glideT = null;
+  function glideView(apply) {
+    flowNodes.classList.add("glide"); flowEdgesSvg.classList.add("glide");
+    apply();
+    if (_glideT) clearTimeout(_glideT);
+    _glideT = setTimeout(() => { flowNodes.classList.remove("glide"); flowEdgesSvg.classList.remove("glide"); flowNodes.style.willChange = "auto"; }, 320);
+  }
   function fitFlowView() {
-    const bb = flowBBox();
-    const r = flowVp.getBoundingClientRect();
-    if (!bb) { flowView = { x: 60, y: 60, s: 1 }; flowApplyView(); return; }
-    const pad = 70;
-    const s = Math.min(1.5, Math.max(0.15, Math.min((r.width - pad * 2) / Math.max(bb.w, 1), (r.height - pad * 2) / Math.max(bb.h, 1))));
-    flowView.s = s;
-    flowView.x = (r.width - bb.w * s) / 2 - bb.minX * s;
-    flowView.y = (r.height - bb.h * s) / 2 - bb.minY * s;
-    flowApplyView();
+    glideView(() => {
+      const bb = flowBBox();
+      const r = flowVp.getBoundingClientRect();
+      if (!bb) { flowView = { x: 60, y: 60, s: 1 }; flowApplyView(); return; }
+      const pad = 70;
+      const s = Math.min(1.5, Math.max(0.15, Math.min((r.width - pad * 2) / Math.max(bb.w, 1), (r.height - pad * 2) / Math.max(bb.h, 1))));
+      flowView.s = s;
+      flowView.x = (r.width - bb.w * s) / 2 - bb.minX * s;
+      flowView.y = (r.height - bb.h * s) / 2 - bb.minY * s;
+      flowApplyView();
+    });
   }
   function centerOnScreen(s, select) {
     const r = flowVp.getBoundingClientRect();
     const w = s.kind === "decision" ? DECISION_W : SCREEN_W;
     const h = s.kind === "decision" ? DECISION_H : (_flowHeights[s.id] || 140);
     const cx = (s.x || 0) + w / 2, cy = (s.y || 0) + h / 2;
-    flowView.x = r.width / 2 - cx * flowView.s;
-    flowView.y = r.height / 2 - cy * flowView.s;
-    flowApplyView();
+    glideView(() => {
+      flowView.x = r.width / 2 - cx * flowView.s;
+      flowView.y = r.height / 2 - cy * flowView.s;
+      flowApplyView();
+    });
     if (select) { flowSel = new Set([s.id]); refreshSelClasses(); }
   }
   function openFlowSearch(rect) {

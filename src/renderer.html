@@ -5,6 +5,8 @@
 <title>Ohana</title>
 <link rel="icon" type="image/png" href="../assets/logo.png" />
 <link rel="stylesheet" href="vendor/xterm.css" />
+<link rel="stylesheet" href="vendor/toastui-editor.css" />
+<link rel="stylesheet" href="vendor/toastui-editor-dark.css" />
 <link rel="stylesheet" href="renderer.css" />
 </head>
 <body>
@@ -86,6 +88,7 @@
     <button class="flow-btn ghost" id="pr-close" title="Close" data-icon="x"></button>
   </div>
   <div class="pr-body markdown" id="pr-body"></div>
+  <div class="pr-editor" id="pr-editor"></div>
 </div>
 
 <div id="canvas">
@@ -269,9 +272,10 @@
           <h3>Anatomy of a screen: Section → Component</h3>
           <p>You design it the way you design a real screen:</p>
           <ul>
-            <li><b>+ Section</b> (at the screen level): you add sections (e.g. "Hero", "Filters"). Each section has an <b>editable name</b> and a <b>⋯</b> menu (Delete section · Turn into component). Variants: Content / Empty state.</li>
-            <li><b>+ Component</b> (inside a section): you pick from the <b>base catalog</b> (Accordion, Alert, Avatar, Badge, Breadcrumbs, Button, Button group, Calendar, Carousel, Chart, Checkbox, Collapsible, Search, Menu, Data table, Date picker), from <b>your components</b> (global library with name + icon), or from the <b>project's components</b> (your design system, in repos).</li>
-            <li>For each component you note its <b>detail</b> — title, description (what it says / how it looks / how it works) and elements.</li>
+            <li><b>+ Section</b> (at the screen level): one click creates the section with its name ready to type. Each section has a <b>⋯</b> menu — Description (context for the organism), Mark as empty state, Turn into component, Delete — and reorders with <b>↑ ↓</b> from its floating bar. Reusable global sections insert from the region's ⋯ menu.</li>
+            <li><b>Empty state is a STATE</b>, not a type: toggle it on any screen, region, or section from its ⋯ menu (amber tag + dashed outline). Agents set the same flag via <code>variant: "empty"</code>.</li>
+            <li><b>+ Component</b> (inside a section): you pick from the <b>base catalog</b> (Accordion, Alert, Avatar, Badge, Breadcrumbs, Button, Button group, Calendar, Carousel, Chart, Checkbox, Collapsible, Search, Menu, Data table, Date picker), from <b>your components</b> (global library — hover a row's pencil to edit or delete it), or from the <b>project's components</b> (your design system, in repos).</li>
+            <li>Components render <b>compact</b> (just the type). The block's <b>⋯</b> meatball has switches for Custom title, Description, and Elements — turn on only what carries real detail.</li>
             <li><b>Layout by presets:</b> the card can start from a SaaS layout (Sidebar, Topbar, Master-detail…) or from the layout editor (split into columns/rows, save the preset per project).</li>
           </ul>
 
@@ -326,8 +330,8 @@
 
           <h3>How it works</h3>
           <ul>
-            <li><b>Comments:</b> numbered pins anchored to a prototype element (by its <code>data-ai-id</code> or a selector). Threads with replies, resolve/reopen. They live in <code>.ohana/findings.json</code>.</li>
-            <li><b>Design:</b> <code>design.md</code> holds the prototype's tokens, principles, voice, patterns, and decisions. You view and edit it in the Design panel; it's what the agent reads before touching the UI to keep things consistent.</li>
+            <li><b>Comments:</b> numbered pins anchored to a prototype element (by its <code>data-ai-id</code> or a selector). Pins belong to the view you're looking at — they appear and hide as you navigate the prototype. Click a pin and its thread opens right next to it; <b>drag a pin</b> onto another element to re-anchor the comment. Threads with replies, resolve/reopen. They live in <code>.ohana/findings.json</code>.</li>
+            <li><b>Design:</b> <code>design.md</code> holds the prototype's tokens, principles, voice, patterns, and decisions. The reader's <b>Edit</b> tab is a real WYSIWYG (headings/paragraph, lists, tasks, quotes, tables with a size picker, code blocks with a clickable language chip) — all the tools live in the floating toolbar. It's what the agent reads before touching the UI to keep things consistent.</li>
           </ul>
 
           <h3>MCP commands (Comments)</h3>
@@ -490,6 +494,7 @@
 
   <!-- Markdown text tools (only while editing a .md in the reader) -->
   <div class="tb-group tb-md-only" id="tb-md">
+    <button class="g-btn tb-h" data-md="p" data-tip="Normal text">P</button>
     <button class="g-btn tb-h" data-md="h1" data-tip="Heading 1">H1</button>
     <button class="g-btn tb-h" data-md="h2" data-tip="Heading 2">H2</button>
     <button class="g-btn tb-h" data-md="h3" data-tip="Heading 3">H3</button>
@@ -498,13 +503,21 @@
   <div class="tb-group tb-md-only">
     <button class="g-btn" data-md="bold" data-tip="Bold  ⌘B" data-icon="bold"></button>
     <button class="g-btn" data-md="italic" data-tip="Italic  ⌘I" data-icon="italic"></button>
-    <button class="g-btn" data-md="code" data-tip="Code" data-icon="code"></button>
+    <button class="g-btn" data-md="strike" data-tip="Strikethrough" data-icon="strike"></button>
+    <button class="g-btn" data-md="code" data-tip="Inline code" data-icon="code"></button>
   </div>
   <div class="tb-sep tb-md-only"></div>
   <div class="tb-group tb-md-only">
     <button class="g-btn" data-md="ul" data-tip="List" data-icon="listBullet"></button>
     <button class="g-btn" data-md="ol" data-tip="Numbered list" data-icon="listOrdered"></button>
-    <button class="g-btn" data-md="quote" data-tip="Cita" data-icon="quote"></button>
+    <button class="g-btn" data-md="task" data-tip="Task list" data-icon="check"></button>
+    <button class="g-btn" data-md="quote" data-tip="Quote" data-icon="quote"></button>
+  </div>
+  <div class="tb-sep tb-md-only"></div>
+  <div class="tb-group tb-md-only">
+    <button class="g-btn" data-md="codeblock" data-tip="Code block" data-icon="codeBlock"></button>
+    <button class="g-btn" data-md="table" data-tip="Table" data-icon="table"></button>
+    <button class="g-btn" data-md="hr" data-tip="Divider" data-icon="minus"></button>
   </div>
 </div>
 
@@ -896,6 +909,7 @@
 
 <script src="vendor/xterm.js"></script>
 <script src="vendor/addon-fit.js"></script>
+<script src="vendor/toastui-editor.js"></script>
 <script src="lib/markdown.js"></script>
 <script src="renderer.js"></script>
 </body>

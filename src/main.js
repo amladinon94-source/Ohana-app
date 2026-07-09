@@ -215,7 +215,7 @@ function ensureTutorialCopy() {
   // Seed on first use, and RESEED when the bundled tutorial is newer (version
   // marker changed). Practice edits are disposable; a stale tutorial that hides
   // new features is worse than losing them.
-  const VER = "<!-- ohana-onboarding v3 -->"; // v3: English tutorial — reseed stale Spanish copies
+  const VER = "<!-- ohana-onboarding v4 -->"; // v4: per-view pins + draggable comments
   let seed = !fs.existsSync(dest);
   if (!seed) {
     try { seed = fs.readFileSync(dest, "utf-8").indexOf(VER) === -1; } catch (e) {}
