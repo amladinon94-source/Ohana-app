@@ -2502,3 +2502,47 @@
   .toastui-editor-contents h1, .toastui-editor-contents h2 { border-bottom: none; padding-bottom: 0; }
   .pr-editor .ProseMirror { padding: 18px 4px; caret-color: var(--accent-strong); }
   .pr-editor .toastui-editor-contents p, .pr-editor .toastui-editor-contents li { color: var(--text-m); }
+
+  /* Toast leftovers → Ohana voice. Code blocks match the preview's pre;
+     the language chip is a quiet badge (hover reveals it's editable);
+     task checkboxes use the app's control style, not Toast's blue. */
+  .toastui-editor-dark .toastui-editor-contents pre,
+  .toastui-editor-dark .toastui-editor-md-preview pre {
+    background: rgba(0,0,0,0.32); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-sm);
+  }
+  .toastui-editor-dark .toastui-editor-contents .toastui-editor-ww-code-block:after {
+    content: attr(data-language);
+    top: 8px; right: 8px; height: auto; padding: 2px 8px;
+    font-family: inherit; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-d); background-color: transparent; background-image: none;
+    border: 1px solid var(--lg-border); border-radius: 999px;
+    transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  }
+  .toastui-editor-dark .toastui-editor-contents .toastui-editor-ww-code-block:hover:after {
+    color: var(--accent-strong); border-color: var(--accent-ring);
+  }
+  .toastui-editor-dark .toastui-editor-ww-code-block-language {
+    background: var(--lg-panel-bg); border: 1px solid var(--lg-border); border-radius: var(--r-xs);
+    box-shadow: var(--lg-shadow); height: 26px;
+  }
+  .toastui-editor-dark .toastui-editor-ww-code-block-language input {
+    background: transparent; color: var(--text); font-family: inherit; font-size: var(--fs-sm);
+  }
+  .toastui-editor-contents .task-list-item::before {
+    background-image: none !important; background-color: transparent;
+    box-sizing: border-box; width: 15px; height: 15px; top: 3px;
+    border: 1.5px solid rgba(255,255,255,0.28); border-radius: 4px;
+    transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  }
+  .toastui-editor-contents .task-list-item.checked::before {
+    background-color: var(--accent); border-color: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") !important;
+    background-size: 10px 10px; background-position: center; background-repeat: no-repeat;
+  }
+
+  /* Table size picker (floating toolbar → table) */
+  .md-table-pick { padding: 9px; z-index: 500; }
+  .mtp-grid { display: grid; gap: 3px; }
+  .mtp-cell { width: 16px; height: 13px; border: 1px solid var(--lg-border); border-radius: 3px; background: rgba(255,255,255,0.04); transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); }
+  .mtp-cell.on { background: var(--accent-bg); border-color: var(--accent-ring); }
+  .mtp-label { margin-top: 7px; text-align: center; font-size: var(--fs-sm); font-weight: 600; color: var(--text-d); }

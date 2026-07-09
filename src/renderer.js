@@ -4639,6 +4639,8 @@
         });
         prEditor.on("change", () => { prDirty = true; });
         window.__ohanaMdEditor = prEditor; // debug/automation handle (agents can drive the editor)
+        // App-wide convention: no spellcheck squiggles in editing surfaces.
+        setTimeout(() => { const pm = host.querySelector(".toastui-editor-ww-container .ProseMirror"); if (pm) pm.setAttribute("spellcheck", "false"); }, 0);
       } else if (prEditor) {
         prEditor.focus();
       }
@@ -4686,7 +4688,7 @@
     else if (a === "task") prEditor.exec("taskList");
     else if (a === "quote") prEditor.exec("blockQuote");
     else if (a === "codeblock") { if (pmInCodeBlock()) pmToParagraph(); else prEditor.exec("codeBlock"); } // real toggle: in → out
-    else if (a === "table") prEditor.exec("addTable", { rowCount: 3, columnCount: 3 });
+    else if (a === "table") { openTableSizePicker(); return; } // grid picker → addTable with the chosen size
     else if (a === "hr") prEditor.exec("hr");
     prEditor.focus();
   }
@@ -4694,6 +4696,35 @@
     b.addEventListener("mousedown", (e) => e.preventDefault()); // keep the text selection alive
     b.addEventListener("click", () => mdCmd(b.dataset.md));
   });
+  // Table size picker — the classic hover-a-grid chooser, in Ohana's own menu
+  // voice (Toast's toolbar had one; ours lives on the floating toolbar).
+  function openTableSizePicker() {
+    const btn = document.querySelector('#toolbar [data-md="table"]'); if (!btn || !prEditor) return;
+    document.querySelectorAll(".md-table-pick").forEach((n) => n.remove());
+    const MAXC = 8, MAXR = 6;
+    const pop = document.createElement("div"); pop.className = "pn-menu md-table-pick";
+    let h = '<div class="mtp-grid" style="grid-template-columns:repeat(' + MAXC + ',16px)">';
+    for (let r = 1; r <= MAXR; r++) for (let c = 1; c <= MAXC; c++) h += '<span class="mtp-cell" data-r="' + r + '" data-c="' + c + '"></span>';
+    h += '</div><div class="mtp-label">2 × 3</div>';
+    pop.innerHTML = h;
+    document.body.appendChild(pop);
+    const br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+    pop.style.left = Math.min(Math.max(8, br.left + br.width / 2 - pr.width / 2), window.innerWidth - pr.width - 8) + "px";
+    pop.style.top = Math.max(8, br.top - pr.height - 10) + "px"; // floats above the toolbar
+    const label = pop.querySelector(".mtp-label");
+    const paint = (R, C) => { pop.querySelectorAll(".mtp-cell").forEach((el) => el.classList.toggle("on", +el.dataset.r <= R && +el.dataset.c <= C)); label.textContent = R + " × " + C; };
+    pop.querySelectorAll(".mtp-cell").forEach((el) => {
+      el.addEventListener("mouseenter", () => paint(+el.dataset.r, +el.dataset.c));
+      el.addEventListener("mousedown", (e) => e.preventDefault()); // keep the editor selection
+      el.addEventListener("click", () => {
+        prEditor.exec("addTable", { rowCount: +el.dataset.r, columnCount: +el.dataset.c });
+        prEditor.focus(); pop.remove();
+      });
+    });
+    paint(2, 3);
+    const out = (e) => { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener("mousedown", out, true); } };
+    setTimeout(() => document.addEventListener("mousedown", out, true), 0);
+  }
   document.getElementById("pn-body").addEventListener("click", (e) => {
     // Collapsed rail → click an icon to expand.
     const rail = e.target.closest(".pn-rail-ic");
