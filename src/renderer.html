@@ -5,6 +5,8 @@
 <title>Ohana</title>
 <link rel="icon" type="image/png" href="../assets/logo.png" />
 <link rel="stylesheet" href="vendor/xterm.css" />
+<link rel="stylesheet" href="vendor/toastui-editor.css" />
+<link rel="stylesheet" href="vendor/toastui-editor-dark.css" />
 <link rel="stylesheet" href="renderer.css" />
 </head>
 <body>
@@ -86,6 +88,7 @@
     <button class="flow-btn ghost" id="pr-close" title="Close" data-icon="x"></button>
   </div>
   <div class="pr-body markdown" id="pr-body"></div>
+  <div class="pr-editor" id="pr-editor"></div>
 </div>
 
 <div id="canvas">
@@ -896,6 +899,7 @@
 
 <script src="vendor/xterm.js"></script>
 <script src="vendor/addon-fit.js"></script>
+<script src="vendor/toastui-editor.js"></script>
 <script src="lib/markdown.js"></script>
 <script src="renderer.js"></script>
 </body>

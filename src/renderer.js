@@ -4202,6 +4202,7 @@
   function hideProjReader() {
     const r = document.getElementById("proj-reader"); if (r) r.classList.remove("visible");
     document.body.classList.remove("md-reading", "md-editing"); // toolbar context back to the artifact
+    if (typeof destroyReaderEditor === "function") destroyReaderEditor();
   }
   // Scan cache — the disk walk (project:scan) + tags.json read are expensive to
   // run on every tab switch / flow:updated burst. We cache the manifest per dir
@@ -4588,6 +4589,7 @@
     tabs.forEach((x) => { if (x.wv) x.wv.classList.add("wv-hidden"); }); // reader is HTML; hide native webviews behind it
     const at = activeTab(); if (at) { at.artifact = { kind: "md", path: p, rel: rel || null }; saveSession(); }
     renderProjectNav();
+    destroyReaderEditor(); // fresh doc → fresh editor
     prPath = p; prRel = rel || name; prDirty = false; prSource = "";
     document.getElementById("pr-name").textContent = name || p.split("/").pop();
     document.getElementById("pr-project").textContent = at ? (at.name || "") : ""; // project name, like Moka's topbar
@@ -4601,43 +4603,58 @@
     prSource = content != null ? content : "";
     body.innerHTML = content != null ? renderMarkdown(prSource) : "Couldn't read the file.";
   }
+  // ── WYSIWYG engine: Toast UI Editor (vendored, dark theme) ──
+  // Real ProseMirror-based editing with a full toolbar (paragraph/heading
+  // switcher, code block you can actually leave, lists, tables) and a solid
+  // markdown round-trip. Replaces the old contenteditable+execCommand engine,
+  // which had no "normal text" tool and trapped the caret inside code marks.
+  let prEditor = null;
+  function destroyReaderEditor() {
+    if (prEditor) { try { prEditor.destroy(); } catch (e) {} prEditor = null; }
+    const host = document.getElementById("pr-editor"); if (host) host.innerHTML = "";
+  }
   function setReaderMode(mode) {
     const reader = document.getElementById("proj-reader");
     const body = document.getElementById("pr-body");
+    const host = document.getElementById("pr-editor");
     reader.classList.toggle("mode-edit", mode === "edit");
     document.getElementById("pr-tab-preview").classList.toggle("active", mode !== "edit");
     document.getElementById("pr-tab-edit").classList.toggle("active", mode === "edit");
-    // WYSIWYG: editing happens ON the render itself, never on raw markdown.
-    body.contentEditable = mode === "edit" ? "true" : "false";
-    document.body.classList.toggle("md-editing", mode === "edit"); // toolbar shows the markdown text tools
-    if (mode === "edit") { try { document.execCommand("styleWithCSS", false, false); } catch (e) {} setTimeout(() => body.focus(), 0); }
-  }
-  // Markdown text tools (toolbar, edit mode): headings, bold/italic/code, lists, quote.
-  function mdCmd(a) {
-    const body = document.getElementById("pr-body"); body.focus();
-    const block = () => (document.queryCommandValue("formatBlock") || "").toLowerCase();
-    if (a === "h1" || a === "h2" || a === "h3") document.execCommand("formatBlock", false, block() === a ? "P" : a.toUpperCase());
-    else if (a === "bold") document.execCommand("bold");
-    else if (a === "italic") document.execCommand("italic");
-    else if (a === "ul") document.execCommand("insertUnorderedList");
-    else if (a === "ol") document.execCommand("insertOrderedList");
-    else if (a === "quote") document.execCommand("formatBlock", false, block() === "blockquote" ? "P" : "BLOCKQUOTE");
-    else if (a === "code") {
-      const sel = window.getSelection();
-      if (sel.rangeCount && !sel.isCollapsed) {
-        const r = sel.getRangeAt(0), c = document.createElement("code");
-        try { r.surroundContents(c); } catch (e) { document.execCommand("insertHTML", false, "<code>" + sel.toString().replace(/</g, "&lt;") + "</code>"); }
+    if (mode === "edit") {
+      body.style.display = "none"; host.style.display = "block";
+      if (!prEditor && window.toastui && window.toastui.Editor) {
+        prEditor = new window.toastui.Editor({
+          el: host,
+          theme: "dark",
+          initialEditType: "wysiwyg",
+          initialValue: prSource || "",
+          height: "100%",
+          usageStatistics: false,
+          autofocus: true,
+          toolbarItems: [
+            ["heading", "bold", "italic", "strike"],
+            ["hr", "quote"],
+            ["ul", "ol", "task"],
+            ["table", "link"],
+            ["code", "codeblock"],
+          ],
+        });
+        prEditor.on("change", () => { prDirty = true; });
+      } else if (prEditor) {
+        prEditor.focus();
       }
+    } else {
+      // Leaving edit → serialize once and re-render the preview (the preview
+      // keeps Ohana niceties like color swatches in token tables).
+      if (prEditor) prSource = prEditor.getMarkdown();
+      body.style.display = ""; host.style.display = "none";
+      body.innerHTML = renderMarkdown(prSource || "");
+      if (prDirty) saveReaderDoc();
     }
-    prDirty = true;
   }
-  document.querySelectorAll("#toolbar [data-md]").forEach((b) => {
-    b.addEventListener("mousedown", (e) => e.preventDefault()); // keep the text selection alive
-    b.addEventListener("click", () => mdCmd(b.dataset.md));
-  });
   async function saveReaderDoc() {
     if (!prPath || !prDirty) return true;
-    prSource = htmlToMd(document.getElementById("pr-body"));
+    if (prEditor) prSource = prEditor.getMarkdown();
     const ok = await window.api.projectWriteFile({ path: prPath, content: prSource });
     if (ok) { prDirty = false; showToast("Saved", "check"); } else showToast("Couldn't save", "warn");
     return ok;

@@ -1108,10 +1108,12 @@
   .dp-path { font-size: var(--fs-2xs); color: var(--text-d); font-family: "SF Mono", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; }
 
   /* Markdown rendering */
-  .markdown { font-size: var(--fs-lg); line-height: 1.6; color: var(--text-m); }
-  .markdown h1 { font-size: 17px; font-weight: 700; color: var(--text); margin: 2px 0 10px; letter-spacing: -0.01em; }
-  .markdown h2 { font-size: var(--fs-lg); font-weight: 600; color: var(--text); margin: 18px 0 7px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.9; }
-  .markdown h3 { font-size: var(--fs-md); font-weight: 600; color: var(--text-m); margin: 14px 0 5px; }
+  .markdown { font-size: 14px; line-height: 1.65; color: var(--text-m); }
+  /* Real heading hierarchy (≈1.25 scale over 14px body) — the old 17/13/12
+     scale read as one flat size and the structure was invisible. */
+  .markdown h1 { font-size: 26px; font-weight: 700; color: var(--text); margin: 4px 0 14px; letter-spacing: -0.015em; line-height: 1.25; }
+  .markdown h2 { font-size: 20px; font-weight: 650; color: var(--text); margin: 26px 0 9px; letter-spacing: -0.01em; line-height: 1.3; }
+  .markdown h3 { font-size: 16px; font-weight: 600; color: var(--text); margin: 20px 0 6px; line-height: 1.35; }
   .markdown p { margin: 6px 0; }
   .markdown ul, .markdown ol { margin: 6px 0 6px 18px; }
   .markdown li { margin: 3px 0; }
@@ -2473,3 +2475,23 @@
     }
     .bento-host .bl { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
   }
+
+  /* ════════════════════════════════════════════════════════════════════
+     Markdown editor (Toast UI, vendored) — themed into Ohana's chrome.
+     ════════════════════════════════════════════════════════════════════ */
+  .pr-editor { display: none; flex: 1; min-height: 0; overflow: hidden; padding: 0 28px 10px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .pr-editor .toastui-editor-defaultUI { border: none; background: transparent; font-family: inherit; }
+  .toastui-editor-dark .toastui-editor-defaultUI-toolbar { background: transparent; border-bottom: 1px solid var(--lg-border); padding: 0 2px; }
+  .toastui-editor-dark .toastui-editor-defaultUI-toolbar button { border-color: transparent; }
+  .toastui-editor-dark .toastui-editor-main .ProseMirror,
+  .toastui-editor-dark .toastui-editor-ww-container,
+  .toastui-editor-dark .toastui-editor-md-container { background: transparent; }
+  .toastui-editor-dark .toastui-editor-mode-switch { background: transparent; border-top: 1px solid var(--lg-border); }
+  .toastui-editor-dark .toastui-editor-mode-switch .tab-item { background: transparent; border-color: var(--lg-border); }
+  .pr-editor .ProseMirror { font-size: 14px; line-height: 1.65; }
+  /* Same heading hierarchy inside the editor as in the preview. */
+  .toastui-editor-contents { font-size: 14px; font-family: inherit; }
+  .toastui-editor-contents h1 { font-size: 26px; font-weight: 700; line-height: 1.25; }
+  .toastui-editor-contents h2 { font-size: 20px; font-weight: 650; line-height: 1.3; }
+  .toastui-editor-contents h3 { font-size: 16px; font-weight: 600; line-height: 1.35; }
+  .toastui-editor-contents h4 { font-size: 14.5px; font-weight: 600; }
