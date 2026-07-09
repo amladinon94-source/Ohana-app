@@ -4620,9 +4620,12 @@
     reader.classList.toggle("mode-edit", mode === "edit");
     document.getElementById("pr-tab-preview").classList.toggle("active", mode !== "edit");
     document.getElementById("pr-tab-edit").classList.toggle("active", mode === "edit");
+    document.body.classList.toggle("md-editing", mode === "edit"); // Ohana's floating toolbar shows the text tools
     if (mode === "edit") {
       body.style.display = "none"; host.style.display = "block";
       if (!prEditor && window.toastui && window.toastui.Editor) {
+        // Chrome-less: no Toast toolbar, no mode switch — the editing surface
+        // only. All tools live in Ohana's own floating toolbar (mdCmd → exec).
         prEditor = new window.toastui.Editor({
           el: host,
           theme: "dark",
@@ -4631,15 +4634,11 @@
           height: "100%",
           usageStatistics: false,
           autofocus: true,
-          toolbarItems: [
-            ["heading", "bold", "italic", "strike"],
-            ["hr", "quote"],
-            ["ul", "ol", "task"],
-            ["table", "link"],
-            ["code", "codeblock"],
-          ],
+          hideModeSwitch: true,
+          toolbarItems: [],
         });
         prEditor.on("change", () => { prDirty = true; });
+        window.__ohanaMdEditor = prEditor; // debug/automation handle (agents can drive the editor)
       } else if (prEditor) {
         prEditor.focus();
       }
@@ -4659,6 +4658,42 @@
     if (ok) { prDirty = false; showToast("Saved", "check"); } else showToast("Couldn't save", "warn");
     return ok;
   }
+  // Ohana's floating toolbar drives the editor (same buttons as always,
+  // executing real editor commands instead of deprecated execCommand).
+  // ProseMirror state helpers: Toast's own `paragraph` command doesn't
+  // convert code blocks, which was the exact "stuck in code" trap — reach
+  // the ww editor's state to detect and convert reliably.
+  function pmInCodeBlock() {
+    try { return prEditor.wwEditor.view.state.selection.$from.parent.type.name === "codeBlock"; } catch (e) { return false; }
+  }
+  function pmToParagraph() {
+    try {
+      const view = prEditor.wwEditor.view, st = view.state, p = st.schema.nodes.paragraph;
+      view.dispatch(st.tr.setBlockType(st.selection.from, st.selection.to, p));
+      return true;
+    } catch (e) { return false; }
+  }
+  function mdCmd(a) {
+    if (!prEditor) return;
+    if (a === "p") { if (pmInCodeBlock()) pmToParagraph(); else prEditor.exec("paragraph"); }
+    else if (a === "h1" || a === "h2" || a === "h3") { if (pmInCodeBlock()) pmToParagraph(); prEditor.exec("heading", { level: parseInt(a.slice(1), 10) }); }
+    else if (a === "bold") prEditor.exec("bold");
+    else if (a === "italic") prEditor.exec("italic");
+    else if (a === "strike") prEditor.exec("strike");
+    else if (a === "code") prEditor.exec("code");
+    else if (a === "ul") prEditor.exec("bulletList");
+    else if (a === "ol") prEditor.exec("orderedList");
+    else if (a === "task") prEditor.exec("taskList");
+    else if (a === "quote") prEditor.exec("blockQuote");
+    else if (a === "codeblock") { if (pmInCodeBlock()) pmToParagraph(); else prEditor.exec("codeBlock"); } // real toggle: in → out
+    else if (a === "table") prEditor.exec("addTable", { rowCount: 3, columnCount: 3 });
+    else if (a === "hr") prEditor.exec("hr");
+    prEditor.focus();
+  }
+  document.querySelectorAll("#toolbar [data-md]").forEach((b) => {
+    b.addEventListener("mousedown", (e) => e.preventDefault()); // keep the text selection alive
+    b.addEventListener("click", () => mdCmd(b.dataset.md));
+  });
   document.getElementById("pn-body").addEventListener("click", (e) => {
     // Collapsed rail → click an icon to expand.
     const rail = e.target.closest(".pn-rail-ic");
@@ -5331,6 +5366,9 @@
     x:     LI('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
     plus:  LI('<path d="M5 12h14"/><path d="M12 5v14"/>'),
     check: LI('<path d="M20 6 9 17l-5-5"/>'),
+    strike: LI('<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/>'),
+    codeBlock: LI('<path d="m10 9-3 3 3 3"/><path d="m14 15 3-3-3-3"/><rect width="18" height="18" x="3" y="3" rx="2"/>'),
+    minus: LI('<path d="M5 12h14"/>'),
     dots:  LI('<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>'),
     // actions
     trash: LI('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>'),
