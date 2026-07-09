@@ -2632,7 +2632,7 @@
     const r = await window.api.openFileOrFolder();
     if (!r) return;
     if (r.kind === "folder") {
-      // A folder is ALWAYS a project workspace (flows/prototipos/handoff/design).
+      // A folder is ALWAYS a project workspace (flows/prototypes/handoff/design).
       // Running its dev server as a localhost repo is the explicit «Repo» option —
       // opening a folder must never force the run dialog.
       startNewPrototype(r.path);
@@ -2658,7 +2658,7 @@
   // navigator; there's no guidance panel — you create things with the nav's «+».
   async function startNewPrototype(dir) {
     const name = (dir.split("/").pop() || "Project");
-    // Scaffold the workspace structure once (prototipos/ planes/ handoff/ design/
+    // Scaffold the workspace structure once (prototypes/ plans/ handoff/ design/
     // + .ohana/ for flows) so every artifact has a home from the start.
     try { await window.api.projectInit(dir); } catch (e) {}
     upsertTab({ key: "new:" + dir, kind: "new", src: dir, dir: dir, name: name });
@@ -4120,7 +4120,7 @@
   }
   function boardIc(b) { return b === "sitemap" ? (FI.workflow || FILE_IC) : FI.arrowRight; }
   function isProjectTab(t) { return !!(t && (t.kind === "new" || t.kind === "project") && t.dir); }
-  // Repos get the navigator too (they're folders: flows/planes/handoff/design),
+  // Repos get the navigator too (they're folders: flows/plans/handoff/design),
   // EXCEPT the Prototypes section — a repo's "prototype" is its running localhost.
   function isNavTab(t) { return isProjectTab(t) || !!(t && t.kind === "repo" && t.dir); }
   // Sync visibility + inset (runs cheaply on every view change).
@@ -4312,8 +4312,8 @@
       "Generate the HANDOFF documentation for this project in the `handoff/` folder (create it if missing). It's the package a team takes to a repository: short, actionable, ready to become Linear issues.\n\n" +
       "SOURCES (read them before writing):\n" +
       "- The Moka boards: use the MCP tools (`ohana_status`, `ohana_flow_list`, `ohana_flow_read`) or `.ohana/flow.json` — screens with their handles (P1…), sections→components, connections with their semantics (Yes/No, Success/Error labels), APIs, and linked views.\n" +
-      "- The prototypes in `prototipos/*.html` (visual and interaction reference).\n" +
-      "- `design.md` (tokens, voice and tone, principles) and the plans in `planes/`.\n" +
+      "- The prototypes in `" + projDirNames().prototypes + "/*.html` (visual and interaction reference).\n" +
+      "- `design.md` (tokens, voice and tone, principles) and the plans in `" + projDirNames().plans + "/`.\n" +
       "- The prototype comments (`ohana_list_comments`): the resolved ones are decisions already made.\n\n" +
       "OUTPUT STRUCTURE:\n" +
       "- `handoff/00-overview.md` — project vision, scope, flow map (name them by name + board type).\n" +
@@ -4332,10 +4332,13 @@
       "- Read ALL the .md files in `handoff/` (and `design.md` for tokens/voice) BEFORE touching code.\n" +
       "- Respect the destination repo's stack and conventions (check its package.json, README, and structure).\n" +
       "- Work story by story, in the order of the docs; if the repo uses git, one commit per story (don't push).\n" +
-      "- The prototypes in `prototipos/*.html` are the visual reference — replicate the intent, not the literal HTML.\n" +
+      "- The prototypes in `" + projDirNames().prototypes + "/*.html` are the visual reference — replicate the intent, not the literal HTML.\n" +
       "- When you're done: summarize what got implemented, what's still pending, and how to run the project.";
     sendToTerminal(at, md, "Instruction sent — when the dev server runs, open it as a Repo");
   }
+  // Folder names this project actually uses (legacy Spanish `prototipos/planes`
+  // or English `prototypes/plans`) — resolved by main during the last scan.
+  function projDirNames() { return (projManifest && projManifest.dirs) || { prototypes: "prototypes", plans: "plans" }; }
   let projTags = {}; // current project's tags (loaded on nav render)
   function saveProjTags() { try { window.api.ohanaWriteFile({ filename: "tags.json", content: JSON.stringify(projTags, null, 2) }); } catch (e) {} }
   function openNavItemMenu(itemEl, x, y) {
@@ -5619,17 +5622,22 @@
   }
   // Portable guide for any agent (Claude/Codex/…) reading the project folder.
   // Versioned: bump MOKA_GUIDE_V when the template changes so stale copies regenerate.
-  const MOKA_GUIDE_V = "<!-- moka-guide v3 -->";
+  const MOKA_GUIDE_V = "<!-- moka-guide v4 -->"; // v4: workspace folder names resolved per project
   async function ensureMokaGuide() {
     try {
       const existing = await window.api.ohanaReadFile("MOKA.md");
       if (existing && existing.indexOf(MOKA_GUIDE_V) !== -1) return;
+      // The guide names the project's real folders — make sure the scan ran for
+      // THIS project before writing (projManifest can lag on a fresh open).
+      let dirs = (projManifest && _navScanDir === (activeTab() || {}).dir && projManifest.dirs) || null;
+      if (!dirs) { try { const m = await window.api.projectScan((activeTab() || {}).dir); dirs = m && m.dirs; } catch (e) {} }
+      dirs = dirs || { prototypes: "prototypes", plans: "plans" };
       const md = [
         "# Moka — how to build sitemaps and user flows (for agents)",
         MOKA_GUIDE_V,
         "",
         "This project uses Moka (Ohana's layout canvas). The boards live in `.ohana/flow.json` and belong TO THE PROJECT (they're listed in the navigator's Flows section).",
-        "Project structure: `prototipos/` (HTML), `planes/` (agent plans), `handoff/` (docs for the repo), `design/` + `design.md` (design system). Write each artifact in its folder.",
+        "Project structure: `" + dirs.prototypes + "/` (HTML), `" + dirs.plans + "/` (agent plans), `handoff/` (docs for the repo), `design/` + `design.md` (design system). Write each artifact in its folder.",
         "Do NOT set coordinates (x/y): Moka lays out on its own. Express the STRUCTURE.",
         "",
         "## Board type — order comes from the STRUCTURE, not the coordinates",
@@ -7705,7 +7713,7 @@
     const at = requireAnchor(); if (!at) return;
     if (!flow.screens.length) { showToast("The flow is empty", "warn"); return; }
     let rel = flow.proto;
-    if (!rel) { rel = "prototipos/" + slugify(flow.name) + ".html"; flow.proto = rel; saveFlow(); renderProjectNav(true); }
+    if (!rel) { rel = projDirNames().prototypes + "/" + slugify(flow.name) + ".html"; flow.proto = rel; saveFlow(); renderProjectNav(true); }
     const abs = (at.dir ? at.dir.replace(/\/$/, "") + "/" : "") + rel;
     let md = "Build (or refine if it already exists) a real HTML PROTOTYPE of this user flow, in the file `" + rel + "` of this project.\n";
     md += "Requirements: ONE self-contained HTML file; Tailwind CSS, Alpine.js, and Lucide via CDN (no installing dependencies). If there's a project `design.md` or tokens, RESPECT THEM (voice, tone, colors, components). Each screen in the flow is a view; respect its sections and components. Leave `data-ai-id` on the key elements so they can be commented on in Ohana.\n\n";

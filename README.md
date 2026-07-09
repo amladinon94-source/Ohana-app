@@ -96,7 +96,7 @@ agent reads and writes.
   design system (in repos). You annotate the detail for each one. A component can
   **connect to another page** (dashed edge) and become **global** (reused across screens).
 - **Flows belong to the project** — every board in the folder lives together in the navigator.
-- **"To prototype"** — links the flow to an HTML file in `prototipos/` and the agent builds it;
+- **"To prototype"** — links the flow to an HTML file in `prototypes/` and the agent builds it;
   "View prototype" opens it in the same project so you can iterate.
 
 **Taking it to a real product:** with **Export** you send the flow as a structured prompt to the

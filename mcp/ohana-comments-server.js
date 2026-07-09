@@ -14,13 +14,15 @@
  * (findings.json, flow.json, design.md). Ohana watches those files live.
  *
  * Project model (Ohana ≥0.8): a PROJECT = a folder workspace scaffolded as
- *   prototipos/  (HTML prototypes — "To prototype" builds here)
- *   planes/     (implementation plans written by agents)
- *   handoff/    (handoff docs — what gets exported to a repo)
- *   design/     (design.md, voice&tone, rubrics)
- *   .ohana/     (flow.json = the Moka boards / "flows")
+ *   prototypes/  (HTML prototypes — "To prototype" builds here)
+ *   plans/       (implementation plans written by agents)
+ *   handoff/     (handoff docs — what gets exported to a repo)
+ *   design/      (design.md, voice&tone, rubrics)
+ *   .ohana/      (flow.json = the Moka boards / "flows")
+ * Projects created before the English migration use prototipos/ and planes/ —
+ * workspaceDirs() resolves the real names; ohana_status reports them.
  * Boards belong to the project; a board can link its prototype via `proto`
- * (rel path, e.g. "prototipos/market.html"). Write artifacts to those folders.
+ * (rel path, e.g. "prototypes/market.html"). Write artifacts to those folders.
  *
  * Transport: stdio, newline-delimited JSON-RPC 2.0 (MCP). Zero dependencies.
  * IMPORTANT: stdout is reserved for protocol messages — logs go to stderr.
@@ -90,6 +92,13 @@ function designPath(active) {
   if (active.designFile) return active.designFile;
   if (active.projectDir) return path.join(active.projectDir, "design.md");
   throw new Error("No project directory for the active prototype.");
+}
+
+// Workspace folder names: English for new projects, legacy Spanish
+// (prototipos/planes) for projects scaffolded before the English migration.
+function workspaceDirs(root) {
+  const pick = (es, en) => { try { return fs.existsSync(path.join(root, es)) ? es : en; } catch (e) { return en; } };
+  return { prototypes: pick("prototipos", "prototypes"), plans: pick("planes", "plans") };
 }
 
 function designTemplate(name) {
@@ -318,12 +327,13 @@ const MOKA_GUIDE = [
   "",
   "## Project structure (where each artifact goes)",
   "An Ohana project is a folder with this skeleton — write each thing in its home:",
-  "- `prototipos/` — HTML prototypes (one self-contained file per flow; Tailwind/Alpine/Lucide via CDN).",
-  "- `planes/` — implementation plans in .md (write your plans here before executing).",
+  "- `prototypes/` — HTML prototypes (one self-contained file per flow; Tailwind/Alpine/Lucide via CDN).",
+  "- `plans/` — implementation plans in .md (write your plans here before executing).",
   "- `handoff/` — handoff documentation (what gets exported to a repository).",
   "- `design/` — design system (voice & tone, rubrics); `design.md` at the root counts too.",
   "- `.ohana/flow.json` — Moka's flows/boards (use the tools, don't edit it by hand).",
-  "When you build the prototype for a flow, link it with `ohana_flow_set_proto({ path: \"prototipos/<slug>.html\" })` so Ohana shows a \"View prototype\" button on the board.",
+  "Projects created before the English migration use `prototipos/` and `planes/` instead — `ohana_status` reports the real folder names (structure.dirs); ALWAYS write into the folders it reports.",
+  "When you build the prototype for a flow, link it with `ohana_flow_set_proto({ path: \"<prototypes-dir>/<slug>.html\" })` so Ohana shows a \"View prototype\" button on the board.",
 ].join("\n");
 // Layout tree helpers (mirror the app): a screen's content is a nestable
 // row/col container tree. Migrate legacy flat `blocks` on read.
@@ -523,7 +533,7 @@ const TOOLS = [
   {
     name: "ohana_status",
     description:
-      "Show the active Ohana project: its folder, workspace structure (boards, prototipos, planes, handoff, design) and a summary of its comments. Call this FIRST to know where to write each artifact.",
+      "Show the active Ohana project: its folder, workspace structure (boards, prototypes, plans, handoff, design) and a summary of its comments. Call this FIRST to know where to write each artifact.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     handler: () => {
       const active = resolveActive();
@@ -541,6 +551,7 @@ const TOOLS = [
       };
       let boards = [];
       try { const { doc } = readFlowDoc(active); boards = (doc.flows || []).map((f) => ({ id: f.id, name: f.name, board: f.board === "sitemap" ? "sitemap" : "userflow", screens: (f.screens || []).length, proto: f.proto || null })); } catch (e) {}
+      const wd = workspaceDirs(dir);
       return {
         projectDir: dir,
         currentFile: active.currentFile,
@@ -548,11 +559,12 @@ const TOOLS = [
         mode: active.mode,
         updatedAt: active.updatedAt,
         structure: {
-          flujos: boards,                                     // Moka boards (.ohana/flow.json)
-          prototipos: listMd("prototipos", [".html", ".htm"]), // build prototypes here
-          planes: listMd("planes", [".md"]),                  // write implementation plans here
-          handoff: listMd("handoff", [".md"]),                // handoff docs (what ships to a repo)
-          design: listMd("design", [".md"]),                  // design system docs (design.md at root too)
+          dirs: wd,                                            // REAL folder names — write into these
+          flows: boards,                                       // Moka boards (.ohana/flow.json)
+          prototypes: listMd(wd.prototypes, [".html", ".htm"]), // build prototypes here
+          plans: listMd(wd.plans, [".md"]),                    // write implementation plans here
+          handoff: listMd("handoff", [".md"]),                 // handoff docs (what ships to a repo)
+          design: listMd("design", [".md"]),                   // design system docs (design.md at root too)
         },
         comments: { total: comments.length, open, resolved },
       };
@@ -812,7 +824,7 @@ const TOOLS = [
       const out = {
         flowId: fl.id, name: fl.name, active: doc.active,
         board: fl.board === "sitemap" ? "sitemap" : "userflow", // sitemap=hierarchy (TB), userflow=sequence (LR)
-        proto: fl.proto || null, // linked prototype (rel path, e.g. "prototipos/x.html")
+        proto: fl.proto || null, // linked prototype (rel path, e.g. "prototypes/x.html")
         screens: screens,
         edges: (fl.edges || []).map(publicEdge),
       };
@@ -859,11 +871,11 @@ const TOOLS = [
   {
     name: "ohana_flow_set_proto",
     description:
-      "Link a Moka board to its HTML prototype (rel path inside the project, e.g. 'prototipos/market.html'). Ohana shows a \"View prototype\" button on the board. Call this after building the prototype for a flow.",
+      "Link a Moka board to its HTML prototype (rel path inside the project, e.g. 'prototypes/market.html' — use the prototypes folder ohana_status reports in structure.dirs). Ohana shows a \"View prototype\" button on the board. Call this after building the prototype for a flow.",
     inputSchema: {
       type: "object",
       properties: {
-        path: { type: "string", description: "Prototype path relative to the project root (put prototypes in prototipos/)." },
+        path: { type: "string", description: "Prototype path relative to the project root (put prototypes in the folder ohana_status reports in structure.dirs — prototypes/ on new projects)." },
         flowId: { type: "string", description: "Target flow (default: active)." },
       },
       required: ["path"],

@@ -115,6 +115,11 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, "renderer.html"));
 
+  // MCP targeting follows FOCUS: ~/.ohana/active.json is shared by every Ohana
+  // instance (dev + installed), so the window the user last focused claims it.
+  // Guarded: an empty instance must not null out another instance's context.
+  mainWindow.on("focus", () => { if (getProjectDir() || activeTabSrc) writeActiveProject(); });
+
   // Open file from CLI argument
   const fileArg = process.argv.find(
     (a) => a.endsWith(".html") || a.endsWith(".htm")
@@ -339,6 +344,7 @@ ipcMain.handle("context:read", (_, filePath) => {
 ipcMain.handle("project:scan", (_, dir) => {
   const res = { dir: dir || null, boards: [], prototypes: [], plans: [], handoff: [], design: [], markdown: [] };
   if (!dir || !fs.existsSync(dir)) return res;
+  res.dirs = workspaceDirs(dir); // folder names writers should target (legacy Spanish or English)
   try {
     const fp = path.join(dir, ".ohana", "flow.json");
     if (fs.existsSync(fp)) {
@@ -376,12 +382,20 @@ ipcMain.handle("project:scan", (_, dir) => {
   [res.prototypes, res.plans, res.handoff, res.design, res.markdown].forEach((a) => a.sort((x, y) => x.rel.localeCompare(y.rel)));
   return res;
 });
+// Workspace folder names. New projects scaffold in English; projects created
+// before the English migration keep their Spanish folders (the scan matches
+// both spellings, and every writer must follow the existing folder).
+function workspaceDirs(dir) {
+  const pick = (es, en) => { try { return fs.existsSync(path.join(dir, es)) ? es : en; } catch (e) { return en; } };
+  return { prototypes: pick("prototipos", "prototypes"), plans: pick("planes", "plans") };
+}
 // Scaffold a folder into a project workspace (idempotent, never destructive):
-//   prototipos/  planes/  handoff/  design/  +  .ohana/ (flows → .ohana/flow.json)
+//   prototypes/  plans/  handoff/  design/  +  .ohana/ (flows → .ohana/flow.json)
 ipcMain.handle("project:init", (_, dir) => {
   try {
     if (!dir || !fs.existsSync(dir)) return false;
-    ["prototipos", "planes", "handoff", "design", ".ohana"].forEach((n) => {
+    const wd = workspaceDirs(dir);
+    [wd.prototypes, wd.plans, "handoff", "design", ".ohana"].forEach((n) => {
       const p = path.join(dir, n);
       if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
     });
