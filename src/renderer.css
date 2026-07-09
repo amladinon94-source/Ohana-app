@@ -2546,3 +2546,7 @@
   .mtp-cell { width: 16px; height: 13px; border: 1px solid var(--lg-border); border-radius: 3px; background: rgba(255,255,255,0.04); transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); }
   .mtp-cell.on { background: var(--accent-bg); border-color: var(--accent-ring); }
   .mtp-label { margin-top: 7px; text-align: center; font-size: var(--fs-sm); font-weight: 600; color: var(--text-d); }
+
+  /* Code block language suggestions (under the chip's input) */
+  .mlang-list { position: fixed; z-index: 510; min-width: 120px; max-height: 220px; overflow-y: auto; padding: 4px; }
+  .mlang-list .fm-item { padding: 5px 10px; font-family: "SF Mono", monospace; font-size: var(--fs-sm); }

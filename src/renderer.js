@@ -4611,7 +4611,71 @@
   let prEditor = null;
   function destroyReaderEditor() {
     if (prEditor) { try { prEditor.destroy(); } catch (e) {} prEditor = null; }
+    if (_langObs) { _langObs.disconnect(); _langObs = null; }
+    document.querySelectorAll(".mlang-list").forEach((n) => n.remove());
     const host = document.getElementById("pr-editor"); if (host) host.innerHTML = "";
+  }
+  // ── Code block language chooser (fully Ohana) ──
+  // Clicking the chip on a code block opens our own menu: filter as you type,
+  // click to apply. The language writes straight into the ProseMirror node's
+  // attrs, so it serializes as the markdown fence info (```js) — agents set
+  // the same field just by writing the block; this menu is the human's side.
+  const CODE_LANGS = ["text", "js", "ts", "jsx", "tsx", "html", "css", "json", "bash", "python", "sql", "yaml", "markdown", "java", "go", "rust", "php", "ruby", "swift", "kotlin", "c", "cpp", "csharp"];
+  let _langObs = null; // (kept name for destroy symmetry — now unused observers)
+  function setCodeBlockLang(preEl, lang) {
+    try {
+      const view = prEditor.wwEditor.view;
+      const $pos = view.state.doc.resolve(view.posAtDOM(preEl, 0));
+      for (let d = $pos.depth; d > 0; d--) {
+        const n = $pos.node(d);
+        if (n.type.name === "codeBlock") {
+          view.dispatch(view.state.tr.setNodeMarkup($pos.before(d), null, Object.assign({}, n.attrs, { language: lang || null })));
+          prDirty = true;
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+  function watchCodeLangPopup(host) {
+    host.addEventListener("click", (e) => {
+      const pre = e.target.closest(".toastui-editor-ww-code-block");
+      if (!pre || !prEditor) return;
+      const r = pre.getBoundingClientRect();
+      if (e.clientX < r.right - 110 || e.clientY > r.top + 34) return; // only the chip zone (top-right)
+      e.preventDefault(); e.stopPropagation();
+      openCodeLangMenu(pre);
+    }, true);
+  }
+  function openCodeLangMenu(preEl) {
+    document.querySelectorAll(".mlang-list").forEach((n) => n.remove());
+    const r = preEl.getBoundingClientRect();
+    const list = document.createElement("div"); list.className = "pn-menu mlang-list";
+    list.innerHTML = '<input class="fm-search mlang-input" placeholder="Language…" spellcheck="false" /><div class="mlang-items"></div>';
+    document.body.appendChild(list);
+    list.style.left = Math.min(r.right - 150, window.innerWidth - 170) + "px";
+    list.style.top = (r.top + 34) + "px";
+    const input = list.querySelector(".mlang-input");
+    const items = list.querySelector(".mlang-items");
+    const current = (preEl.dataset.language || "text").toLowerCase();
+    const cleanup = () => { list.remove(); document.removeEventListener("mousedown", out, true); };
+    const out = (e) => { if (!list.contains(e.target)) cleanup(); };
+    const apply = (lang) => { setCodeBlockLang(preEl, lang === "text" ? "" : lang); cleanup(); };
+    const paint = () => {
+      const q = (input.value || "").toLowerCase().trim();
+      const matches = CODE_LANGS.filter((l) => !q || l.indexOf(q) !== -1).slice(0, 8);
+      items.innerHTML = matches.map((l) => '<div class="fm-item" data-lang="' + l + '"><span>' + l + '</span>' + (l === current ? '<span class="fm-check">✓</span>' : '') + '</div>').join("");
+      items.querySelectorAll("[data-lang]").forEach((it) => {
+        it.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); apply(it.dataset.lang); });
+      });
+    };
+    input.addEventListener("input", paint);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { const first = items.querySelector("[data-lang]"); apply(first ? first.dataset.lang : input.value.trim()); }
+      if (e.key === "Escape") cleanup();
+    });
+    setTimeout(() => { input.focus(); document.addEventListener("mousedown", out, true); }, 0);
+    paint();
   }
   function setReaderMode(mode) {
     const reader = document.getElementById("proj-reader");
@@ -4641,6 +4705,7 @@
         window.__ohanaMdEditor = prEditor; // debug/automation handle (agents can drive the editor)
         // App-wide convention: no spellcheck squiggles in editing surfaces.
         setTimeout(() => { const pm = host.querySelector(".toastui-editor-ww-container .ProseMirror"); if (pm) pm.setAttribute("spellcheck", "false"); }, 0);
+        watchCodeLangPopup(host); // language suggestions on the code block chip
       } else if (prEditor) {
         prEditor.focus();
       }
