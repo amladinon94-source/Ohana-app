@@ -4363,7 +4363,7 @@
       const nv = inp.value.trim(); close();
       if (!nv || nv === currentName) return;
       if (art === "board") {
-        await loadFlowForActive();
+        await loadFlowForActive({ noEnsure: true });
         const f = (flowDoc.flows || []).find((b) => b.id === ref); if (!f) return;
         f.name = nv; saveFlow(); writeFlowFile(); renderFlowSwitcher(); renderProjectNav(true); showToast("Flow renamed", "check");
       } else {
@@ -4405,14 +4405,14 @@
     setTimeout(() => document.addEventListener("mousedown", out, true), 0);
   }
   async function duplicateBoard(id) {
-    await loadFlowForActive();
+    await loadFlowForActive({ noEnsure: true });
     const f = (flowDoc.flows || []).find((x) => x.id === id); if (!f) return;
     const c = JSON.parse(JSON.stringify(f)); c.id = flowGenId(); c.name = (f.name || "Flow") + " copy";
     flowDoc.flows.push(c); saveFlow(); writeFlowFile(); // flush now — the nav rescans from disk
     renderFlowSwitcher(); renderProjectNav(true); showToast("Flow duplicated", "check");
   }
   async function deleteBoard(id) {
-    await loadFlowForActive();
+    await loadFlowForActive({ noEnsure: true });
     const i = (flowDoc.flows || []).findIndex((x) => x.id === id); if (i < 0) return;
     flowDoc.flows.splice(i, 1);
     if (flowDoc.active === id) flowDoc.active = flowDoc.flows[0] ? flowDoc.flows[0].id : null;
@@ -4438,7 +4438,7 @@
     const at = activeTab(); if (!at) return;
     // The mode switch is gone, so flowDoc may not be loaded yet — always sync
     // from disk before operating (also protects against clobbering flow.json).
-    await loadFlowForActive();
+    await loadFlowForActive({ noEnsure: true });
     const f = (flowDoc.flows || []).find((x) => x.id === id); if (!f) return;
     saveReaderDoc(); // auto-save any doc being edited before leaving the reader
     hideProjReader();
@@ -4455,7 +4455,7 @@
   }
   async function createBoard(type) {
     const at = activeTab(); if (!at) return;
-    await loadFlowForActive(); // fresh doc from disk — never clobber existing boards
+    await loadFlowForActive({ noEnsure: true }); // fresh doc from disk — never clobber existing boards
     const n = (flowDoc.flows || []).length + 1;
     const f = { id: flowGenId(), name: (type === "sitemap" ? "Sitemap " : "Flow ") + n, board: type === "sitemap" ? "sitemap" : "userflow", src: at.src || at.dir || null, screens: [], edges: [] };
     flowDoc.flows.push(f); flowDoc.active = f.id; bindTabFlow(f.id);
@@ -5315,8 +5315,10 @@
       const f = { id: flowGenId(), name: "Main flow", screens: doc.screens, edges: Array.isArray(doc.edges) ? doc.edges : [] };
       return { flows: [f], active: f.id, globals: (doc.globals && typeof doc.globals === "object") ? doc.globals : {}, tabActive: tabActive, layout: layout, layouts: layouts };
     }
-    const f = { id: flowGenId(), name: "Main flow", screens: [], edges: [] };
-    return { flows: [f], active: f.id, globals: {}, tabActive: tabActive, layout: layout, layouts: layouts };
+    // Empty/missing doc → NO flows. Fabricating a default here caused a phantom
+    // "Main flow" next to the one the user actually created (double-creation bug);
+    // flows are only born in ensureTabFlow (entering Moka) or an explicit create.
+    return { flows: [], active: null, globals: {}, tabActive: tabActive, layout: layout, layouts: layouts };
   }
   // Each tab keeps its own active flow (keyed by its src). On load, bind the tab
   // to its remembered flow; if it has none, adopt an unclaimed flow or create one.
@@ -5551,7 +5553,10 @@
     flowDoc = normalizeFlowDoc(JSON.parse(next)); _flowSnap = JSON.stringify(flowDoc); flow = activeFlowObj();
     renderFlow(); renderFlowSwitcher(); writeFlowFile(); showToast("Redone", "refresh-cw");
   }
-  async function loadFlowForActive() {
+  // opts.noEnsure: skip ensureTabFlow — for callers that operate on an existing
+  // flow or create their own right after (create/open/rename/duplicate/delete),
+  // so the load never fabricates an extra flow alongside theirs.
+  async function loadFlowForActive(opts) {
     const at = activeTab();
     // Same-project reload (rename/switcher/refresh): persist the pending edit
     // before rereading disk, or the reload clobbers it. Never flush on a cross-
@@ -5568,7 +5573,7 @@
     if (corrupt) { showFlowError("corrupt"); return; } // don't overwrite a broken file — let an agent fix it
     flowDoc = normalizeFlowDoc(d);
     migrateScreens();
-    const created = ensureTabFlow(at.src);
+    const created = (opts && opts.noEnsure) ? false : ensureTabFlow(at.src);
     flow = activeFlowObj();
     flowSel = new Set();
     if (created) writeFlowFile();
