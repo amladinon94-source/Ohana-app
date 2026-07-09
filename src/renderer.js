@@ -239,7 +239,10 @@
       hidePreviewLoader();
       updateZoom();
       syncInspectorVisual();
-      webview.executeJavaScript(PINS_SCRIPT).then(() => syncPins()).catch(() => {});
+      // Tab switch → reload THIS prototype's findings from disk (comments are
+      // per project; pins must exist as soon as you open it, not only after
+      // the panel opens or the file changes).
+      webview.executeJavaScript(PINS_SCRIPT).then(() => loadFindings()).catch(() => {});
     } else {
       showPreviewLoader(); // slow prototype/dev-server load → the app's bento breathes meanwhile
     }
@@ -286,7 +289,7 @@
       try { t.wcId = wv.getWebContentsId(); } catch (e) {} // per-tab network capture key
       if (wv === webview) { hidePreviewError(); hidePreviewLoader(); }
       wv.executeJavaScript(INSPECTOR_SCRIPT).catch(() => {});
-      wv.executeJavaScript(PINS_SCRIPT).then(() => { if (wv === webview) syncPins(); }).catch(() => {});
+      wv.executeJavaScript(PINS_SCRIPT).then(() => { if (wv === webview) loadFindings(); }).catch(() => {});
       if (wv !== webview) return; // background tab \u2014 don't touch active UI
       webviewReady = true;
       syncInspectorVisual();
@@ -302,6 +305,19 @@
     // Pin clicks bridged out via console.log (only the visible webview can be
     // clicked, but bind to wv regardless).
     wv.addEventListener("console-message", (e) => {
+      if (e.message && e.message.indexOf("__OHANA_PIN_MOVE__") === 0) {
+        // Pin dragged onto another element → re-anchor the comment there.
+        try {
+          const mv = JSON.parse(e.message.slice("__OHANA_PIN_MOVE__".length));
+          const f = findingsData[parseInt(mv.id, 10)];
+          if (f) {
+            f.anchor = { aiId: mv.aiId || null, selector: mv.selector || null, label: mv.label || mv.aiId || mv.selector || "element" };
+            saveFindings(); syncPins(); renderFindings();
+            showToast("Comment moved to " + (f.anchor.label || "element"), "check");
+          }
+        } catch (err) {}
+        return;
+      }
       if (e.message && e.message.indexOf("__OHANA_PIN__") === 0) {
         const idx = parseInt(e.message.slice("__OHANA_PIN__".length), 10);
         if (!isNaN(idx)) openThread(idx);
@@ -1473,20 +1489,67 @@
             'transition:transform 0.1s ease;opacity:' + (resolved ? '0.8' : '1') + ';';
           b.textContent = p.num;
           b.title = (p.author || 'Comment') + ': ' + (p.preview || '');
-          b.addEventListener('mouseenter', function(){ b.style.transform = 'scale(1.15)'; });
+          b.addEventListener('mouseenter', function(){ if (!p._drag) b.style.transform = 'scale(1.15)'; });
           b.addEventListener('mouseleave', function(){ b.style.transform = 'scale(1)'; });
-          b.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); console.log('__OHANA_PIN__' + p.id); });
+          // Click = open the thread. Drag = move the pin: on drop it re-anchors
+          // to the element under the cursor (Figma-style move).
+          b.addEventListener('mousedown', function(ev){
+            ev.stopPropagation(); ev.preventDefault();
+            var sx = ev.clientX, sy = ev.clientY, moved = false;
+            function mv(e){
+              if (!moved && Math.hypot(e.clientX - sx, e.clientY - sy) > 6){ moved = true; p._drag = true; b.style.opacity = '0.75'; b.style.transform = 'scale(1.15)'; }
+              if (moved){ b.style.left = (e.clientX - 13) + 'px'; b.style.top = (e.clientY - 13) + 'px'; }
+            }
+            function up(e){
+              document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+              if (!moved){ console.log('__OHANA_PIN__' + p.id); return; }
+              p._drag = false; b.style.opacity = ''; b.style.transform = 'scale(1)';
+              b.style.pointerEvents = 'none';
+              var t = document.elementFromPoint(e.clientX, e.clientY);
+              b.style.pointerEvents = 'auto';
+              if (!t || t === document.documentElement || t === document.body){ return; } // dropped on nothing → snap back to its anchor
+              var aiId = null, node = t;
+              while (node && node !== document.documentElement){ if (node.dataset && node.dataset.aiId){ aiId = node.dataset.aiId; break; } node = node.parentElement; }
+              var anchorEl = aiId ? node : t;
+              function sel(el){
+                if (!el || el.nodeType !== 1) return '';
+                if (el.id) return '#' + CSS.escape(el.id);
+                var parts = [];
+                while (el && el.nodeType === 1 && el !== document.body){
+                  var part = el.tagName.toLowerCase();
+                  var pp = el.parentElement;
+                  if (pp){ var sibs = Array.prototype.filter.call(pp.children, function(c){ return c.tagName === el.tagName; }); if (sibs.length > 1) part += ':nth-of-type(' + (sibs.indexOf(el) + 1) + ')'; }
+                  parts.unshift(part); el = pp;
+                }
+                return parts.join(' > ');
+              }
+              var tag = anchorEl.tagName.toLowerCase();
+              var label = aiId ? aiId : (tag + (anchorEl.id ? '#' + anchorEl.id : (anchorEl.className && typeof anchorEl.className === 'string' && anchorEl.className.trim() ? '.' + anchorEl.className.trim().split(/\\s+/)[0] : '')));
+              console.log('__OHANA_PIN_MOVE__' + JSON.stringify({ id: p.id, aiId: aiId, selector: sel(anchorEl), label: label }));
+            }
+            document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+          });
           layer.appendChild(b);
           p._el = b;
         });
       };
       window.__ohanaHidePins = function(hide){ layer.style.display = hide ? 'none' : 'block'; };
+      // A pin belongs to the VIEW you're looking at: if its anchor is hidden
+      // (display:none / zero-size — e.g. another SPA screen), the pin hides too
+      // instead of collapsing to the top-left corner. It reappears as you navigate.
+      function visibleRect(t){
+        var r = t.getBoundingClientRect();
+        if (r.width <= 0 && r.height <= 0) return null;
+        try { var st = getComputedStyle(t); if (st.display === 'none' || st.visibility === 'hidden') return null; } catch(e){}
+        return r;
+      }
       function positionAll(){
         for (var i = 0; i < pins.length; i++){
           var p = pins[i]; if (!p._el) continue;
+          if (p._drag) continue; // being dragged — follows the cursor, not the anchor
           var t = resolveEl(p);
-          if (!t){ p._el.style.display = 'none'; continue; }
-          var r = t.getBoundingClientRect();
+          var r = t && visibleRect(t);
+          if (!r){ p._el.style.display = 'none'; continue; }
           p._el.style.display = 'flex';
           p._el.style.left = (r.left - 6) + 'px';
           p._el.style.top = (r.top - 6) + 'px';
@@ -1817,12 +1880,18 @@
         `);
         if (rectStr) {
           const r = JSON.parse(rectStr);
-          const wvRect = webview.getBoundingClientRect();
-          const zf = currentZoom / 100;
-          const pinX = wvRect.left + (r.x + r.w) * zf;
-          const pinY = wvRect.top + r.y * zf;
-          left = pinX + 16;
-          top = Math.max(60, pinY);
+          // A hidden anchor (another SPA view) has a zero rect → keep the default
+          // side position instead of jumping to the top-left corner.
+          if (r.w > 0 || r.h > 0) {
+            const wvRect = webview.getBoundingClientRect();
+            const zf = currentZoom / 100;
+            // Figma-style: the card opens NEXT TO THE PIN (element's top-left),
+            // left-aligned to it — not off the element's far right edge.
+            const pinX = wvRect.left + r.x * zf;
+            const pinY = wvRect.top + r.y * zf;
+            left = pinX + 28;
+            top = Math.max(60, pinY - 6);
+          }
         }
       } catch (e) {}
     }
