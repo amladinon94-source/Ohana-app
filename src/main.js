@@ -54,14 +54,14 @@ let currentFilePath = null;
 let fileWatcher = null;
 let devServerProcess = null;
 let repoDir = null;
-// «Nuevo prototipo»: carpeta elegida por el usuario que aún no tiene HTML ni es
-// repo. Debe anclar active.json (y por tanto el MCP) igual que un file/repo, o
-// Moka no tendría dónde escribir flow.json.
+// "New prototype": a folder the user picked that doesn't have HTML yet and
+// isn't a repo. It must anchor active.json (and therefore the MCP) just like a
+// file/repo, or Moka would have nowhere to write flow.json.
 let newProtoDir = null;
-// Identificador de "dueño" del tab activo, EXACTAMENTE el mismo string que el
-// renderer usa como `tab.src` (ruta del .html, URL del repo, o carpeta del
-// prototipo nuevo). El MCP lo usa para que el flujo que crea el agente quede
-// con el mismo dueño que la UI filtra — si no, el flujo es huérfano/invisible.
+// "Owner" identifier of the active tab — EXACTLY the same string the renderer
+// uses as `tab.src` (the .html path, the repo URL, or the new prototype's
+// folder). The MCP uses it so the flow the agent creates ends up with the same
+// owner the UI filters by — otherwise the flow is orphaned/invisible.
 let activeTabSrc = null;
 let sourceWatcher = null;
 let currentMode = "html"; // "html" | "react"
@@ -237,8 +237,8 @@ ipcMain.handle("app:openOnboarding", () => {
 // it just returns the path so the renderer can run repo detection.
 async function openFileOrFolderDialog() {
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
-    title: "Abrir archivo HTML o carpeta",
-    buttonLabel: "Abrir",
+    title: "Open HTML file or folder",
+    buttonLabel: "Open",
     filters: [{ name: "HTML", extensions: ["html", "htm"] }],
     properties: ["openFile", "openDirectory"],
   });
@@ -280,8 +280,8 @@ ipcMain.handle("tab:syncContext", (_, { kind, dir, url, src } = {}) => {
     if (sourceWatcher) { sourceWatcher.close(); sourceWatcher = null; }
     watchFindings(); // context is now null → this tears down the previous project's watchers
   } else {
-    // kind:"none" → «Nuevo prototipo»: ancla la carpeta elegida para que Moka y
-    // el MCP tengan dónde vivir, aunque todavía no exista ningún .html.
+    // kind:"none" → "New prototype": anchor the chosen folder so Moka and the
+    // MCP have somewhere to live, even though no .html exists yet.
     repoDir = null;
     currentFilePath = null;
     newProtoDir = dir || null;
@@ -343,7 +343,7 @@ ipcMain.handle("project:scan", (_, dir) => {
     if (fs.existsSync(fp)) {
       const doc = JSON.parse(fs.readFileSync(fp, "utf-8"));
       (doc.flows || []).forEach((fl) => res.boards.push({
-        id: fl.id, name: fl.name || "Flujo",
+        id: fl.id, name: fl.name || "Flow",
         board: fl.board === "sitemap" ? "sitemap" : "userflow",
         screens: Array.isArray(fl.screens) ? fl.screens.length : 0,
         src: fl.src || null,
@@ -376,7 +376,7 @@ ipcMain.handle("project:scan", (_, dir) => {
   return res;
 });
 // Scaffold a folder into a project workspace (idempotent, never destructive):
-//   prototipos/  planes/  handoff/  design/  +  .ohana/ (flujos → .ohana/flow.json)
+//   prototipos/  planes/  handoff/  design/  +  .ohana/ (flows → .ohana/flow.json)
 ipcMain.handle("project:init", (_, dir) => {
   try {
     if (!dir || !fs.existsSync(dir)) return false;
@@ -424,10 +424,10 @@ ipcMain.handle("project:duplicateFile", (_, filePath) => {
   } catch (e) { return false; }
 });
 
-// ─── Network capture (devtools amables) ──────────────────────────────
+// ─── Network capture (friendly devtools) ─────────────────────────────
 // Attach CDP to the active preview webview and surface a focused, friendly view
-// of its requests — with response bodies on demand for "¿qué endpoint llena
-// esto?". Only one preview webview is live at a time (it's recreated per tab).
+// of its requests — with response bodies on demand for "which endpoint fills
+// this?". Only one preview webview is live at a time (it's recreated per tab).
 let netDebuggee = null;
 const netRequests = new Map(); // requestId -> {requestId,url,method,type,status,mimeType,size,failed}
 const consoleEntries = [];     // {level:"warning"|"error", text}
@@ -479,7 +479,7 @@ function attachNet(contents) {
       }
       if (method === "Runtime.exceptionThrown") {
         const d = params.exceptionDetails || {};
-        pushConsole("error", (d.exception && (d.exception.description || d.exception.value)) || d.text || "Excepción no controlada");
+        pushConsole("error", (d.exception && (d.exception.description || d.exception.value)) || d.text || "Uncaught exception");
         return;
       }
       if (method === "Log.entryAdded") {
@@ -528,7 +528,7 @@ app.whenReady().then(() => {
   try {
     session.fromPartition("persist:viewer").on("will-download", (e, item) => {
       e.preventDefault();
-      try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("toast:show", "Descarga bloqueada: " + (item.getFilename() || "archivo")); } catch (err) {}
+      try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("toast:show", "Download blocked: " + (item.getFilename() || "file")); } catch (err) {}
     });
   } catch (e) {}
 });
@@ -840,8 +840,8 @@ ipcMain.handle("storybook:index", async (_, base) => {
 ipcMain.handle("dialog:pickFolder", async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return null;
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
-    title: "Elegir la carpeta del proyecto / design system",
-    buttonLabel: "Usar esta carpeta",
+    title: "Choose the project / design system folder",
+    buttonLabel: "Use this folder",
     properties: ["openDirectory"],
   });
   if (canceled || !filePaths.length) return null;
@@ -1140,7 +1140,7 @@ function startDevServer(dir, command, preferredUrl) {
 
     proc.on("exit", (code) => {
       if (!urlFound) reject(new Error(code === 127
-        ? "No encontré el comando para levantar el dev server (exit 127) — ¿está instalado el package manager del repo (npm/yarn/pnpm)?"
+        ? "Couldn't find the command to start the dev server (exit 127) — is the repo's package manager installed (npm/yarn/pnpm)?"
         : "Dev server exited with code " + code));
       devServerProcess = null;
     });
@@ -1311,33 +1311,33 @@ function designTemplate(name) {
   const today = new Date().toISOString().slice(0, 10);
   return `# Design — ${name}
 
-> Fuente de verdad del diseño de este prototipo. Ohana y Claude lo leen para
-> mantener consistencia. Mantenlo corto y accionable.
+> Source of truth for this prototype's design. Ohana and Claude read it to keep
+> things consistent. Keep it short and actionable.
 
-## Principios
+## Principles
 -
 
 ## Tokens
 
 ### Color
-| Token | Valor | Uso |
-|-------|-------|-----|
-|       |       |     |
+| Token | Value | Usage |
+|-------|-------|-------|
+|       |       |       |
 
-### Tipografía
+### Typography
 - Display:
 - Body:
 
 ### Spacing & radius
 -
 
-## Voz y tono
+## Voice & tone
 -
 
-## Patrones de componentes
+## Component patterns
 -
 
-## Decisiones
+## Decisions
 - ${today} —
 `;
 }
@@ -1424,7 +1424,7 @@ function watchFindings() {
     mainWindow.webContents.send("ohana:commandsUpdated");
   });
 
-  // Watch flow.json — Flow mode (maquetación); Claude or the user edits it,
+  // Watch flow.json — Flow mode (layout); Claude or the user edits it,
   // Ohana auto-reloads the canvas.
   if (flowWatcher) flowWatcher.close();
   const flowPath = path.join(ohanaDir, "flow.json");
@@ -1565,7 +1565,7 @@ function buildMenu() {
       label: "File",
       submenu: [
         {
-          label: "Abrir…",
+          label: "Open…",
           accelerator: "CmdOrCtrl+O",
           click: () => { if (mainWindow) mainWindow.webContents.send("view:openDialog"); },
         },

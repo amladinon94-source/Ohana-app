@@ -1,10 +1,10 @@
 <!doctype html>
 <!-- ohana-onboarding v2 -->
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ohana · Empieza aquí</title>
+<title>Ohana · Start here</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet" />
@@ -162,7 +162,7 @@
   .arrow.yes { color: var(--ok); }
   .arrow.build { color: var(--action); }
 
-  /* screen anatomy: Página → Regiones → Secciones → Componentes */
+  /* screen anatomy: Page → Regions → Sections → Components */
   .anatomy {
     margin-top: 26px; max-width: 420px; background: var(--ground-2); border: 1px solid var(--line);
     border-radius: 14px; overflow: hidden; font-size: 12.5px; box-shadow: 0 18px 44px rgba(0,0,0,0.35);
@@ -216,78 +216,78 @@
 <nav id="rail"></nav>
 
 <!-- 01 · HERO -->
-<section class="scene" id="s-hero" data-title="Bienvenida">
+<section class="scene" id="s-hero" data-title="Welcome">
   <div class="brand" data-r="1"><img src="../assets/logo.png" alt="Ohana" /><span>Ohana</span><span class="beta">beta</span></div>
-  <h1 data-r="1">Dirige.<br/><span class="mark accent">Tu agente construye.</span></h1>
-  <p class="lead" data-r="2">Tu espacio para diseñar productos: abres una carpeta, defines la experiencia en flujos y prototipos, y tu agente escribe el código real, sin salir de la ventana. Cada escena es para <b style="color:var(--text)">hacer</b>, no para leer.</p>
-  <button class="cta" data-r="3" onclick="go('s-change')">Empezar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
-  <button class="ghost" data-r="4" onclick="go('s-open')">Ya lo conozco, saltar al final</button>
+  <h1 data-r="1">You direct.<br/><span class="mark accent">Your agent builds.</span></h1>
+  <p class="lead" data-r="2">Your space for designing products: open a folder, define the experience in flows and prototypes, and your agent writes the real code without leaving the window. Every scene is for <b style="color:var(--text)">doing</b>, not for reading.</p>
+  <button class="cta" data-r="3" onclick="go('s-change')">Get started <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+  <button class="ghost" data-r="4" onclick="go('s-open')">I already know this, skip to the end</button>
 </section>
 
-<!-- 02 · PRIMER CAMBIO -->
-<section class="scene" id="s-change" data-title="Tu primer cambio">
-  <div class="eyebrow" data-r="1"><span class="n">01</span> · Pídeselo al agente</div>
-  <h2 data-r="1">Cambia algo <span class="mark accent">sin tocar el código</span></h2>
-  <p class="lead" data-r="2">Corre tu agente en la terminal de Ohana, cópiale el prompt y míralo cambiar el botón de abajo <b style="color:var(--text)">aquí mismo</b>.</p>
+<!-- 02 · FIRST CHANGE -->
+<section class="scene" id="s-change" data-title="Your first change">
+  <div class="eyebrow" data-r="1"><span class="n">01</span> · Ask your agent</div>
+  <h2 data-r="1">Change something <span class="mark accent">without touching the code</span></h2>
+  <p class="lead" data-r="2">Run your agent in the Ohana terminal, copy the prompt to it, and watch it change the button below <b style="color:var(--text)">right here</b>.</p>
 
   <div class="practice" data-r="3">
-    <span class="practice-label">⌖ Zona de práctica</span>
-    <button id="practice-button" data-ai-id="practice-button">Cámbiame de color</button>
+    <span class="practice-label">⌖ Practice zone</span>
+    <button id="practice-button" data-ai-id="practice-button">Change my color</button>
   </div>
 
   <div class="prompt" data-r="4">
-    <div class="prompt-bar"><span>Prompt para el agente</span><button class="copy" type="button">Copiar</button></div>
-    <pre>En <span class="hl">onboarding.html</span>, cambia el fondo del botón con data-ai-id="practice-button" a índigo (#8b9bff) y el texto a #141118.</pre>
+    <div class="prompt-bar"><span>Prompt for the agent</span><button class="copy" type="button">Copy</button></div>
+    <pre>In <span class="hl">onboarding.html</span>, change the background of the button with data-ai-id="practice-button" to indigo (#8b9bff) and the text to #141118.</pre>
   </div>
 </section>
 
-<!-- 03 · COMENTARIOS -->
-<section class="scene" id="s-comment" data-title="Comentarios">
-  <div class="eyebrow" data-r="1"><span class="n">02</span> · Señala, no describas</div>
-  <h2 data-r="1">Deja un pin <span class="mark accent">donde algo no cuadra</span></h2>
-  <p class="lead" data-r="2">Comentas sobre el elemento real, como en Figma. El agente lee el pin, sabe a qué te refieres y responde.</p>
+<!-- 03 · COMMENTS -->
+<section class="scene" id="s-comment" data-title="Comments">
+  <div class="eyebrow" data-r="1"><span class="n">02</span> · Point, don't describe</div>
+  <h2 data-r="1">Drop a pin <span class="mark accent">where something's off</span></h2>
+  <p class="lead" data-r="2">You comment on the real element, like in Figma. The agent reads the pin, knows what you mean, and replies.</p>
   <div class="card" data-r="3">
     <ol class="steps">
-      <li><span class="i">1</span><span>Activa el modo comentario (<kbd>⇧⌘M</kbd>) y haz clic en cualquier elemento de esta página.</span></li>
-      <li><span class="i">2</span><span>Escribe qué cambiar. Queda un <b>pin numerado</b> anclado al elemento.</span></li>
-      <li><span class="i">3</span><span>En el panel <span class="chip">Comments</span> (<kbd>⇧⌘F</kbd>), el agente responde y resuelve.</span></li>
+      <li><span class="i">1</span><span>Turn on comment mode (<kbd>⇧⌘M</kbd>) and click any element on this page.</span></li>
+      <li><span class="i">2</span><span>Type what to change. A <b>numbered pin</b> stays anchored to the element.</span></li>
+      <li><span class="i">3</span><span>In the <span class="chip">Comments</span> panel (<kbd>⇧⌘F</kbd>), the agent replies and resolves.</span></li>
     </ol>
   </div>
 </section>
 
 <!-- 04 · MOKA -->
 <section class="scene" id="s-moka" data-title="Moka">
-  <div class="eyebrow" data-r="1"><span class="n">03</span> · Del mapa al código</div>
-  <h2 data-r="1">Mapea el flujo, y <span class="mark accent">que el agente lo levante</span></h2>
-  <p class="lead" data-r="2">Abre un flujo desde el navegador y entras a <span class="chip">Moka</span>: dibujas el user-flow o sitemap con nodos opinados (páginas, decisiones con salidas Sí/No, inicio y fin). No es un dibujo aparte: es el brief que, con «A prototipo», el agente vuelve HTML real en tu proyecto.</p>
+  <div class="eyebrow" data-r="1"><span class="n">03</span> · From map to code</div>
+  <h2 data-r="1">Map the flow, and <span class="mark accent">let the agent build it</span></h2>
+  <p class="lead" data-r="2">Open a flow from the navigator and you enter <span class="chip">Moka</span>: you draw the user flow or sitemap with opinionated nodes (pages, decisions with Yes/No outputs, start and end). It's not a separate drawing: it's the brief that, with "To prototype", the agent turns into real HTML in your project.</p>
 
   <div class="flow" data-r="3">
-    <div class="node pill">Inicio</div>
+    <div class="node pill">Start</div>
     <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
     <div class="node">Login</div>
     <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
-    <div class="node dec">¿Válido?<small>Sí / No</small></div>
+    <div class="node dec">Valid?<small>Yes / No</small></div>
     <svg class="arrow yes" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
-    <div class="node" style="border-color:var(--action)">Prototipo real</div>
+    <div class="node" style="border-color:var(--action)">Real prototype</div>
   </div>
 
   <div class="card-row" style="align-items:stretch">
     <div class="anatomy" data-r="4">
-      <div class="a-head"><span class="a-kind">Página</span> Login</div>
+      <div class="a-head"><span class="a-kind">Page</span> Login</div>
       <div class="a-body">
-        <div class="a-region"><span class="a-tag">Región · Body</span>
-          <div class="a-section"><span class="a-tag">Sección · Formulario</span>
-            <div class="a-comp"><b>Input</b> Correo</div>
-            <div class="a-comp"><b>Button</b> Entrar <span class="a-goto">→ Home</span></div>
+        <div class="a-region"><span class="a-tag">Region · Body</span>
+          <div class="a-section"><span class="a-tag">Section · Form</span>
+            <div class="a-comp"><b>Input</b> Email</div>
+            <div class="a-comp"><b>Button</b> Sign in <span class="a-goto">→ Home</span></div>
           </div>
         </div>
       </div>
     </div>
     <div style="flex:1;min-width:260px;max-width:520px" data-r="4">
-      <p class="kicker" style="margin-top:26px">Cada tarjeta se <b style="color:var(--text)">componetiza</b>: regiones que definen el layout (píntalas en el editor tipo grid), secciones con nombre y componentes del catálogo o de tu design system. Un componente puede conectar a otra página, y volverse <span class="chip">global</span> para reutilizarlo.</p>
+      <p class="kicker" style="margin-top:26px">Each card is <b style="color:var(--text)">componentized</b>: regions that define the layout (draw them in the grid-style editor), named sections, and components from the catalog or your design system. A component can connect to another page and become <span class="chip">global</span> to reuse it.</p>
       <div class="prompt" style="margin-top:20px">
-        <div class="prompt-bar"><span>Cuando tengas el flujo</span><button class="copy" type="button">Copiar</button></div>
-        <pre>Toma el flujo de Moka (<span class="hl">.ohana/flow.json</span>) y construye la pantalla "Login" en HTML, respetando sus regiones, secciones, componentes y la rama de la decisión.</pre>
+        <div class="prompt-bar"><span>Once you have the flow</span><button class="copy" type="button">Copy</button></div>
+        <pre>Take the Moka flow (<span class="hl">.ohana/flow.json</span>) and build the "Login" screen in HTML, respecting its regions, sections, components, and the decision branch.</pre>
       </div>
     </div>
   </div>
@@ -295,53 +295,53 @@
 
 <!-- 05 · DESIGN.MD -->
 <section class="scene" id="s-design" data-title="design.md">
-  <div class="eyebrow" data-r="1"><span class="n">04</span> · La fuente de verdad</div>
-  <h2 data-r="1">El diseño vive en un archivo, <span class="mark accent">no en tu memoria</span></h2>
-  <p class="lead" data-r="2"><span class="chip">design.md</span> guarda tokens, principios, voz y decisiones. Lo editas visual en la sección <b style="color:var(--text)">Design</b> del proyecto; tu agente lo lee antes de tocar la UI y lo mantiene al día.</p>
+  <div class="eyebrow" data-r="1"><span class="n">04</span> · The source of truth</div>
+  <h2 data-r="1">The design lives in a file, <span class="mark accent">not in your memory</span></h2>
+  <p class="lead" data-r="2"><span class="chip">design.md</span> holds tokens, principles, voice, and decisions. You edit it visually in the project's <b style="color:var(--text)">Design</b> section; your agent reads it before touching the UI and keeps it up to date.</p>
 
   <div class="tokens" data-r="3">
     <table>
-      <tr><th>Token</th><th>Valor</th><th>Uso</th></tr>
-      <tr><td><code>--accent</code></td><td><span class="sw" style="background:#7cb0ff"></span><code>#7cb0ff</code></td><td>Interacción</td></tr>
-      <tr><td><code>--action</code></td><td><span class="sw" style="background:#f5d90a"></span><code>#f5d90a</code></td><td>Momento de acción</td></tr>
-      <tr><td><code>--ground</code></td><td><span class="sw" style="background:#141118"></span><code>#141118</code></td><td>Fondo</td></tr>
+      <tr><th>Token</th><th>Value</th><th>Usage</th></tr>
+      <tr><td><code>--accent</code></td><td><span class="sw" style="background:#7cb0ff"></span><code>#7cb0ff</code></td><td>Interaction</td></tr>
+      <tr><td><code>--action</code></td><td><span class="sw" style="background:#f5d90a"></span><code>#f5d90a</code></td><td>Action moment</td></tr>
+      <tr><td><code>--ground</code></td><td><span class="sw" style="background:#141118"></span><code>#141118</code></td><td>Background</td></tr>
     </table>
   </div>
 
   <div class="prompt" data-r="4" style="max-width:560px">
-    <div class="prompt-bar"><span>Prueba: registra una decisión</span><button class="copy" type="button">Copiar</button></div>
-    <pre>Registra en <span class="hl">design.md</span> esta decisión: los CTA usan --action (#f5d90a) con texto #4a3d00 y radio 999. Motivo: es el momento de acción de la marca.</pre>
+    <div class="prompt-bar"><span>Try it: record a decision</span><button class="copy" type="button">Copy</button></div>
+    <pre>Record this decision in <span class="hl">design.md</span>: CTAs use --action (#f5d90a) with #4a3d00 text and radius 999. Reason: it's the brand's action moment.</pre>
   </div>
 </section>
 
-<!-- 06 · EL CICLO -->
-<section class="scene" id="s-cycle" data-title="El ciclo">
-  <div class="eyebrow" data-r="1"><span class="n">05</span> · De la idea al repositorio</div>
-  <h2 data-r="1">Un solo hilo: <span class="mark accent">del flujo al código real</span></h2>
-  <p class="lead" data-r="2">Nada se queda en el dibujo. Defines en Flujos, iteras el prototipo con comentarios, y cuando está listo: «Generar handoff» destila el proyecto en tickets listos para Linear, y «Llevar a repositorio» lo implementa con los componentes reales de tu design system.</p>
+<!-- 06 · THE CYCLE -->
+<section class="scene" id="s-cycle" data-title="The cycle">
+  <div class="eyebrow" data-r="1"><span class="n">05</span> · From idea to repository</div>
+  <h2 data-r="1">A single thread: <span class="mark accent">from flow to real code</span></h2>
+  <p class="lead" data-r="2">Nothing stays a drawing. You define in Flows, iterate the prototype with comments, and once it's ready: "Generate handoff" distills the project into Linear-ready tickets, and "Ship to repository" implements it with the real components of your design system.</p>
 
   <div class="flow" data-r="3">
-    <div class="node">Flujos</div>
+    <div class="node">Flows</div>
     <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
-    <div class="node">Prototipo</div>
+    <div class="node">Prototype</div>
     <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
-    <div class="node">Comentarios</div>
+    <div class="node">Comments</div>
     <svg class="arrow" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
     <div class="node" style="border-color:var(--ok);color:var(--ok)">Handoff</div>
     <svg class="arrow build" width="34" height="18" viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9h28"/><path d="m24 3 6 6-6 6"/></svg>
-    <div class="node" style="border-color:var(--action)">Repositorio</div>
+    <div class="node" style="border-color:var(--action)">Repository</div>
   </div>
 
-  <p class="kicker" data-r="4">El puente es <b style="color:var(--text)">MCP</b>: tu agente ve el mismo proyecto que tú (comentarios, flujos, design.md) y sus cambios aparecen en vivo. Se conecta una vez desde el chip <b style="color:var(--text)">MCP</b> del header.</p>
+  <p class="kicker" data-r="4">The bridge is <b style="color:var(--text)">MCP</b>: your agent sees the same project you do (comments, flows, design.md) and its changes appear live. You connect it once from the <b style="color:var(--text)">MCP</b> chip in the header.</p>
 </section>
 
-<!-- 07 · CIERRE -->
-<section class="scene" id="s-open" data-title="Tu proyecto">
-  <div class="eyebrow" data-r="1"><span class="n">06</span> · Tu turno</div>
-  <h2 data-r="1">Abre lo tuyo.<br/><span class="mark accent">Empieza a dirigir.</span></h2>
-  <p class="lead" data-r="2">Abre una <b>carpeta</b> y se vuelve tu proyecto: el navegador izquierdo articula sus <kbd>Flujos</kbd> · <kbd>Prototipos</kbd> · <kbd>Planes</kbd> · <kbd>Handoff</kbd> · <kbd>Design</kbd>. También un repo (localhost) o una URL; cada tab es su propio espacio y recuerda dónde estaba.</p>
-  <button class="cta" data-r="3" onclick="console.log('__OHANA_OPEN__')">Abrir un proyecto <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
-  <p class="foot" data-r="4">Y para iterar rápido, siempre a mano: live reload al guardar, inspector (<kbd>⇧⌘I</kbd>), breakpoints, zoom y screenshots (<kbd>⇧⌘S</kbd>).</p>
+<!-- 07 · CLOSE -->
+<section class="scene" id="s-open" data-title="Your project">
+  <div class="eyebrow" data-r="1"><span class="n">06</span> · Your turn</div>
+  <h2 data-r="1">Open yours.<br/><span class="mark accent">Start directing.</span></h2>
+  <p class="lead" data-r="2">Open a <b>folder</b> and it becomes your project: the left navigator lays out its <kbd>Flows</kbd> · <kbd>Prototypes</kbd> · <kbd>Plans</kbd> · <kbd>Handoff</kbd> · <kbd>Design</kbd>. Also a repo (localhost) or a URL; each tab is its own space and remembers where it was.</p>
+  <button class="cta" data-r="3" onclick="console.log('__OHANA_OPEN__')">Open a project <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+  <p class="foot" data-r="4">And for fast iteration, always on hand: live reload on save, inspector (<kbd>⇧⌘I</kbd>), breakpoints, zoom, and screenshots (<kbd>⇧⌘S</kbd>).</p>
 </section>
 
 <script>
@@ -382,7 +382,7 @@
       var pre = btn.closest(".prompt").querySelector("pre");
       var txt = pre.textContent;
       try { navigator.clipboard.writeText(txt); } catch (e) {}
-      var old = btn.textContent; btn.textContent = "Copiado ✓"; btn.classList.add("done");
+      var old = btn.textContent; btn.textContent = "Copied ✓"; btn.classList.add("done");
       setTimeout(function () { btn.textContent = old; btn.classList.remove("done"); }, 1600);
     });
   });

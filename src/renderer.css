@@ -29,20 +29,20 @@
     --focus-ring: #7cb0ff;
     /* Darker fill so white text/icons reach WCAG AA (4.6:1). */
     --accent-solid: #2563eb;
-    --green: #34d399;   /* positivo: Sí / Éxito / proyecto */
-    --red: #f87171;     /* negativo: No / Error / peligro */
-    --yellow: #f5d90a;  /* marca (logo): user flow, tabs URL, notas */
-    --agent: #B638FF;   /* identidad del agente */
+    --green: #34d399;   /* positive: Yes / Success / project */
+    --red: #f87171;     /* negative: No / Error / danger */
+    --yellow: #f5d90a;  /* brand (logo): user flow, URL tabs, notes */
+    --agent: #B638FF;   /* agent identity */
     --agent-soft: #d8a3ff;
     --canvas-bg: #111111;
-    /* ── Escala de radios (5 pasos + círculos) ──
-       xs 5 · sm 7 · r 12 · lg 14 (viewport) · panel 18 (paneles flotantes) */
+    /* ── Radius scale (5 steps + circles) ──
+       xs 5 · sm 7 · r 12 · lg 14 (viewport) · panel 18 (floating panels) */
     --r-xs: 5px;
     --r-sm: 7px;
     --r: 12px;
     --r-lg: 14px;
     --r-panel: 18px;
-    /* ── Escala tipográfica (6 pasos; 7.5/8px = micro-badges deliberados) ──
+    /* ── Type scale (6 steps; 7.5/8px = deliberate micro-badges) ──
        2xs 9 · xs 10.5 · sm 11 · md 12 · lg 13 · xl 16 */
     --fs-2xs: 9px;
     --fs-xs: 10.5px;
@@ -50,22 +50,22 @@
     --fs-md: 12px;
     --fs-lg: 13px;
     --fs-xl: 16px;
-    /* Altura estándar de control (botones, inputs, items de lista) */
+    /* Standard control height (buttons, inputs, list items) */
     --ctl-h: 28px;
-    /* ── Movimiento (una sola curva + escala de duración) ── */
-    --ease: cubic-bezier(0.22, 0.61, 0.36, 1); /* ease-out suave para deslizamientos */
+    /* ── Motion (a single curve + duration scale) ── */
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1); /* smooth ease-out for slides */
     --t-fast: 0.12s;
     --t: 0.15s;
     --t-slow: 0.25s;
-    /* ── Escala de espaciado (gaps/paddings) ── */
+    /* ── Spacing scale (gaps/paddings) ── */
     --sp-1: 2px;
     --sp-2: 4px;
     --sp-3: 6px;
     --sp-4: 8px;
     --sp-5: 12px;
-    /* ── Bandas de z-index (capas del app; los internos del lienzo 0-10 quedan
-       crudos porque son orden LOCAL dentro de #flow-canvas) ──
-       viewport 20 · paneles 90-140 · chrome 200-250 · popovers 300-500 · modales 9000+ */
+    /* ── z-index bands (app layers; the canvas internals 0-10 stay raw
+       because they're LOCAL ordering inside #flow-canvas) ──
+       viewport 20 · panels 90-140 · chrome 200-250 · popovers 300-500 · modals 9000+ */
     --z-panel: 90;
     --z-chrome: 200;
     --z-popover: 400;
@@ -982,7 +982,7 @@
   .cmt-btn.agent { background: color-mix(in srgb, var(--agent) 14%, transparent); color: var(--agent-soft); border: 1px solid color-mix(in srgb, var(--agent) 40%, transparent); display: inline-flex; align-items: center; gap: var(--sp-3); }
   .cmt-btn.agent:hover { background: color-mix(in srgb, var(--agent) 22%, transparent); color: #ecccff; }
 
-  /* "Qué cambió" — accent ring flashed over the preview on reload */
+  /* "What changed" — accent ring flashed over the preview on reload */
   .reload-flash {
     position: fixed; z-index: 60; pointer-events: none; border-radius: var(--r);
     box-shadow: 0 0 0 2px var(--accent-strong), 0 0 22px rgba(124,176,255,0.45);
@@ -1403,7 +1403,7 @@
   .tab-ic { display: flex; flex-shrink: 0; opacity: 0.8; }
   .tab-ic svg { width: 13px; height: 13px; }
 
-  /* "Claude está trabajando" — the tab pulses while its terminal is busy */
+  /* "Claude is working" — the tab pulses while its terminal is busy */
   .tab-work { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: none;
     background: var(--agent); box-shadow: 0 0 6px color-mix(in srgb, var(--agent) 80%, transparent); }
   .tab.working .tab-work { display: block; animation: tab-pulse 1.1s ease-in-out infinite; }
@@ -1794,7 +1794,7 @@
   #flow-reload-btn { border: none; background: var(--accent); color: #fff; border-radius: 999px; padding: 5px 13px; font: inherit; font-size: var(--fs-md); font-weight: 600; cursor: default; }
   #flow-reload-btn:hover { background: var(--accent-strong); }
   /* Bento loader — squares of Moka/Ohana pulsing in a wave */
-  #flow-loader { position: absolute; inset: 38px 0 0; /* bajo el topbar (38px) → centrado en el lienzo */ z-index: 40; display: none; align-items: center; justify-content: center; background: color-mix(in srgb, var(--canvas-bg) 90%, transparent); /* opaco, SIN blur: cubre el lienzo y ahorra memoria de GPU */ }
+  #flow-loader { position: absolute; inset: 38px 0 0; /* below the topbar (38px) → centered on the canvas */ z-index: 40; display: none; align-items: center; justify-content: center; background: color-mix(in srgb, var(--canvas-bg) 90%, transparent); /* opaque, NO blur: covers the canvas and saves GPU memory */ }
   #flow-loader.visible { display: flex; }
   /* Preview loader — visible while a prototype's webview loads (the webview is
      kept hidden until dom-ready, so this HTML overlay shows through). */
@@ -1856,10 +1856,10 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     transition: border-color 0.16s var(--ease);
   }
-  /* Al hacer hover la tarjeta sube sobre sus vecinas: los puertos y "Construir"
-     emergen FUERA del box (z negativo dentro del stacking context de la tarjeta);
-     sin esto, una vecina con el mismo z-index:2 posterior en el DOM los tapa y
-     además roba el :hover, retrayéndolos antes de poder clickearlos. */
+  /* On hover the card rises above its neighbors: the ports and "Build"
+     emerge OUTSIDE the box (negative z within the card's stacking context);
+     without this, a neighbor with the same z-index:2 later in the DOM covers them
+     and also steals the :hover, retracting them before you can click. */
   .flow-screen:hover { z-index: 3; }
   .fs-diamond { background: #23232a; }
   /* Selection stroke uses the card's KIND color (page/modal/dialog/…), not a fixed blue */
@@ -1983,7 +1983,7 @@
   .fs-subflow-go svg { width: 14px; height: 14px; }
   .flow-screen.compact .fs-dlabel { position: static; transform: none; width: auto; padding: 0; font-size: var(--fs-lg); font-weight: 600; color: var(--text); line-height: 1.25; text-align: left; }
   .flow-screen.compact .fs-dmenu { top: 2px; right: 6px; }
-  /* Predefined output handles (decision Sí/No, system Éxito/Error) — labeled,
+  /* Predefined output handles (decision Yes/No, system Success/Error) — labeled,
      colored pills anchored on the edge they exit from. Drag = connect, click = new screen. */
   .fs-outs { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
   .fs-out {
@@ -2019,9 +2019,9 @@
   .fl-cont.fl-grid { display: grid; gap: var(--sp-2); align-content: start; }
   .fl-cont.fl-grid > .fl-cont { align-self: stretch; min-width: 0; min-height: 0; }
   .fl-cont:hover { border-color: rgba(124,176,255,0.28); }
-  /* Región: estructura del layout (punteado más visible). Sección: organismo UI
-     dentro de la región (punteado más tenue). El componente es la única tarjeta
-     sólida — tres niveles, misma etiqueta, distinta presencia de borde. */
+  /* Region: layout structure (more visible dashes). Section: UI organism
+     inside the region (fainter dashes). The component is the only solid
+     card — three levels, same label, different border presence. */
   .fl-cont.lvl-section { border: 1px dashed rgba(255,255,255,0.07); background: transparent; border-radius: var(--r-sm); }
   .fl-cont.lvl-section:hover { border-color: rgba(124,176,255,0.28); }
   /* Empty container: keep the body from growing so the add button sits at the TOP */
@@ -2140,7 +2140,7 @@
   .fl-add-section { display: flex; align-items: center; justify-content: center; gap: var(--sp-3); width: 100%; margin-top: 15px; padding: 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-m); background: transparent; border: 1px dashed var(--lg-border); border-radius: var(--r-sm); cursor: default; flex-shrink: 0; box-sizing: border-box; }
   .fl-add-section:hover { border-color: var(--accent-ring); color: var(--accent-strong); background: var(--accent-bg); }
   .fl-add-section svg { width: 13px; height: 13px; }
-  /* "+ Componente" — secondary add inside a section (lighter than "+ Sección") */
+  /* "+ Component" — secondary add inside a section (lighter than "+ Section") */
   .fl-add-comp { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); width: 100%; margin-top: 5px; padding: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-d); background: transparent; border: 1px dashed rgba(255,255,255,0.14); border-radius: var(--r-xs); cursor: default; flex-shrink: 0; box-sizing: border-box; }
   .fl-add-comp:hover { border-color: var(--accent-ring); color: var(--accent-strong); background: var(--accent-bg); }
   .fl-add-comp svg { width: 11px; height: 11px; }
@@ -2226,7 +2226,7 @@
 
   /* Screen context menu */
   #flow-menu {
-    position: fixed; z-index: calc(var(--z-modal) + 40); min-width: 168px; background: var(--lg-panel-bg); border: 1px solid var(--lg-border); /* mismo surface legible que .pn-menu */
+    position: fixed; z-index: calc(var(--z-modal) + 40); min-width: 168px; background: var(--lg-panel-bg); border: 1px solid var(--lg-border); /* same legible surface as .pn-menu */
     border-radius: var(--r); box-shadow: var(--lg-shadow); padding: 5px; display: none;
     backdrop-filter: var(--lg-blur); -webkit-backdrop-filter: var(--lg-blur);
   }
@@ -2353,9 +2353,9 @@
   body.md-reading:not(.md-editing) #toolbar { display: none !important; }
   .tb-h { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.02em; width: auto; padding: 0 7px; }
 
-  /* ─── Sistema: familia de INPUTS (una sola receta) ───
-     Normaliza superficie, borde, radio y focus de todos los campos de texto —
-     los tamaños siguen siendo por caso. Al final del archivo para ganar cascada. */
+  /* ─── System: INPUT family (a single recipe) ───
+     Normalizes surface, border, radius, and focus of every text field —
+     sizes remain per case. At the end of the file to win the cascade. */
   #url-bar, .pn-input, .open-url-input, .rd-input, .fg-textarea, .fg-select, .fl-name-edit {
     background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.14);
     border-radius: var(--r-sm); color: var(--text);
@@ -2364,10 +2364,10 @@
     outline: none; border-color: var(--accent-ring);
   }
 
-  /* ─── Sistema: familia de BOTONES ───
-     · icono (.g-btn) — cuadrado 28px           · texto (.flow-btn) — píldora 28px
-     · formulario (.pn-fbtn) — mismas métricas   · switch (.tb-mode) — ya componente
-     Un solo anillo de foco para toda la familia (accesibilidad por teclado). */
+  /* ─── System: BUTTON family ───
+     · icon (.g-btn) — 28px square           · text (.flow-btn) — 28px pill
+     · form (.pn-fbtn) — same metrics         · switch (.tb-mode) — already a component
+     One focus ring for the whole family (keyboard accessibility). */
   .flow-btn, .pn-fbtn {
     height: var(--ctl-h); box-sizing: border-box; padding: 0 12px;
     font-size: var(--fs-md); border-radius: var(--r-sm);

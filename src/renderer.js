@@ -2,7 +2,7 @@
   let inspectorActive = false;
   let sectionMode = null;
   let commentMode = false;
-  let netProbeMode = false; // "¿qué endpoint llena esto?" selection mode
+  let netProbeMode = false; // "which endpoint fills this?" selection mode
   let webviewReady = false;
   let currentFilePath = null;
   let toolbarVertical = false;
@@ -11,7 +11,7 @@
   // adjustPanelsMargin before those `let`s exist → would throw a TDZ error and
   // break the whole renderer (empty state, no session restore).
   let dockReady = false;
-  // Flow (maquetación) mode — declared early so activateTab can read it safely.
+  // Flow (layout) mode — declared early so activateTab can read it safely.
   // Markdown engine (render + WYSIWYG serialize) is a shared pure module.
   const { escapeHtml, escMd, inlineMd, cellWithSwatch, highlightCode, renderMarkdown, htmlToMd } = window.OhanaMD;
   let flowMode = false;
@@ -259,13 +259,13 @@
   function showPreviewError(t, desc) {
     const el = document.getElementById("preview-error"); if (!el) return;
     const isFile = t.kind === "file";
-    document.getElementById("preview-error-title").textContent = isFile ? "No se pudo cargar el archivo" : "El preview no cargó";
+    document.getElementById("preview-error-title").textContent = isFile ? "Couldn't load the file" : "The preview didn't load";
     document.getElementById("preview-error-msg").textContent = isFile
-      ? "Ohana no pudo abrir este prototipo. ¿El archivo existe y es HTML válido?"
-      : "La página no respondió" + (desc ? " (" + desc + ")" : "") + ". Si es un servidor de desarrollo, quizá no está corriendo.";
+      ? "Ohana couldn't open this prototype. Does the file exist and is it valid HTML?"
+      : "The page didn't respond" + (desc ? " (" + desc + ")" : "") + ". If it's a dev server, it may not be running.";
     document.getElementById("preview-error-prompt").textContent = isFile
-      ? "El archivo de este prototipo (" + (t.src || "") + ") no se pudo cargar en Ohana. Verifica que exista, que la ruta sea correcta y que sea HTML válido; si lo moví o renombré, actualiza la referencia."
-      : "El preview de " + (t.src || "") + " no cargó" + (desc ? " (" + desc + ")" : "") + ". Si es un servidor de desarrollo (localhost), arráncalo (p. ej. `npm run dev`) y confirma el puerto; si es una URL remota, revisa que esté disponible.";
+      ? "This prototype's file (" + (t.src || "") + ") couldn't be loaded in Ohana. Check that it exists, that the path is correct, and that it's valid HTML; if I moved or renamed it, update the reference."
+      : "The preview of " + (t.src || "") + " didn't load" + (desc ? " (" + desc + ")" : "") + ". If it's a dev server (localhost), start it (e.g. `npm run dev`) and confirm the port; if it's a remote URL, check that it's available.";
     if (typeof stopBento === "function") stopBento(document.getElementById("preview-loader")); // error replaces the loader
     if (webview) webview.style.visibility = "hidden";
     el.classList.add("visible");
@@ -379,7 +379,7 @@
     const relX = (e.clientX - wvRect.left) / zf;
     const relY = (e.clientY - wvRect.top) / zf;
 
-    // "¿Qué endpoint llena esto?": grab the section's text and match it against
+    // "Which endpoint fills this?": grab the section's text and match it against
     // captured response bodies to find the request that feeds it.
     if (netProbeMode) {
       let txt = "";
@@ -1239,12 +1239,12 @@
       const n = pinNumForId(f.id);
       const resolved = f.status === "resolved";
       const last = (f.replies || []).filter((r) => r.authorType === "agent").slice(-1)[0];
-      title = resolved ? "Comentario resuelto" : "El agente respondió";
+      title = resolved ? "Comment resolved" : "The agent replied";
       body = (n ? "#" + n + " — " : "") + (last ? last.message : "");
       showToast(title + (n ? " · #" + n : ""), "check");
     } else {
-      title = "El agente actualizó comentarios";
-      body = changed.length + " comentarios con respuesta nueva";
+      title = "The agent updated comments";
+      body = changed.length + " comments with new replies";
       showToast(body, "check");
     }
     if (!document.hasFocus()) window.api.notify(title, body);
@@ -1342,8 +1342,8 @@
         </div>
         <div class="fp-message">${escapeHtml(finding.message || '')}</div>
         <div class="fp-actions">
-          <button class="fp-act" data-act="resolve">${resolved ? "Reabrir" : "Resolver"}</button>
-          <button class="fp-act danger" data-act="delete">Borrar</button>
+          <button class="fp-act" data-act="resolve">${resolved ? "Reopen" : "Resolve"}</button>
+          <button class="fp-act danger" data-act="delete">Delete</button>
         </div>
       `;
       list.appendChild(item);
@@ -1580,9 +1580,9 @@
     if (btn) {
       btn.classList.toggle("active", pinsHidden);
       const slash = btn.querySelector(".tp-slash"); if (slash) slash.style.display = pinsHidden ? "" : "none";
-      btn.dataset.tip = pinsHidden ? "Mostrar comentarios" : "Ocultar comentarios";
+      btn.dataset.tip = pinsHidden ? "Show comments" : "Hide comments";
     }
-    showToast(pinsHidden ? "Comentarios ocultos" : "Comentarios visibles", "check");
+    showToast(pinsHidden ? "Comments hidden" : "Comments visible", "check");
   }
   document.getElementById("btn-toggle-pins").onclick = togglePinsVisible;
 
@@ -1615,7 +1615,7 @@
     document.getElementById("btn-comment").classList.toggle("active", commentMode);
     inspectOverlay.classList.toggle("comment-mode", commentMode);
     if (commentMode) {
-      sectionHintEl.textContent = "Haz clic en cualquier elemento para comentar · Esc para salir";
+      sectionHintEl.textContent = "Click any element to comment · Esc to exit";
       sectionHintEl.classList.add("visible");
       document.addEventListener("keydown", commentEscHandler);
       syncPins(); // make sure existing comment pins are visible
@@ -1903,13 +1903,13 @@
       : (f.anchor && f.anchor.selector) ? f.anchor.selector
       : ((f.anchor && f.anchor.label) || f.component || "");
     const note = (f.message || "").replace(/"/g, "'").replace(/\s+/g, " ").trim();
-    const prompt = "Atiende este comentario de Ohana"
-      + (sel ? " sobre el elemento `" + sel + "`" : "")
+    const prompt = "Address this Ohana comment"
+      + (sel ? " on the element `" + sel + "`" : "")
       + ': "' + note + '".'
-      + (pinNum ? " Cuando termines, responde el comentario #" + pinNum + " con la herramienta ohana_reply (resuélvelo si quedó listo)." : "");
+      + (pinNum ? " When you're done, reply to comment #" + pinNum + " with the ohana_reply tool (resolve it if it's ready)." : "");
     if (!termVisible) toggleTerminal(); else switchTerminalTo(at);
     setTimeout(() => window.api.termInput({ tabKey: at.key, data: prompt }), 280);
-    showToast("Enviado a la terminal — revisá y Enter", "check");
+    showToast("Sent to the terminal — review and hit Enter", "check");
   };
 
   // Reusable comment actions — shared by the thread card AND the per-item
@@ -2093,7 +2093,7 @@
     const wh = document.createElement("div"); wh.className = "dock-h dock-wh"; document.body.appendChild(wh);
     const dividers = [], grips = [];
     for (let i = 0; i < ALL_PANEL_IDS.length - 1; i++) { const d = document.createElement("div"); d.className = "dock-h dock-dv"; document.body.appendChild(d); dividers.push(d); }
-    for (let i = 0; i < ALL_PANEL_IDS.length; i++) { const g = document.createElement("div"); g.className = "dock-grip"; g.title = "Arrastra para reordenar"; document.body.appendChild(g); grips.push(g); }
+    for (let i = 0; i < ALL_PANEL_IDS.length; i++) { const g = document.createElement("div"); g.className = "dock-grip"; g.title = "Drag to reorder"; document.body.appendChild(g); grips.push(g); }
     _dock = { shield, wh, dividers, grips };
     wireDockHandles(_dock);
     return _dock;
@@ -2405,7 +2405,7 @@
     closeRunDialog();
     await window.api.repoConnectExisting({ dir: rdDir, url });
     openRepoTab(rdDir, url);
-    showToast("Conectado a " + url, "check");
+    showToast("Connected to " + url, "check");
   };
 
   document.getElementById("rd-run").onclick = async () => {
@@ -2417,18 +2417,18 @@
     const statusEl = document.getElementById("repo-status-text");
     const subEl = document.getElementById("repo-sub-text");
     loadingEl.classList.add("active");
-    statusEl.textContent = "Ejecutando " + (rdInfo ? rdInfo.name : "") + "…";
+    statusEl.textContent = "Running " + (rdInfo ? rdInfo.name : "") + "…";
     subEl.textContent = command;
     try {
       const result = await window.api.repoStart({ dir: rdDir, command, url });
-      if (result.error) { loadingEl.classList.remove("active"); showToast("Falló: " + result.error, "warn"); return; }
-      statusEl.textContent = "Listo"; subEl.textContent = result.url;
+      if (result.error) { loadingEl.classList.remove("active"); showToast("Failed: " + result.error, "warn"); return; }
+      statusEl.textContent = "Ready"; subEl.textContent = result.url;
       openRepoTab(rdDir, result.url, command);
       setTimeout(() => loadingEl.classList.remove("active"), 500);
-      showToast("Repo cargado — " + result.url, "check");
+      showToast("Repo loaded — " + result.url, "check");
     } catch (err) {
       loadingEl.classList.remove("active");
-      showToast("No se pudo iniciar el servidor", "warn");
+      showToast("Couldn't start the server", "warn");
     }
   };
 
@@ -2463,14 +2463,14 @@
         else { t.wv = buildURLWebview(t); t.wv.classList.add("wv-hidden"); canvas.appendChild(t.wv); }
       }, 3000);
       const msg = document.getElementById("preview-error-msg");
-      if (wv === webview && msg && !/Reintentando/.test(msg.textContent)) msg.textContent += " Reintentando automáticamente…";
+      if (wv === webview && msg && !/Retrying/.test(msg.textContent)) msg.textContent += " Retrying automatically…";
       // A dev server launched BY Ohana is a child process — it dies with the
       // app, so a restored repo tab points at a dead localhost. Relaunch the
       // SAME server it had (remembered command; for older sessions, infer:
       // port 6006 → storybook script) and let the retry loop reconnect.
       if (t.kind === "repo" && t.dir && !t._devAutoStart) {
         t._devAutoStart = true;
-        if (wv === webview) showToast("Levantando el dev server…", "refresh-cw");
+        if (wv === webview) showToast("Bringing up the dev server…", "refresh-cw");
         const startP = t.devCommand
           ? window.api.repoStart({ dir: t.dir, command: t.devCommand, url: t.src })
           : window.api.repoDetect(t.dir).then((info) => {
@@ -2574,7 +2574,7 @@
   window.api.on("repo:reloadWebview", () => {
     const wv = webview;
     if (!wv || !webviewReady) return;
-    showToast("Recargando...", "refresh-cw");
+    showToast("Reloading...", "refresh-cw");
     wv.reload();
   });
 
@@ -2605,7 +2605,7 @@
   document.getElementById("btn-empty-tutorial").onclick = () => window.api.openOnboarding();
   document.getElementById("btn-inspector").onclick = toggleInspector;
 
-  // ─── Unified "Abrir" modal — URL vs Archivo/Carpeta ───
+  // ─── Unified "Open" modal — URL vs File/Folder ───
   const openDialogEl = document.getElementById("open-dialog");
   const odUrlInput = document.getElementById("od-url-input");
   function openOpenDialog() {
@@ -2629,14 +2629,14 @@
     const r = await window.api.openFileOrFolder();
     if (!r) return;
     if (r.kind === "folder") {
-      // A folder is ALWAYS a project workspace (flujos/prototipos/handoff/design).
+      // A folder is ALWAYS a project workspace (flows/prototipos/handoff/design).
       // Running its dev server as a localhost repo is the explicit «Repo» option —
       // opening a folder must never force the run dialog.
       startNewPrototype(r.path);
     } else if (r.kind === "file") {
       // main already emitted file:load → the tab opens itself
     } else {
-      showToast("Elige un archivo .html o una carpeta", "warn");
+      showToast("Choose an .html file or a folder", "warn");
     }
   };
   // «Repo»: pick a folder with a dev server and run/connect it (localhost, blue tab).
@@ -2645,7 +2645,7 @@
     const dir = await window.api.pickFolder();
     if (!dir) return;
     const info = await window.api.repoDetect(dir);
-    if (!info) { showToast("Esa carpeta no tiene package.json — ábrela como Proyecto", "warn"); return; }
+    if (!info) { showToast("That folder has no package.json — open it as a Project", "warn"); return; }
     openRunDialog(dir, info);
   };
   openDialogEl.addEventListener("mousedown", (e) => { if (e.target === openDialogEl) closeOpenDialog(); });
@@ -2654,9 +2654,9 @@
   // Open a folder as a PROJECT tab (workspace). Its artifacts live in the left
   // navigator; there's no guidance panel — you create things with the nav's «+».
   async function startNewPrototype(dir) {
-    const name = (dir.split("/").pop() || "Proyecto");
+    const name = (dir.split("/").pop() || "Project");
     // Scaffold the workspace structure once (prototipos/ planes/ handoff/ design/
-    // + .ohana/ for flujos) so every artifact has a home from the start.
+    // + .ohana/ for flows) so every artifact has a home from the start.
     try { await window.api.projectInit(dir); } catch (e) {}
     upsertTab({ key: "new:" + dir, kind: "new", src: dir, dir: dir, name: name });
     activateTab("new:" + dir);
@@ -2698,7 +2698,7 @@
     const dir = data.dir, key = "new:" + dir;
     const old = findTab(data.path); // legacy file-tab for this same html (old sessions)
     if (old && old.kind === "file") { tabs = tabs.filter((x) => x !== old); if (old.wv) old.wv.remove(); }
-    if (!findTab(key)) upsertTab({ key, kind: "new", src: dir, dir: dir, name: dir.split("/").pop() || "Proyecto" });
+    if (!findTab(key)) upsertTab({ key, kind: "new", src: dir, dir: dir, name: dir.split("/").pop() || "Project" });
     activateTab(key);
     window.api.tabSyncContext({ kind: "none", dir: dir, url: null, src: dir });
     openPrototypeArtifact(findTab(key), data.path);
@@ -2706,9 +2706,9 @@
   window.api.on("file:reload", (data) => {
     currentFilePath = data.path;
     reloadWebview(data.path);
-    flashPreview(); // visual "algo cambió" cue over the preview
+    flashPreview(); // visual "something changed" cue over the preview
     const changed = data.changedFile ? data.changedFile.split("/").pop() : null;
-    showToast(changed ? "Actualizado · " + changed : "Actualizado", "refresh-cw");
+    showToast(changed ? "Updated · " + changed : "Updated", "refresh-cw");
   });
 
   // Brief accent ring over the preview so you notice a change landed.
@@ -2790,20 +2790,20 @@
 
   // ════════════════════════════════════════════════════════════════════
   //  Inspector — click an element to edit its text, styles, CSS variables
-  //  and raw inline CSS live. Changes preview instantly; "Copiar estilos"
+  //  and raw inline CSS live. Changes preview instantly; "Copy styles"
   //  copies a paste-ready instruction to the clipboard for Claude.
   // ════════════════════════════════════════════════════════════════════
   const STYLE_FIELDS = [
     { k: "color", label: "Color", type: "color" },
-    { k: "background-color", label: "Fondo", type: "color" },
-    { k: "font-size", label: "Tamaño", type: "stepper" },
-    { k: "font-weight", label: "Peso", type: "text" },
-    { k: "line-height", label: "Interlineado", type: "stepper" },
-    { k: "text-align", label: "Alineación", type: "align" },
-    { k: "border-radius", label: "Radio", type: "stepper" },
-    { k: "width", label: "Ancho", type: "text", px: true },
-    { k: "height", label: "Alto", type: "text", px: true },
-    { k: "opacity", label: "Opacidad", type: "slider" },
+    { k: "background-color", label: "Background", type: "color" },
+    { k: "font-size", label: "Size", type: "stepper" },
+    { k: "font-weight", label: "Weight", type: "text" },
+    { k: "line-height", label: "Line height", type: "stepper" },
+    { k: "text-align", label: "Alignment", type: "align" },
+    { k: "border-radius", label: "Radius", type: "stepper" },
+    { k: "width", label: "Width", type: "text", px: true },
+    { k: "height", label: "Height", type: "text", px: true },
+    { k: "opacity", label: "Opacity", type: "slider" },
     { k: "display", label: "Display", type: "text" },
   ];
   const ALIGN_OPTS = [
@@ -2910,12 +2910,12 @@
     return (pref || list[0]).id;
   }
   const COMPONENT_SOURCE_LABEL = {
-    "config": "fuente: configuración (.ohana/config.json)",
-    "components.json": "fuente: components.json del proyecto",
-    "ohana-field": "fuente: design system (package.json · ohana)",
-    "mcp-context": "fuente: design system (mcp-context)",
-    "storybook": "fuente: Storybook",
-    "folder": "fuente: escaneo de carpeta (solo nombres)",
+    "config": "source: config (.ohana/config.json)",
+    "components.json": "source: project's components.json",
+    "ohana-field": "source: design system (package.json · ohana)",
+    "mcp-context": "source: design system (mcp-context)",
+    "storybook": "source: Storybook",
+    "folder": "source: folder scan (names only)",
     "none": "",
   };
   // Match the inspected element to a known component by class / data-ai-id.
@@ -2941,7 +2941,7 @@
     return dflt; // none of the modifier classes present → the default option
   }
   // Change a component prop: live-preview by swapping its mapped classes, and
-  // record the intent so "Aplicar al código" asks the agent to set the prop.
+  // record the intent so "Apply to code" asks the agent to set the prop.
   function ip_setProp(p, value) {
     if (!inspectorEdits) return;
     inspectorEdits.props = inspectorEdits.props || {};
@@ -2959,7 +2959,7 @@
     const sec = document.getElementById("ip-sec-component");
     if (!comp) { sec.classList.add("hidden"); return; }
     sec.classList.remove("hidden");
-    document.getElementById("ip-comp-name").textContent = comp.name || "Componente";
+    document.getElementById("ip-comp-name").textContent = comp.name || "Component";
     const wrap = document.getElementById("ip-component");
     wrap.innerHTML = "";
     (comp.props || []).forEach((p) => {
@@ -3036,7 +3036,7 @@
     const apply = document.getElementById("ip-apply");
     const send = document.getElementById("ip-send");
     if (apply) {
-      apply.textContent = n > 0 ? "Aplicar al código (" + n + ")" : "Aplicar al código";
+      apply.textContent = n > 0 ? "Apply to code (" + n + ")" : "Apply to code";
       apply.disabled = n === 0;
       apply.style.opacity = n === 0 ? "0.45" : "1";
     }
@@ -3049,27 +3049,27 @@
   function buildStylePrompt() {
     const e = inspectorEdits;
     const where = e.aiId ? '`[data-ai-id="' + e.aiId + '"]`' : "`" + e.selector + "`";
-    const what = e.component ? ("el componente " + e.component + " (" + where + ")") : ("el elemento " + where);
-    const lines = ["En " + what + " aplica estos cambios:"];
+    const what = e.component ? ("the " + e.component + " component (" + where + ")") : ("the element " + where);
+    const lines = ["On " + what + " apply these changes:"];
     const propKeys = Object.keys(e.props || {});
     if (propKeys.length) {
-      lines.push("- Props del componente (ajusta la prop, no el CSS):");
+      lines.push("- Component props (adjust the prop, not the CSS):");
       propKeys.forEach((k) => lines.push("    " + k + " = " + e.props[k]));
     }
-    if (e.text !== null) lines.push('- Texto: "' + e.text + '"');
+    if (e.text !== null) lines.push('- Text: "' + e.text + '"');
     const styleKeys = Object.keys(e.styles);
     if (styleKeys.length) {
-      lines.push("- Estilos (CSS):");
+      lines.push("- Styles (CSS):");
       styleKeys.forEach((k) => lines.push("    " + k + ": " + e.styles[k] + ";"));
     }
-    if (e.rawStyle !== null) lines.push("- Estilo inline completo: " + e.rawStyle);
-    if (e.order !== null) lines.push("- Mover el elemento a la posición " + (e.order + 1) + " entre sus hermanos.");
+    if (e.rawStyle !== null) lines.push("- Full inline style: " + e.rawStyle);
+    if (e.order !== null) lines.push("- Move the element to position " + (e.order + 1) + " among its siblings.");
     return lines.join("\n");
   }
   async function copyInspectorStyles() {
-    if (!inspectorEdits || inspectorChangeCount() === 0) { showToast("No hay cambios para copiar", "warn"); return; }
+    if (!inspectorEdits || inspectorChangeCount() === 0) { showToast("No changes to copy", "warn"); return; }
     await window.api.copyText(buildStylePrompt());
-    showToast("Instrucción copiada — pégasela al agente", "check");
+    showToast("Instruction copied — paste it to the agent", "check");
   }
 
   // Wrap the change list with a directive that tells the agent HOW to persist:
@@ -3077,24 +3077,24 @@
   // (so we never hardcode CSS that breaks the design system).
   function buildApplyPrompt(isRepo) {
     const head = isRepo
-      ? "Aplica al código estos cambios del inspector de Ohana. IMPORTANTE: este elemento es parte del design system del proyecto — NO inyectes CSS ni estilos inline que rompan el sistema. Si es un componente, ajusta su variante/prop (o usa el token correcto). Si el cambio no cabe dentro del sistema, decímelo en vez de forzarlo.\n\n"
-      : "Aplica al código estos cambios del inspector de Ohana (es un prototipo HTML, podés editarlo libremente):\n\n";
+      ? "Apply these changes from Ohana's inspector to the code. IMPORTANT: this element is part of the project's design system — do NOT inject CSS or inline styles that break the system. If it's a component, adjust its variant/prop (or use the right token). If the change doesn't fit within the system, tell me instead of forcing it.\n\n"
+      : "Apply these changes from Ohana's inspector to the code (it's an HTML prototype, you can edit it freely):\n\n";
     return head + buildStylePrompt();
   }
 
-  // "Aplicar al código" — send the accumulated edits to the active tab's
+  // "Apply to code" — send the accumulated edits to the active tab's
   // terminal so the agent writes them to source. Review before pressing Enter.
   function applyInspectorEdits() {
-    if (!inspectorEdits || inspectorChangeCount() === 0) { showToast("No hay cambios para aplicar", "warn"); return; }
+    if (!inspectorEdits || inspectorChangeCount() === 0) { showToast("No changes to apply", "warn"); return; }
     const at = activeTab();
-    if (!at) { showToast("Abre un prototipo primero", "warn"); return; }
+    if (!at) { showToast("Open a prototype first", "warn"); return; }
     const isRepo = at.kind === "repo";
     const prompt = buildApplyPrompt(isRepo);
     if (!termVisible) toggleTerminal(); else switchTerminalTo(at);
     setTimeout(() => window.api.termInput({ tabKey: at.key, data: prompt }), 280);
     showToast(isRepo
-      ? "Enviado al agente — lo aplicará por variante/prop (revisá y Enter)"
-      : "Enviado a la terminal — revisá y Enter", "check");
+      ? "Sent to the agent — it will apply by variant/prop (review and hit Enter)"
+      : "Sent to the terminal — review and hit Enter", "check");
   }
 
   document.getElementById("ip-text").addEventListener("input", (e) => ip_setText(e.target.value));
@@ -3106,7 +3106,7 @@
     // Discard the live preview edits by reloading the prototype
     closeInspector();
     if (webview && webviewReady) webview.reload();
-    showToast("Cambios descartados", "check");
+    showToast("Changes discarded", "check");
   };
 
   // ── Inspector · Auto Layout (visual flexbox controls) ──
@@ -3150,16 +3150,16 @@
     let html = "";
 
     if (!s.flex) {
-      html += '<div class="ly-enable"><span style="color:var(--text-m);font-size:11px;">Sin auto layout</span>' +
-        '<button class="ly-btn" data-act="enable">Usar Auto layout</button></div>';
+      html += '<div class="ly-enable"><span style="color:var(--text-m);font-size:11px;">No auto layout</span>' +
+        '<button class="ly-btn" data-act="enable">Use Auto layout</button></div>';
     } else {
-      html += '<div class="ly-enable"><span style="font-size:11px;">Activo</span>' +
-        '<button class="icon-btn" data-act="disable" title="Quitar auto layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>';
+      html += '<div class="ly-enable"><span style="font-size:11px;">Active</span>' +
+        '<button class="icon-btn" data-act="disable" title="Remove auto layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>';
       html += '<div class="ly-controls">';
       // Direction
-      html += '<div class="ly-row"><span class="ly-label">Dirección</span><div class="seg">' +
-        '<button data-act="dir" data-val="row" class="' + (s.dir === "row" ? "on" : "") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>Fila</button>' +
-        '<button data-act="dir" data-val="column" class="' + (s.dir === "column" ? "on" : "") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="6 13 12 19 18 13"/></svg>Columna</button>' +
+      html += '<div class="ly-row"><span class="ly-label">Direction</span><div class="seg">' +
+        '<button data-act="dir" data-val="row" class="' + (s.dir === "row" ? "on" : "") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>Row</button>' +
+        '<button data-act="dir" data-val="column" class="' + (s.dir === "column" ? "on" : "") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="6 13 12 19 18 13"/></svg>Column</button>' +
         "</div></div>";
       // Alignment grid + gap/padding
       const ji = pIdx(s.justify), ai = pIdx(s.align);
@@ -3180,10 +3180,10 @@
     // Order among siblings (always shown when there are siblings)
     if (s.count > 1) {
       html += '<div class="ly-row" style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">' +
-        '<span class="ly-label">Orden</span><div class="ly-order">' +
+        '<span class="ly-label">Order</span><div class="ly-order">' +
         '<button class="icon-btn" data-act="up"' + (s.index <= 0 ? " disabled" : "") + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button>' +
         '<button class="icon-btn" data-act="down"' + (s.index >= s.count - 1 ? " disabled" : "") + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>' +
-        '<span class="ly-pos">' + (s.index + 1) + " de " + s.count + "</span></div></div>";
+        '<span class="ly-pos">' + (s.index + 1) + " of " + s.count + "</span></div></div>";
     }
     wrap.innerHTML = html;
   }
@@ -3378,7 +3378,7 @@
     });
     const add = document.createElement("button");
     add.className = "tab-add";
-    add.title = "Abrir  ⌘O";
+    add.title = "Open  ⌘O";
     add.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
     add.onclick = () => openOpenDialog();
     tabsEl.appendChild(add);
@@ -3575,7 +3575,7 @@
     const wrap = document.createElement("div"); wrap.className = "ip-input-wrap";
     const sel = document.createElement("select"); sel.className = "ip-token-select";
     const tokens = colorTokens();
-    const optC = document.createElement("option"); optC.value = ""; optC.textContent = "Personalizado…"; sel.appendChild(optC);
+    const optC = document.createElement("option"); optC.value = ""; optC.textContent = "Custom…"; sel.appendChild(optC);
     tokens.forEach((t) => {
       const o = document.createElement("option"); o.value = t.name; o.textContent = t.name + " · " + t.value;
       sel.appendChild(o);
@@ -3854,12 +3854,12 @@
     const wrap = document.getElementById("ip-vars");
     wrap.innerHTML = "";
     if (designTokens.length === 0) {
-      wrap.innerHTML = '<div class="token-empty">No hay tokens en <b>design.md</b>. Definílos ahí (sección Tokens) y aparecerán aquí para aplicarlos.</div>';
+      wrap.innerHTML = '<div class="token-empty">No tokens in <b>design.md</b>. Define them there (Tokens section) and they will show up here to apply.</div>';
       return;
     }
     const note = document.createElement("div");
     note.className = "ip-token-note";
-    note.innerHTML = "Fuente de verdad: <b>design.md</b>. Para cambiar un valor, editá design.md (⇧⌘D).";
+    note.innerHTML = "Source of truth: <b>design.md</b>. To change a value, edit design.md (⇧⌘D).";
     wrap.appendChild(note);
     const chips = document.createElement("div"); chips.className = "token-chips";
     designTokens.forEach((t) => {
@@ -3902,7 +3902,7 @@
   });
   window.api.on("term:exit", (p) => {
     const inst = p && termInstances.get(p.tabKey);
-    if (inst) { inst.term.write("\r\n\x1b[90m[shell terminado]\x1b[0m\r\n"); inst.started = false; }
+    if (inst) { inst.term.write("\r\n\x1b[90m[shell terminated]\x1b[0m\r\n"); inst.started = false; }
   });
 
   function ensureTermInstance(tab) {
@@ -3948,13 +3948,13 @@
     const file = tab.kind === "file" ? (tab.src || null) : null;
     const res = await window.api.termStart({ tabKey: inst.key, cols: d.cols, rows: d.rows, cwd: cwd, file: file });
     if (res && res.error) {
-      inst.term.write("\x1b[31mNo se pudo iniciar la terminal: " + res.error + "\x1b[0m\r\n");
+      inst.term.write("\x1b[31mCouldn't start the terminal: " + res.error + "\x1b[0m\r\n");
       return;
     }
     inst.started = true;
     if (res && res.cwd) {
       inst.term.write("\x1b[90m" + res.cwd + "\x1b[0m\r\n");
-      if (file) inst.term.write("\x1b[90marchivo de este tab: " + file.split("/").pop() + "  ($OHANA_FILE)\x1b[0m\r\n");
+      if (file) inst.term.write("\x1b[90mthis tab's file: " + file.split("/").pop() + "  ($OHANA_FILE)\x1b[0m\r\n");
     }
   }
 
@@ -4031,8 +4031,8 @@
     if (!contextFiles.length) {
       empty.style.display = "";
       empty.textContent = contextActiveTab
-        ? "No hay archivos .md en esta carpeta."
-        : "Abre un archivo o repo para ver su contexto.";
+        ? "No .md files in this folder."
+        : "Open a file or repo to see its context.";
       return;
     }
     empty.style.display = "none";
@@ -4042,7 +4042,7 @@
       row.innerHTML =
         '<svg class="ctx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M13 2v7h7"/></svg>' +
         '<span class="ctx-meta"><span class="ctx-name"></span><span class="ctx-rel"></span></span>' +
-        '<button class="ctx-ref" title="Insertar @ruta en la terminal">@</button>';
+        '<button class="ctx-ref" title="Insert @path into the terminal">@</button>';
       row.querySelector(".ctx-name").textContent = f.name;
       row.querySelector(".ctx-rel").textContent = f.rel + (f.size ? " · " + fmtBytes(f.size) : "");
       row.querySelector(".ctx-ref").onclick = (e) => { e.stopPropagation(); insertContextRef(f); };
@@ -4055,11 +4055,11 @@
     const back = document.getElementById("ctx-preview");
     const body = document.getElementById("ctx-preview-body");
     document.getElementById("ctx-preview-name").textContent = f.name;
-    body.textContent = "Cargando…";
+    body.textContent = "Loading…";
     back.classList.add("visible");
     const content = await window.api.contextRead(f.path);
     if (content != null) body.innerHTML = renderMarkdown(content);
-    else body.textContent = "No se pudo leer el archivo.";
+    else body.textContent = "Couldn't read the file.";
   }
 
   // Write "@rel/path " into the active tab's terminal prompt (opening the
@@ -4069,7 +4069,7 @@
     if (!at) return;
     if (!termVisible) toggleTerminal(); else switchTerminalTo(at);
     setTimeout(() => window.api.termInput({ tabKey: at.key, data: "@" + f.rel + " " }), 260);
-    showToast("Insertado @" + f.rel + " en la terminal", "check");
+    showToast("Inserted @" + f.rel + " into the terminal", "check");
   }
 
   function toggleContext() {
@@ -4086,14 +4086,14 @@
 
   // ════════════════════════════════════════════════════════════════════
   // Project navigator (floating panel) — a folder workspace's artifacts:
-  // Flujos (Moka boards) · Prototipos (.html) · Handoff · Design.
+  // Flows (Moka boards) · Prototypes (.html) · Handoff · Design.
   // Collapsible per-section; collapses to an icon rail.
   // ════════════════════════════════════════════════════════════════════
   let projManifest = null, navCollapsed = false, navSecCollapsed = {};
   const NAV_SECTIONS = [
-    { key: "boards", title: "Flujos", art: "board", add: true },
-    { key: "prototypes", title: "Prototipos", art: "html" },
-    { key: "plans", title: "Planes", art: "md" },
+    { key: "boards", title: "Flows", art: "board", add: true },
+    { key: "prototypes", title: "Prototypes", art: "html" },
+    { key: "plans", title: "Plans", art: "md" },
     { key: "handoff", title: "Handoff", art: "md" },
     { key: "design", title: "Design", art: "md" },
   ];
@@ -4112,8 +4112,8 @@
   }
   function boardIc(b) { return b === "sitemap" ? (FI.workflow || FILE_IC) : FI.arrowRight; }
   function isProjectTab(t) { return !!(t && (t.kind === "new" || t.kind === "project") && t.dir); }
-  // Repos get the navigator too (they're folders: flujos/planes/handoff/design),
-  // EXCEPT the Prototipos section — a repo's "prototype" is its running localhost.
+  // Repos get the navigator too (they're folders: flows/planes/handoff/design),
+  // EXCEPT the Prototypes section — a repo's "prototype" is its running localhost.
   function isNavTab(t) { return isProjectTab(t) || !!(t && t.kind === "repo" && t.dir); }
   // Sync visibility + inset (runs cheaply on every view change).
   function updateNavVisibility() {
@@ -4135,7 +4135,7 @@
     refreshGitCard(); // footer git card follows the same visibility (cheap: 8s cache)
     const at = activeTab();
     if (!isNavTab(at)) { projManifest = null; return; }
-    document.getElementById("pn-name").textContent = at.name || "Proyecto";
+    document.getElementById("pn-name").textContent = at.name || "Project";
     const fresh = projManifest && _navScanDir === at.dir && (performance.now() - _navScanAt) < 600;
     if (fresh && !force) { paintProjectNav(at); return; }      // paint from cache, no disk I/O
     if (_navScanning) { _navScanQueued = true; return; }        // a scan is already running → let it repaint
@@ -4162,7 +4162,7 @@
     const REPO_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
     const repoActive = at.kind === "repo" && !at.artifact && !flowMode;
     const repoCard = at.kind === "repo"
-      ? '<div class="pn-repo-card' + (repoActive ? " active" : "") + '" data-repoview="1" title="Volver al preview del repo">' +
+      ? '<div class="pn-repo-card' + (repoActive ? " active" : "") + '" data-repoview="1" title="Back to the repo preview">' +
         '<span class="pn-repo-ic">' + REPO_IC + '</span>' +
         '<div class="pn-repo-txt"><span class="pn-repo-name">Preview</span>' +
         '<span class="pn-repo-url">' + escapeHtml((at.src || "").replace(/^https?:\/\//, "")) + '</span></div>' +
@@ -4171,7 +4171,7 @@
     // Collapsed → icon rail (keeps the section icons visible).
     if (navCollapsed) {
       const repoRail = at.kind === "repo"
-        ? '<div class="pn-rail-ic pn-rail-repo' + (repoActive ? " active" : "") + '" data-repoview="1" title="Preview del repo">' + REPO_IC + '</div>'
+        ? '<div class="pn-rail-ic pn-rail-repo' + (repoActive ? " active" : "") + '" data-repoview="1" title="Repo preview">' + REPO_IC + '</div>'
         : "";
       body.innerHTML = '<div class="pn-rail">' + repoRail + sections.map((s) => {
         const n = (m[s.key] || []).length;
@@ -4181,25 +4181,25 @@
     }
     const art = at.artifact || {};
     const activeBoard = flowMode ? flowDoc.active : null;
-    const moreBtn = '<button class="pn-more" title="Opciones"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>';
+    const moreBtn = '<button class="pn-more" title="Options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>';
     const item = (ic, icCls, label, attrs, activeItem, hasRef, rel, name, tagKey) => {
       const tg = tags[tagKey];
       const chip = tg && tg.name ? '<span class="pn-tag" style="--tc:' + escapeHtml(tg.color || "#7cb0ff") + '">' + escapeHtml(tg.name) + '</span>' : "";
       return '<div class="pn-item' + (activeItem ? " active" : "") + '" ' + attrs + (rel ? ' data-rel="' + escapeHtml(rel) + '"' : "") + ' data-name="' + escapeHtml(name || label) + '" data-tagkey="' + escapeHtml(tagKey || "") + '">' +
         '<span class="pn-ic ' + (icCls || "") + '">' + ic + '</span><span class="pn-label">' + escapeHtml(label) + '</span>' + chip +
-        (hasRef ? '<button class="pn-ref" title="@ a la terminal">@</button>' : "") + moreBtn + '</div>';
+        (hasRef ? '<button class="pn-ref" title="@ to the terminal">@</button>' : "") + moreBtn + '</div>';
     };
     body.innerHTML = repoCard + sections.map((s) => {
       let rows;
       if (s.art === "board") rows = (m.boards || []).map((b) => item(boardIc(b.board), "type-" + b.board, b.name, 'data-art="board" data-ref="' + b.id + '"', activeBoard === b.id, false, null, b.name, "board:" + b.id)).join("");
       else rows = (m[s.key] || []).map((p) => item(s.art === "html" ? HTML_IC : MD_IC, "type-" + s.art, p.name, 'data-art="' + s.art + '" data-ref="' + escapeHtml(p.path) + '"', art.path === p.path, true, p.rel, p.name, p.rel)).join("");
       const col = navSecCollapsed[s.key] ? " collapsed" : "";
-      // Section header actions: Flujos gets «+», Handoff gets ✦ generate + ↗ to-repo.
+      // Section header actions: Flows gets «+», Handoff gets ✦ generate + ↗ to-repo.
       let acts = "";
-      if (s.key === "boards") acts = '<span class="pn-add" data-add="board" title="Nuevo flujo">+</span>';
+      if (s.key === "boards") acts = '<span class="pn-add" data-add="board" title="New flow">+</span>';
       if (s.key === "handoff") acts =
-        '<span class="pn-add" data-add="handoff" title="Generar handoff — el agente destila el proyecto">' + FI.sparkle + '</span>' +
-        '<span class="pn-add" data-add="torepo" title="Llevar a repositorio — implementar el handoff">' + FI.arrowUpRight + '</span>';
+        '<span class="pn-add" data-add="handoff" title="Generate handoff — the agent distills the project">' + FI.sparkle + '</span>' +
+        '<span class="pn-add" data-add="torepo" title="Take to a repository — implement the handoff">' + FI.arrowUpRight + '</span>';
       return '<div class="pn-sec' + col + '"><div class="pn-sec-h" data-sech="' + s.key + '">' +
         '<svg class="pn-sec-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>' +
         '<span class="pn-sec-hic">' + navSecIcon(s.key) + '</span>' +
@@ -4230,15 +4230,15 @@
     if (!st || !st.git) { pnGit.classList.remove("visible"); return; }
     const synced = st.upstream && !st.ahead && !st.behind && !st.changes;
     let badges = "";
-    if (synced) badges = '<span class="pn-git-ok">' + GIT_CHECK_IC + 'Sincronizado</span>';
+    if (synced) badges = '<span class="pn-git-ok">' + GIT_CHECK_IC + 'Synced</span>';
     else {
-      if (st.upstream) badges += '<span class="pn-git-badge" title="Commits por bajar / subir">↓' + st.behind + " ↑" + st.ahead + "</span>";
-      else badges += '<span class="pn-git-badge pn-git-noup" title="La rama no tiene upstream">sin remoto</span>';
-      if (st.changes) badges += '<span class="pn-git-badge pn-git-dirty" title="Archivos con cambios sin commit">●' + st.changes + "</span>";
+      if (st.upstream) badges += '<span class="pn-git-badge" title="Commits to pull / push">↓' + st.behind + " ↑" + st.ahead + "</span>";
+      else badges += '<span class="pn-git-badge pn-git-noup" title="The branch has no upstream">no remote</span>';
+      if (st.changes) badges += '<span class="pn-git-badge pn-git-dirty" title="Files with uncommitted changes">●' + st.changes + "</span>";
     }
     pnGit.innerHTML = '<span class="pn-git-ic">' + GIT_BRANCH_IC + '</span>' +
       '<span class="pn-git-branch">' + escapeHtml(st.branch) + '</span>' + badges;
-    pnGit.title = "git — " + st.branch + (st.upstream ? " · ↓" + st.behind + " por bajar · ↑" + st.ahead + " por subir" : " · sin upstream") + " · " + st.changes + " cambios locales. Clic para ver el detalle.";
+    pnGit.title = "git — " + st.branch + (st.upstream ? " · ↓" + st.behind + " to pull · ↑" + st.ahead + " to push" : " · no upstream") + " · " + st.changes + " local changes. Click to see the details.";
     pnGit.classList.add("visible");
     _gitLast = st;
     if (document.querySelector(".pn-git-pop")) paintGitPopover(); // live-update an open popover
@@ -4247,39 +4247,39 @@
 
   // Detail popover (VS Code's SCM view, in miniature): upstream + sync counts +
   // changed files with their status letter, plus a hand-off to the tab's agent.
-  const GIT_ST_LABEL = { M: "Modificado", A: "Agregado", D: "Eliminado", R: "Renombrado", U: "Nuevo (sin trackear)", C: "Copiado", T: "Tipo cambiado" };
+  const GIT_ST_LABEL = { M: "Modified", A: "Added", D: "Deleted", R: "Renamed", U: "New (untracked)", C: "Copied", T: "Type changed" };
   function closeGitPopover() { document.querySelectorAll(".pn-git-pop").forEach((n) => n.remove()); }
   function paintGitPopover() {
     const pop = document.querySelector(".pn-git-pop"); const st = _gitLast;
     if (!pop || !st) return;
     const syncLine = st.upstream
       ? (st.ahead || st.behind
-        ? "↓" + st.behind + " por bajar · ↑" + st.ahead + " por subir"
-        : "Al día con " + escapeHtml(st.upstreamName || "el remoto"))
-      : "La rama no tiene upstream";
+        ? "↓" + st.behind + " to pull · ↑" + st.ahead + " to push"
+        : "Up to date with " + escapeHtml(st.upstreamName || "the remote"))
+      : "The branch has no upstream";
     const rows = (st.files || []).map((f) =>
       '<div class="pn-git-file" title="' + escapeHtml((GIT_ST_LABEL[f.st] || f.st) + " — " + f.path) + '">' +
       '<span class="pn-git-st st-' + escapeHtml(f.st) + '">' + escapeHtml(f.st) + '</span>' +
       '<span class="pn-git-path">' + escapeHtml(f.path) + '</span></div>').join("");
-    const more = st.changes > (st.files || []).length ? '<div class="pn-git-more">+' + (st.changes - st.files.length) + ' más</div>' : "";
+    const more = st.changes > (st.files || []).length ? '<div class="pn-git-more">+' + (st.changes - st.files.length) + ' more</div>' : "";
     const action = st.changes
-      ? '<button class="pn-git-act" data-act="commit">Commit con el agente</button>'
-      : (st.upstream && (st.ahead || st.behind) ? '<button class="pn-git-act" data-act="sync">Sincronizar con el agente</button>' : "");
+      ? '<button class="pn-git-act" data-act="commit">Commit with the agent</button>'
+      : (st.upstream && (st.ahead || st.behind) ? '<button class="pn-git-act" data-act="sync">Sync with the agent</button>' : "");
     pop.innerHTML =
       '<div class="pn-git-pop-h">' + GIT_BRANCH_IC + '<b>' + escapeHtml(st.branch) + '</b>' +
       (st.upstreamName ? '<span class="pn-git-up">→ ' + escapeHtml(st.upstreamName) + '</span>' : "") + '</div>' +
       '<div class="pn-git-sync">' + syncLine + '</div>' +
-      (st.changes ? '<div class="pn-git-sec">Cambios locales (' + st.changes + ')</div><div class="pn-git-files">' + rows + more + '</div>' : "") +
+      (st.changes ? '<div class="pn-git-sec">Local changes (' + st.changes + ')</div><div class="pn-git-files">' + rows + more + '</div>' : "") +
       (action ? '<div class="pn-git-pop-f">' + action + '</div>' : "");
     const act = pop.querySelector(".pn-git-act");
     if (act) act.onclick = () => {
       const at = activeTab(); if (!at) return;
       const md = act.dataset.act === "commit"
-        ? "Haz commit de los cambios pendientes de este repo: revisa `git status` y `git diff`, agrupa los cambios relacionados y escribe mensajes claros. No hagas push sin confirmarlo conmigo."
-        : "Sincroniza este repo con su upstream: `git pull` primero (avísame si hay conflictos en vez de resolverlos a la fuerza) y luego `git push` si hay commits locales.";
+        ? "Commit this repo's pending changes: review `git status` and `git diff`, group related changes together, and write clear messages. Don't push without confirming with me first."
+        : "Sync this repo with its upstream: `git pull` first (let me know if there are conflicts instead of resolving them by force) and then `git push` if there are local commits.";
       if (!termVisible) toggleTerminal(); else switchTerminalTo(at);
       setTimeout(() => window.api.termInput({ tabKey: at.key, data: md }), 240);
-      closeGitPopover(); showToast("Enviado a la terminal", "check");
+      closeGitPopover(); showToast("Sent to the terminal", "check");
     };
   }
   pnGit.addEventListener("click", () => {
@@ -4295,38 +4295,38 @@
     setTimeout(() => document.addEventListener("mousedown", out, true), 0);
   });
 
-  // ⋯ menu per item: Duplicar / Eliminar.
-  // ── Fase 3: Handoff → Repositorio (Ohana orquesta, el agente ejecuta) ──
-  // «Generar handoff»: the agent distills the whole project into handoff/*.md.
+  // ⋯ menu per item: Duplicate / Delete.
+  // ── Phase 3: Handoff → Repository (Ohana orchestrates, the agent executes) ──
+  // «Generate handoff»: the agent distills the whole project into handoff/*.md.
   function runHandoffGenerate() {
     const at = requireAnchor(); if (!at) return;
     const md =
-      "Genera la documentación de HANDOFF de este proyecto en la carpeta `handoff/` (créala si falta). Es el paquete que un equipo lleva a un repositorio: corto, accionable, listo para volverse issues de Linear.\n\n" +
-      "FUENTES (léelas antes de escribir):\n" +
-      "- Los boards de Moka: usa las tools MCP (`ohana_status`, `ohana_flow_list`, `ohana_flow_read`) o `.ohana/flow.json` — pantallas con sus handles (P1…), secciones→componentes, conexiones con su semántica (Sí/No, Éxito/Error), APIs y vistas vinculadas.\n" +
-      "- Los prototipos en `prototipos/*.html` (referencia visual y de interacción).\n" +
-      "- `design.md` (tokens, voz y tono, principios) y los planes en `planes/`.\n" +
-      "- Los comentarios del prototipo (`ohana_list_comments`): los resueltos son decisiones tomadas.\n\n" +
-      "ESTRUCTURA de salida:\n" +
-      "- `handoff/00-overview.md` — visión del proyecto, alcance, mapa de flujos (nómbralos por nombre + board type).\n" +
-      "- Un doc por flujo: `handoff/<n>-<slug-del-flujo>.md` con: épica y contexto · historias de usuario con criterios de aceptación (Given/When/Then) · referencias a pantallas por handle (P1…) · endpoints/APIs de las tarjetas · estados y ramas (positivo/negativo) · link al prototipo si existe.\n\n" +
-      "REGLAS: español neutro; NO inventes alcance que no esté en los boards/prototipos/comentarios; si algo quedó ambiguo, márcalo como «Pregunta abierta». Los docs aparecen en vivo en el panel Handoff de Ohana.";
-    sendToTerminal(at, md, "Instrucción enviada — los docs aparecerán en Handoff");
+      "Generate the HANDOFF documentation for this project in the `handoff/` folder (create it if missing). It's the package a team takes to a repository: short, actionable, ready to become Linear issues.\n\n" +
+      "SOURCES (read them before writing):\n" +
+      "- The Moka boards: use the MCP tools (`ohana_status`, `ohana_flow_list`, `ohana_flow_read`) or `.ohana/flow.json` — screens with their handles (P1…), sections→components, connections with their semantics (Yes/No, Success/Error labels), APIs, and linked views.\n" +
+      "- The prototypes in `prototipos/*.html` (visual and interaction reference).\n" +
+      "- `design.md` (tokens, voice and tone, principles) and the plans in `planes/`.\n" +
+      "- The prototype comments (`ohana_list_comments`): the resolved ones are decisions already made.\n\n" +
+      "OUTPUT STRUCTURE:\n" +
+      "- `handoff/00-overview.md` — project vision, scope, flow map (name them by name + board type).\n" +
+      "- One doc per flow: `handoff/<n>-<flow-slug>.md` with: epic and context · user stories with acceptance criteria (Given/When/Then) · screen references by handle (P1…) · card endpoints/APIs · states and branches (positive/negative) · link to the prototype if one exists.\n\n" +
+      "RULES: clear neutral English; do NOT invent scope that isn't in the boards/prototypes/comments; if something is ambiguous, mark it as «Open question». The docs appear live in Ohana's Handoff panel.";
+    sendToTerminal(at, md, "Instruction sent — the docs will appear in Handoff");
   }
   // «Llevar a repositorio»: pick the destination repo and ask the agent to implement the handoff there.
   async function takeToRepo() {
     const at = requireAnchor(); if (!at) return;
     const m = projManifest || {};
-    if (!(m.handoff || []).length) { showToast("Primero genera el handoff (✦)", "warn"); return; }
+    if (!(m.handoff || []).length) { showToast("Generate the handoff first (✦)", "warn"); return; }
     const dir = await window.api.pickFolder(); if (!dir) return;
     const md =
-      "Implementa en el repositorio `" + dir + "` lo definido en la documentación de handoff de este proyecto (`" + (at.dir || "") + "/handoff/`).\n" +
-      "- Lee TODOS los .md de `handoff/` (y `design.md` para tokens/voz) ANTES de tocar código.\n" +
-      "- Respeta el stack y las convenciones del repo destino (revisa su package.json, README y estructura).\n" +
-      "- Trabaja por historias, en el orden de los docs; si el repo usa git, un commit por historia (no hagas push).\n" +
-      "- Los prototipos en `prototipos/*.html` son la referencia visual — replica la intención, no el HTML literal.\n" +
-      "- Al terminar: resume qué quedó implementado, qué quedó pendiente y cómo correr el proyecto.";
-    sendToTerminal(at, md, "Instrucción enviada — cuando el dev server corra, ábrelo como Repo");
+      "Implement in the repository `" + dir + "` what's defined in this project's handoff documentation (`" + (at.dir || "") + "/handoff/`).\n" +
+      "- Read ALL the .md files in `handoff/` (and `design.md` for tokens/voice) BEFORE touching code.\n" +
+      "- Respect the destination repo's stack and conventions (check its package.json, README, and structure).\n" +
+      "- Work story by story, in the order of the docs; if the repo uses git, one commit per story (don't push).\n" +
+      "- The prototypes in `prototipos/*.html` are the visual reference — replicate the intent, not the literal HTML.\n" +
+      "- When you're done: summarize what got implemented, what's still pending, and how to run the project.";
+    sendToTerminal(at, md, "Instruction sent — when the dev server runs, open it as a Repo");
   }
   let projTags = {}; // current project's tags (loaded on nav render)
   function saveProjTags() { try { window.api.ohanaWriteFile({ filename: "tags.json", content: JSON.stringify(projTags, null, 2) }); } catch (e) {} }
@@ -4335,10 +4335,10 @@
     document.querySelectorAll(".pn-menu").forEach((n) => n.remove());
     const menu = document.createElement("div"); menu.className = "pn-menu"; menu.style.cssText = "left:" + x + "px;top:" + y + "px;";
     menu.innerHTML =
-      '<button data-a="ren">' + FI.edit + 'Renombrar</button>' +
-      '<button data-a="tag">' + FI.tag + 'Etiqueta…</button>' +
-      '<button data-a="dup">' + FI.dup + 'Duplicar</button>' +
-      '<button data-a="del" class="danger">' + FI.trash + 'Eliminar</button>';
+      '<button data-a="ren">' + FI.edit + 'Rename</button>' +
+      '<button data-a="tag">' + FI.tag + 'Tag…</button>' +
+      '<button data-a="dup">' + FI.dup + 'Duplicate</button>' +
+      '<button data-a="del" class="danger">' + FI.trash + 'Delete</button>';
     document.body.appendChild(menu);
     const close = () => { menu.remove(); document.removeEventListener("mousedown", out, true); };
     const out = (ev) => { if (!menu.contains(ev.target)) close(); };
@@ -4352,7 +4352,7 @@
   function openRenamePopover(art, ref, currentName, x, y) {
     document.querySelectorAll(".pn-menu").forEach((n) => n.remove());
     const pop = document.createElement("div"); pop.className = "pn-menu pn-form"; pop.style.cssText = "left:" + x + "px;top:" + y + "px;";
-    pop.innerHTML = '<input class="pn-input" spellcheck="false" placeholder="Nuevo nombre" />';
+    pop.innerHTML = '<input class="pn-input" spellcheck="false" placeholder="New name" />';
     document.body.appendChild(pop);
     const inp = pop.querySelector("input"); inp.value = currentName; inp.focus(); inp.select();
     const close = () => { pop.remove(); document.removeEventListener("mousedown", out, true); };
@@ -4365,10 +4365,10 @@
       if (art === "board") {
         await loadFlowForActive();
         const f = (flowDoc.flows || []).find((b) => b.id === ref); if (!f) return;
-        f.name = nv; saveFlow(); writeFlowFile(); renderFlowSwitcher(); renderProjectNav(true); showToast("Flujo renombrado", "check");
+        f.name = nv; saveFlow(); writeFlowFile(); renderFlowSwitcher(); renderProjectNav(true); showToast("Flow renamed", "check");
       } else {
         const dest = await window.api.projectRenameFile({ path: ref, newName: nv });
-        if (!dest) { showToast("No se pudo renombrar (¿nombre en uso?)", "warn"); return; }
+        if (!dest) { showToast("Couldn't rename (name in use?)", "warn"); return; }
         const at = activeTab();
         // Keep references + tag in sync with the new path.
         const oldRel = (Array.prototype.find.call(document.querySelectorAll(".pn-item"), (el) => el.dataset.ref === ref) || {}).dataset;
@@ -4376,7 +4376,7 @@
         if (at && at.previewPath === ref) { at.previewPath = dest; if (at.wv) { at.wv.remove(); at.wv = null; at.wvReady = false; } if (at.artifact && at.artifact.kind === "html") mountWebview(at); }
         const relOld = oldRel && oldRel.tagkey; const relNew = at && at.dir ? dest.slice(at.dir.length + 1) : dest;
         if (relOld && projTags[relOld]) { projTags[relNew] = projTags[relOld]; delete projTags[relOld]; saveProjTags(); }
-        renderProjectNav(true); showToast("Renombrado", "check");
+        renderProjectNav(true); showToast("Renamed", "check");
       }
     });
     setTimeout(() => document.addEventListener("mousedown", out, true), 0);
@@ -4389,9 +4389,9 @@
     const cur = projTags[tagKey] || {};
     const pop = document.createElement("div"); pop.className = "pn-menu pn-form"; pop.style.cssText = "left:" + x + "px;top:" + y + "px;";
     pop.innerHTML =
-      '<input class="pn-input" spellcheck="false" placeholder="Nombre de la etiqueta" />' +
+      '<input class="pn-input" spellcheck="false" placeholder="Tag name" />' +
       '<div class="pn-swatches">' + TAG_COLORS.map((c) => '<button class="pn-sw' + (cur.color === c ? " on" : "") + '" data-c="' + c + '" style="--c:' + c + '"></button>').join("") + '</div>' +
-      '<div class="pn-form-actions"><button class="pn-fbtn" data-a="clear">Quitar</button><button class="pn-fbtn accent" data-a="save">Guardar</button></div>';
+      '<div class="pn-form-actions"><button class="pn-fbtn" data-a="clear">Remove</button><button class="pn-fbtn accent" data-a="save">Save</button></div>';
     document.body.appendChild(pop);
     const inp = pop.querySelector("input"); inp.value = cur.name || ""; inp.focus();
     let color = cur.color || TAG_COLORS[0];
@@ -4407,9 +4407,9 @@
   async function duplicateBoard(id) {
     await loadFlowForActive();
     const f = (flowDoc.flows || []).find((x) => x.id === id); if (!f) return;
-    const c = JSON.parse(JSON.stringify(f)); c.id = flowGenId(); c.name = (f.name || "Flujo") + " copia";
+    const c = JSON.parse(JSON.stringify(f)); c.id = flowGenId(); c.name = (f.name || "Flow") + " copy";
     flowDoc.flows.push(c); saveFlow(); writeFlowFile(); // flush now — the nav rescans from disk
-    renderFlowSwitcher(); renderProjectNav(true); showToast("Flujo duplicado", "check");
+    renderFlowSwitcher(); renderProjectNav(true); showToast("Flow duplicated", "check");
   }
   async function deleteBoard(id) {
     await loadFlowForActive();
@@ -4418,19 +4418,19 @@
     if (flowDoc.active === id) flowDoc.active = flowDoc.flows[0] ? flowDoc.flows[0].id : null;
     if (flow && flow.id === id) { flowMode = false; syncView(); }
     saveFlow(); writeFlowFile(); // flush now — the nav rescans from disk
-    renderFlowSwitcher(); renderProjectNav(true); showToast("Flujo eliminado", "refresh-cw");
+    renderFlowSwitcher(); renderProjectNav(true); showToast("Flow deleted", "refresh-cw");
   }
   async function duplicateFile(p) {
-    try { const r = await window.api.projectDuplicateFile(p); if (r) { showToast("Archivo duplicado", "check"); renderProjectNav(true); } else showToast("No se pudo duplicar", "warn"); } catch (e) { showToast("No se pudo duplicar", "warn"); }
+    try { const r = await window.api.projectDuplicateFile(p); if (r) { showToast("File duplicated", "check"); renderProjectNav(true); } else showToast("Couldn't duplicate", "warn"); } catch (e) { showToast("Couldn't duplicate", "warn"); }
   }
   async function deleteFile(p, name) {
     try {
-      const r = await window.api.projectDeleteFile(p); if (!r) { showToast("No se pudo eliminar", "warn"); return; }
+      const r = await window.api.projectDeleteFile(p); if (!r) { showToast("Couldn't delete", "warn"); return; }
       const at = activeTab();
       if (prPath === p) { prPath = null; prDirty = false; } // never auto-save a file we just deleted
       if (at && at.artifact && at.artifact.path === p) { at.artifact = null; hideProjReader(); if (at.previewPath === p) { at.previewPath = null; if (at.wv) { at.wv.remove(); at.wv = null; at.wvReady = false; } syncView(); } }
-      showToast("Eliminado " + (name || ""), "refresh-cw"); renderProjectNav(true);
-    } catch (e) { showToast("No se pudo eliminar", "warn"); }
+      showToast("Deleted " + (name || ""), "refresh-cw"); renderProjectNav(true);
+    } catch (e) { showToast("Couldn't delete", "warn"); }
   }
   // Open a Moka board in place (bypasses the disk reload so any board of the
   // project shows, regardless of its src owner).
@@ -4457,7 +4457,7 @@
     const at = activeTab(); if (!at) return;
     await loadFlowForActive(); // fresh doc from disk — never clobber existing boards
     const n = (flowDoc.flows || []).length + 1;
-    const f = { id: flowGenId(), name: (type === "sitemap" ? "Sitemap " : "Flujo ") + n, board: type === "sitemap" ? "sitemap" : "userflow", src: at.src || at.dir || null, screens: [], edges: [] };
+    const f = { id: flowGenId(), name: (type === "sitemap" ? "Sitemap " : "Flow ") + n, board: type === "sitemap" ? "sitemap" : "userflow", src: at.src || at.dir || null, screens: [], edges: [] };
     flowDoc.flows.push(f); flowDoc.active = f.id; bindTabFlow(f.id);
     at.artifact = { kind: "board", id: f.id }; // per-tab memory
     flow = f; flowSel = new Set(); flowView = { x: 40, y: 40, s: 1 };
@@ -4465,7 +4465,7 @@
     saveFlow(); writeFlowFile(); // flush now — the nav rescans from disk
     renderFlow(); renderFlowSwitcher(); renderProjectNav(true);
   }
-  // Tiny type picker for "+ Flujo" (type is chosen at creation, no toggle).
+  // Tiny type picker for "+ Flow" (type is chosen at creation, no toggle).
   // Uses the same glass menu style as the ⋯ menu for consistency.
   function openBoardCreator(x, y) {
     document.querySelectorAll(".pn-menu").forEach((n) => n.remove());
@@ -4515,11 +4515,11 @@
     setReaderMode("preview");
     reader.classList.add("visible");
     document.body.classList.add("md-reading"); // reader owns the center → toolbar goes quiet
-    const body = document.getElementById("pr-body"); body.textContent = "Cargando…";
+    const body = document.getElementById("pr-body"); body.textContent = "Loading…";
     const content = await window.api.contextRead(p);
     if (prPath !== p) return; // opened another doc meanwhile
     prSource = content != null ? content : "";
-    body.innerHTML = content != null ? renderMarkdown(prSource) : "No se pudo leer el archivo.";
+    body.innerHTML = content != null ? renderMarkdown(prSource) : "Couldn't read the file.";
   }
   function setReaderMode(mode) {
     const reader = document.getElementById("proj-reader");
@@ -4559,7 +4559,7 @@
     if (!prPath || !prDirty) return true;
     prSource = htmlToMd(document.getElementById("pr-body"));
     const ok = await window.api.projectWriteFile({ path: prPath, content: prSource });
-    if (ok) { prDirty = false; showToast("Guardado", "check"); } else showToast("No se pudo guardar", "warn");
+    if (ok) { prDirty = false; showToast("Saved", "check"); } else showToast("Couldn't save", "warn");
     return ok;
   }
   document.getElementById("pn-body").addEventListener("click", (e) => {
@@ -4582,7 +4582,7 @@
     if (e.target.closest(".pn-more")) { const r = e.target.closest(".pn-more").getBoundingClientRect(); openNavItemMenu(item, Math.max(8, r.right - 150), r.bottom + 4); return; }
     if (e.target.closest(".pn-ref")) {
       const at = activeTab(); const rel = item.dataset.rel;
-      if (at && rel) { if (!termVisible) toggleTerminal(); else switchTerminalTo(at); setTimeout(() => window.api.termInput({ tabKey: at.key, data: "@" + rel + " " }), 240); showToast("Insertado @" + rel, "check"); }
+      if (at && rel) { if (!termVisible) toggleTerminal(); else switchTerminalTo(at); setTimeout(() => window.api.termInput({ tabKey: at.key, data: "@" + rel + " " }), 240); showToast("Inserted @" + rel, "check"); }
       return;
     }
     const at = activeTab(); if (!at) return;
@@ -4600,7 +4600,7 @@
   document.getElementById("pr-tab-edit").onclick = () => setReaderMode("edit");
   document.getElementById("pr-body").addEventListener("input", () => { if (document.getElementById("proj-reader").classList.contains("mode-edit")) prDirty = true; });
   document.getElementById("pr-body").addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) { e.preventDefault(); saveReaderDoc(); } });
-  document.getElementById("pr-ref").onclick = () => { const a = activeTab(); if (a && prRel) { if (!termVisible) toggleTerminal(); else switchTerminalTo(a); setTimeout(() => window.api.termInput({ tabKey: a.key, data: "@" + prRel + " " }), 240); showToast("Insertado @" + prRel, "check"); } };
+  document.getElementById("pr-ref").onclick = () => { const a = activeTab(); if (a && prRel) { if (!termVisible) toggleTerminal(); else switchTerminalTo(a); setTimeout(() => window.api.termInput({ tabKey: a.key, data: "@" + prRel + " " }), 240); showToast("Inserted @" + prRel, "check"); } };
   document.getElementById("pr-close").onclick = async () => { await saveReaderDoc(); hideProjReader(); const at = activeTab(); if (at) { at.artifact = null; if (at.previewPath || at.kind === "repo") mountWebview(at); } renderProjectNav(); };
 
   // ════════════════════════════════════════════════════════════════════
@@ -4621,10 +4621,10 @@
     const sbInput = document.getElementById("cp-sb-url");
     if (sbInput && document.activeElement !== sbInput) sbInput.value = (at && at.storybookUrl) || "";
     const pickedEl = document.getElementById("cp-picked");
-    if (pickedEl) pickedEl.textContent = (at && at.componentsDir) ? ("Carpeta: " + at.componentsDir) : "";
+    if (pickedEl) pickedEl.textContent = (at && at.componentsDir) ? ("Folder: " + at.componentsDir) : "";
     if (srcEl) {
       const label = COMPONENT_SOURCE_LABEL[componentSource] || "";
-      srcEl.textContent = componentMeta.length ? (componentMeta.length + " componentes · " + label) : "";
+      srcEl.textContent = componentMeta.length ? (componentMeta.length + " components · " + label) : "";
       srcEl.style.display = (componentMeta.length && label) ? "" : "none";
     }
     if (!componentMeta.length) { empty.style.display = ""; return; }
@@ -4632,8 +4632,8 @@
     componentMeta.forEach((c) => {
       const card = document.createElement("div"); card.className = "cp-card";
       const head = document.createElement("div"); head.className = "cp-card-head";
-      const name = document.createElement("span"); name.className = "cp-name"; name.textContent = c.name || "Componente";
-      const ins = document.createElement("button"); ins.className = "ctx-ref"; ins.textContent = "@"; ins.title = "Insertar referencia en la terminal";
+      const name = document.createElement("span"); name.className = "cp-name"; name.textContent = c.name || "Component";
+      const ins = document.createElement("button"); ins.className = "ctx-ref"; ins.textContent = "@"; ins.title = "Insert reference into the terminal";
       ins.onclick = (e) => { e.stopPropagation(); insertComponentRef(c); };
       head.appendChild(name); head.appendChild(ins); card.appendChild(head);
       const pv = buildComponentPreview(c);
@@ -4710,9 +4710,9 @@
     if (!at) return;
     if (!termVisible) toggleTerminal(); else switchTerminalTo(at);
     const variants = (c.props || []).map((p) => (p.label || p.name) + " (" + (p.options || []).join("/") + ")").join(", ");
-    const ref = "el componente " + (c.name || "") + (variants ? " [" + variants + "]" : "") + " ";
+    const ref = "the " + (c.name || "") + " component" + (variants ? " [" + variants + "]" : "") + " ";
     setTimeout(() => window.api.termInput({ tabKey: at.key, data: ref }), 260);
-    showToast("Insertado: " + (c.name || "componente"), "check");
+    showToast("Inserted: " + (c.name || "component"), "check");
   }
   function toggleComponents() {
     componentsVisible = !componentsVisible;
@@ -4734,7 +4734,7 @@
     saveSession();
     await loadStorybookIndex();
     renderComponents();
-    showToast(sbBase ? ("Storybook conectado · " + Object.keys(sbMap || {}).length + " componentes") : (v ? "No se pudo leer el Storybook" : "Storybook desconectado"), sbBase ? "check" : "warn");
+    showToast(sbBase ? ("Storybook connected · " + Object.keys(sbMap || {}).length + " components") : (v ? "Couldn't read Storybook" : "Storybook disconnected"), sbBase ? "check" : "warn");
   };
   document.getElementById("cp-sb-url").addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("cp-sb-set").click(); });
 
@@ -4743,7 +4743,7 @@
     if (!dir) return;
     const at = activeTab();
     if (at) { at.componentsDir = dir; saveSession(); }
-    showToast("Carpeta: " + dir.split("/").pop(), "check");
+    showToast("Folder: " + dir.split("/").pop(), "check");
     await loadComponentMeta({ force: true });
     renderComponents();
   };
@@ -4803,7 +4803,7 @@
     // Console view: only errors + warnings (the "is something broken?" view)
     if (netFilter === "console") {
       updateNetErrBadge();
-      if (!consoleData.length) { empty.style.display = ""; empty.textContent = "Sin errores ni warnings. 🎉"; return; }
+      if (!consoleData.length) { empty.style.display = ""; empty.textContent = "No errors or warnings. 🎉"; return; }
       empty.style.display = "none";
       consoleData.slice().reverse().forEach((c) => {
         const row = document.createElement("div"); row.className = "np-con np-con-" + c.level;
@@ -4818,9 +4818,9 @@
     const rows = netData.filter((r) => (netFilter === "all" ? true : netIsApi(r)) && (!q || r.url.toLowerCase().indexOf(q) !== -1));
     if (!rows.length) {
       empty.style.display = "";
-      if (q) empty.textContent = "Sin requests que coincidan con la búsqueda.";
-      else if (netData.length) empty.textContent = "Sin llamadas de API — mira 'Todo'.";
-      else empty.innerHTML = "Aquí aparecen las llamadas de tu app.<br><br>Navega el preview o recarga (⌘R) para capturarlas. Luego haz clic en una para ver su respuesta o <b>mockearla</b> (devolver el JSON que tú quieras).";
+      if (q) empty.textContent = "No requests match your search.";
+      else if (netData.length) empty.textContent = "No API calls — check 'All'.";
+      else empty.innerHTML = "Your app's calls show up here.<br><br>Navigate the preview or reload (⌘R) to capture them. Then click one to see its response or <b>mock it</b> (return whatever JSON you want).";
       return;
     }
     empty.style.display = "none";
@@ -4832,9 +4832,9 @@
       if (ov) { const mk = document.createElement("span"); mk.className = "np-mock-badge"; mk.textContent = overrideLabel(ov); row.appendChild(mk); }
       const st = document.createElement("span"); st.className = "np-status " + netStatusClass(r.status);
       st.textContent = r.failed ? "✕" : (r.status == null ? "…" : r.status);
-      const cp = document.createElement("button"); cp.className = "np-copy"; cp.title = "Copiar URL del BE";
+      const cp = document.createElement("button"); cp.className = "np-copy"; cp.title = "Copy the BE URL";
       cp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
-      cp.onclick = (e) => { e.stopPropagation(); window.api.copyText(r.url); showToast("URL copiada", "check"); };
+      cp.onclick = (e) => { e.stopPropagation(); window.api.copyText(r.url); showToast("URL copied", "check"); };
       row.appendChild(m); row.appendChild(p); row.appendChild(st); row.appendChild(cp);
       row.onclick = () => previewNet(r);
       list.appendChild(row);
@@ -4845,17 +4845,17 @@
     syncForceButtons();
     document.getElementById("np-prev-name").textContent = r.method + " " + netPath(r.url);
     const body = document.getElementById("np-prev-body");
-    body.textContent = "Cargando…";
+    body.textContent = "Loading…";
     document.getElementById("np-preview").classList.add("visible");
     const res = await window.api.netGetBody(r.requestId);
     let txt = res && res.body ? res.body : "";
     if (res && res.base64Encoded) { try { txt = atob(txt); } catch (e) {} }
     let isJson = false;
     try { txt = JSON.stringify(JSON.parse(txt), null, 2); isJson = true; } catch (e) {}
-    netPreviewingBody = txt; // remember the real body for "usar la real"
+    netPreviewingBody = txt; // remember the real body for "use the real one"
     // Header (url + status) plain, then the body — JSON gets syntax colors.
     const header = escMd(r.url) + "\n" + (r.status != null ? "Status: " + r.status : "") + "\n\n";
-    const bodyHtml = txt ? (isJson ? hlJson(escMd(txt)) : escMd(txt)) : "(sin cuerpo disponible)";
+    const bodyHtml = txt ? (isJson ? hlJson(escMd(txt)) : escMd(txt)) : "(no body available)";
     body.innerHTML = header + bodyHtml;
     // If no custom mock is set for this endpoint, seed the editor with the real body
     const ta = document.getElementById("np-mock-body");
@@ -4875,7 +4875,7 @@
   document.getElementById("np-clear").onclick = async () => { await window.api.netClear(); };
   document.getElementById("np-cache").onclick = async () => {
     const ok = await window.api.cacheClear();
-    showToast(ok ? "Caché y cookies limpiadas — recarga con ⌘R" : "No se pudo limpiar la caché", ok ? "check" : "warn");
+    showToast(ok ? "Cache and cookies cleared — reload with ⌘R" : "Couldn't clear the cache", ok ? "check" : "warn");
   };
   document.querySelectorAll(".np-tab").forEach((t) => {
     t.onclick = () => {
@@ -4889,15 +4889,15 @@
     };
   });
   document.getElementById("np-search").addEventListener("input", (e) => { netQuery = e.target.value.toLowerCase().trim(); renderNetwork(); });
-  document.getElementById("np-copy").onclick = () => { if (netPreviewing) { window.api.copyText(netPreviewing.url); showToast("URL copiada", "check"); } };
+  document.getElementById("np-copy").onclick = () => { if (netPreviewing) { window.api.copyText(netPreviewing.url); showToast("URL copied", "check"); } };
 
   // ── Mock data states — PER ENDPOINT (page-side shim, no CDP) ──
   // Each override = { match, state, status? }. Applies ONLY to requests whose
   // URL matches that pathname, so you mock one API without touching the rest.
   // state: normal | loading | empty | many | status (status uses any code 200–599).
   let dataOverrides = []; // [{ match, state, status, body }]
-  let netPreviewingBody = ""; // raw body of the request shown in the detail (for "usar la real")
-  const DATA_STATE_LABEL = { normal: "Normal", loading: "Cargando", empty: "Vacío", many: "Muchas filas", custom: "Mock" };
+  let netPreviewingBody = ""; // raw body of the request shown in the detail (for "use the real one")
+  const DATA_STATE_LABEL = { normal: "Normal", loading: "Loading", empty: "Empty", many: "Many rows", custom: "Mock" };
   function pathOnly(u) { try { return new URL(u, location.href).pathname; } catch (e) { return (u || "").split("?")[0]; } }
   function overrideFor(url) {
     const p = pathOnly(url);
@@ -4908,12 +4908,12 @@
   function overrideLabel(ov) { return ov.state === "status" ? String(ov.status) : (DATA_STATE_LABEL[ov.state] || ov.state); }
   // Plain-text description of what a state simulates (shown in the detail).
   function stateDescription(ov) {
-    if (!ov || ov.state === "normal") return "Sin simular — respuesta real del endpoint.";
-    if (ov.state === "loading") return "Cargando — la petición nunca responde (spinner perpetuo).";
-    if (ov.state === "empty") return "Vacío — responde [] (lista vacía).";
-    if (ov.state === "many") return "Muchas filas — duplica la respuesta real ×40.";
-    if (ov.state === "status") return "Status " + ov.status + " " + (STATUS_TEXT[ov.status] || "") + " — fuerza ese código (conserva el body real).";
-    if (ov.state === "custom") return "Mock — devuelve tu JSON" + (ov.status && ov.status !== 200 ? " con status " + ov.status + " " + (STATUS_TEXT[ov.status] || "") : "") + ".";
+    if (!ov || ov.state === "normal") return "Not simulated — the endpoint's real response.";
+    if (ov.state === "loading") return "Loading — the request never responds (perpetual spinner).";
+    if (ov.state === "empty") return "Empty — responds [] (empty list).";
+    if (ov.state === "many") return "Many rows — duplicates the real response ×40.";
+    if (ov.state === "status") return "Status " + ov.status + " " + (STATUS_TEXT[ov.status] || "") + " — forces that code (keeps the real body).";
+    if (ov.state === "custom") return "Mock — returns your JSON" + (ov.status && ov.status !== 200 ? " with status " + ov.status + " " + (STATUS_TEXT[ov.status] || "") : "") + ".";
     return "";
   }
   function renderMocksBar() {
@@ -4922,7 +4922,7 @@
     if (!dataOverrides.length) { bar.style.display = "none"; return; }
     bar.style.display = "";
     const n = dataOverrides.length;
-    document.getElementById("np-mocks-label").textContent = n + (n === 1 ? " endpoint mockeado" : " endpoints mockeados");
+    document.getElementById("np-mocks-label").textContent = n + (n === 1 ? " endpoint mocked" : " endpoints mocked");
   }
   function applyOverrides(reload) {
     if (webview && webviewReady) {
@@ -4944,9 +4944,9 @@
     syncForceButtons();
     applyOverrides(true);
     const what = !state || state === "normal" ? "normal" : (state === "custom" ? "mock JSON" : (state === "status" ? "status " + ov.status : (DATA_STATE_LABEL[state] || state)));
-    showToast("Forzado " + what + " en " + match + " — recargando…", "refresh-cw");
+    showToast("Forced " + what + " on " + match + " — reloading…", "refresh-cw");
   }
-  function clearOverrides() { dataOverrides = []; syncForceButtons(); applyOverrides(true); showToast("Mocks limpiados — recargando…", "refresh-cw"); }
+  function clearOverrides() { dataOverrides = []; syncForceButtons(); applyOverrides(true); showToast("Mocks cleared — reloading…", "refresh-cw"); }
   // Reflect the active override of the currently-previewed endpoint in the controls
   function syncForceButtons() {
     if (!netPreviewing) return;
@@ -4970,7 +4970,7 @@
       return txt;
     } catch (e) { return txt; }
   }
-  // The textarea IS the mock; the "Rellenar" buttons only populate it.
+  // The textarea IS the mock; the "Fill" buttons only populate it.
   document.querySelectorAll("#np-force .np-fill").forEach((b) => {
     b.onclick = () => {
       const ta = document.getElementById("np-mock-body");
@@ -4994,7 +4994,7 @@
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "n" || e.key === "N")) { e.preventDefault(); toggleNetwork(); }
   });
 
-  // ── "¿Qué endpoint llena esto?" ──
+  // ── "Which endpoint fills this?" ──
   const _bodyCache = new Map(); // requestId -> decoded body text
   async function getBodyCached(r) {
     if (_bodyCache.has(r.requestId)) return _bodyCache.get(r.requestId);
@@ -5021,7 +5021,7 @@
     const tb = document.getElementById("btn-probe");
     if (tb) tb.classList.toggle("active", netProbeMode);
     if (netProbeMode) {
-      sectionHintEl.textContent = "Haz clic en una sección para ver qué endpoint la llena · Esc para salir";
+      sectionHintEl.textContent = "Click a section to see which endpoint fills it · Esc to exit";
       sectionHintEl.classList.add("visible");
     } else {
       sectionHintEl.classList.remove("visible");
@@ -5064,17 +5064,17 @@
     el.onclick = () => { if (!networkVisible) toggleNetwork(); previewNet(match); };
   }
   async function probeEndpoint(text) {
-    if (!extractTokens(text).length) { showToast("Esa sección no tiene texto rastreable", "warn"); return; }
+    if (!extractTokens(text).length) { showToast("That section has no traceable text", "warn"); return; }
     const api = netData.filter(netIsApi);
-    if (!api.length) { showToast("No hay llamadas de API capturadas — recarga el preview", "warn"); return; }
-    showToast("Rastreando " + api.length + " requests…", "refresh-cw");
+    if (!api.length) { showToast("No API calls captured — reload the preview", "warn"); return; }
+    showToast("Tracing " + api.length + " requests…", "refresh-cw");
     const best = await bestEndpointFor(text);
     if (best) {
       if (!networkVisible) toggleNetwork();
       previewNet(best);
-      showToast("Esta sección la llena " + best.method + " " + netPath(best.url), "check");
+      showToast("This section is filled by " + best.method + " " + netPath(best.url), "check");
     } else {
-      showToast("No encontré un endpoint que coincida con esa sección", "warn");
+      showToast("Couldn't find an endpoint matching that section", "warn");
     }
   }
   document.getElementById("np-probe").onclick = () => setNetProbe(!netProbeMode);
@@ -5140,36 +5140,38 @@
   });
 
   // ════════════════════════════════════════════════════════════════════
-  //  Flow / Maquetación mode (beta) — build user flows & sitemaps per
+  //  Flow / Layout mode (beta) — build user flows & sitemaps per
   //  project. Persisted in .ohana/flow.json as living documentation; the
   //  agent can read/write it, and you export a structured prompt from it.
   // ════════════════════════════════════════════════════════════════════
   const FLOW_KINDS = {
-    page:   { label: "Página",     color: "#7cb0ff", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="4" y1="8" x2="20" y2="8"/></svg>' },
+    page:   { label: "Page",       color: "#7cb0ff", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="4" y1="8" x2="20" y2="8"/></svg>' },
     modal:  { label: "Modal",      color: "#b388ff", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="7" y="9" width="10" height="6" rx="1"/></svg>' },
-    dialog: { label: "Diálogo",    color: "#f5a623", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.5 8.5 0 01-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1121 11.5z"/></svg>' },
-    decision: { label: "Decisión", color: "#ffd166", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l10 10-10 10L2 12z"/></svg>' },
-    start:  { label: "Inicio",     color: "#34d399", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none"/></svg>' },
-    end:    { label: "Fin",        color: "#f87171", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/></svg>' },
-    subflow: { label: "Subflujo", color: "#b388ff", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M6.5 10v3.5a3 3 0 0 0 3 3h4.5"/></svg>' },
+    dialog: { label: "Dialog",     color: "#f5a623", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.5 8.5 0 01-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1121 11.5z"/></svg>' },
+    decision: { label: "Decision", color: "#ffd166", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l10 10-10 10L2 12z"/></svg>' },
+    start:  { label: "Start",      color: "#34d399", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none"/></svg>' },
+    end:    { label: "End",        color: "#f87171", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/></svg>' },
+    subflow: { label: "Subflow", color: "#b388ff", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M6.5 10v3.5a3 3 0 0 0 3 3h4.5"/></svg>' },
   };
   const TERMINAL_KINDS = { start: 1, end: 1 };           // terminator pills
   const COMPACT_KINDS = { subflow: 1 };                  // compact flow nodes
   // Branching nodes ship with their outputs already defined (label + color + side).
   const BRANCH_OUTS = {
-    decision: [{ label: "Sí", color: "#34d399", side: "right" }, { label: "No", color: "#f87171", side: "bottom" }],
+    decision: [{ label: "Yes", color: "#34d399", side: "right" }, { label: "No", color: "#f87171", side: "bottom" }],
   };
+  // Legacy Spanish edge labels (boards saved before the English migration) → canonical output label.
+  const LEGACY_OUT_LABELS = { "sí": "yes", "si": "yes", "éxito": "success", "exito": "success" };
   // Match the decision node's CSS box (120×120). The diamond's 4 vertices sit at
   // the midpoints of this box, so side anchors land exactly on the rhombus tips.
   const DECISION_W = 120, DECISION_H = 120;
-  // Build-status per screen — powers the handoff loop ("agente, construye las que
-  // están por construir"). Missing status is treated as "todo".
+  // Build-status per screen — powers the handoff loop ("agent, build the ones
+  // still to build"). Missing status is treated as "todo".
   const FLOW_STATUS = {
-    // Semantic icon per status (Lucide-style): empty circle = por construir,
-    // half/clock = en progreso, check = listo. Colored via currentColor.
-    todo: { label: "Por construir", color: "#f5a623", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>' },
-    wip:  { label: "En progreso",   color: "#7cb0ff", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 12V7" stroke-linecap="round"/><path d="M12 12l3.5 2" stroke-linecap="round"/></svg>' },
-    done: { label: "Listo",         color: "#34d399", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+    // Semantic icon per status (Lucide-style): empty circle = to build,
+    // half/clock = in progress, check = done. Colored via currentColor.
+    todo: { label: "To build",      color: "#f5a623", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>' },
+    wip:  { label: "In progress",   color: "#7cb0ff", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 12V7" stroke-linecap="round"/><path d="M12 12l3.5 2" stroke-linecap="round"/></svg>' },
+    done: { label: "Done",          color: "#34d399", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
   };
   const STATUS_ORDER = ["todo", "wip", "done"];
   function screenStatus(s) { return FLOW_STATUS[s && s.status] ? s.status : "todo"; }
@@ -5303,17 +5305,17 @@
     const layout = (doc && doc.layout && typeof doc.layout === "object") ? doc.layout : { dir: "LR", connector: "smooth" };
     const layouts = (doc && Array.isArray(doc.layouts)) ? doc.layouts : []; // saved layout presets (per project)
     if (doc && Array.isArray(doc.flows) && doc.flows.length) {
-      doc.flows.forEach((f) => { f.id = f.id || flowGenId(); f.name = f.name || "Flujo"; f.screens = Array.isArray(f.screens) ? f.screens : []; f.edges = Array.isArray(f.edges) ? f.edges : []; });
+      doc.flows.forEach((f) => { f.id = f.id || flowGenId(); f.name = f.name || "Flow"; f.screens = Array.isArray(f.screens) ? f.screens : []; f.edges = Array.isArray(f.edges) ? f.edges : []; });
       // Migrate legacy tabActive map → explicit per-flow owner (src). First src wins;
       // a flow can only belong to one src now. Unmapped flows stay orphan (no owner → hidden).
       Object.keys(tabActive).forEach((src) => { const f = doc.flows.find((x) => x.id === tabActive[src]); if (f && !f.src) f.src = src; });
       return { flows: doc.flows, active: (doc.active && doc.flows.some((f) => f.id === doc.active)) ? doc.active : doc.flows[0].id, globals: (doc.globals && typeof doc.globals === "object") ? doc.globals : {}, tabActive: tabActive, layout: layout, layouts: layouts };
     }
     if (doc && Array.isArray(doc.screens)) { // legacy single-flow format → migrate
-      const f = { id: flowGenId(), name: "Flujo principal", screens: doc.screens, edges: Array.isArray(doc.edges) ? doc.edges : [] };
+      const f = { id: flowGenId(), name: "Main flow", screens: doc.screens, edges: Array.isArray(doc.edges) ? doc.edges : [] };
       return { flows: [f], active: f.id, globals: (doc.globals && typeof doc.globals === "object") ? doc.globals : {}, tabActive: tabActive, layout: layout, layouts: layouts };
     }
-    const f = { id: flowGenId(), name: "Flujo principal", screens: [], edges: [] };
+    const f = { id: flowGenId(), name: "Main flow", screens: [], edges: [] };
     return { flows: [f], active: f.id, globals: {}, tabActive: tabActive, layout: layout, layouts: layouts };
   }
   // Each tab keeps its own active flow (keyed by its src). On load, bind the tab
@@ -5331,7 +5333,7 @@
     // claimed by the first tab that opens it. Never adopt when several flows exist
     // (that was the cross-contamination bug).
     let f = (flowDoc.flows.length === 1 && !flowDoc.flows[0].src) ? flowDoc.flows[0] : null;
-    if (!f) { const at = activeTab(); f = { id: flowGenId(), name: (at && at.name) ? at.name : "Flujo 1", screens: [], edges: [] }; flowDoc.flows.push(f); }
+    if (!f) { const at = activeTab(); f = { id: flowGenId(), name: (at && at.name) ? at.name : "Flow 1", screens: [], edges: [] }; flowDoc.flows.push(f); }
     f.src = src;
     flowDoc.tabActive[src] = f.id;
     flowDoc.active = f.id;
@@ -5351,7 +5353,7 @@
     }));
   }
   function flowGlobals() { return (flowDoc.globals = flowDoc.globals || {}); }
-  function blockContent(b) { return b.globalId ? (flowGlobals()[b.globalId] || { title: "(global eliminado)", desc: "", items: [] }) : b; }
+  function blockContent(b) { return b.globalId ? (flowGlobals()[b.globalId] || { title: "(global deleted)", desc: "", items: [] }) : b; }
   // ── Layout tree: a screen's content is a nestable row/col container tree ──
   // node = container { cid, dir:"row"|"col", grow?, children:[...] } | block leaf
   function genCid() { return "c" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
@@ -5536,18 +5538,18 @@
   function flowResetHistory() { _flowUndo = []; _flowRedo = []; _flowSnap = JSON.stringify(flowDoc); }
   function flowUndo() {
     if (_flowSaveT) { clearTimeout(_flowSaveT); _flowSaveT = null; if (_flowSnap !== null) { _flowUndo.push(_flowSnap); _flowSnap = JSON.stringify(flowDoc); } } // flush a pending change first
-    if (!_flowUndo.length) { showToast("Nada que deshacer", "warn"); return; }
+    if (!_flowUndo.length) { showToast("Nothing to undo", "warn"); return; }
     _flowRedo.push(JSON.stringify(flowDoc));
     const prev = _flowUndo.pop();
     flowDoc = normalizeFlowDoc(JSON.parse(prev)); _flowSnap = JSON.stringify(flowDoc); flow = activeFlowObj();
-    renderFlow(); renderFlowSwitcher(); writeFlowFile(); showToast("Deshecho", "refresh-cw");
+    renderFlow(); renderFlowSwitcher(); writeFlowFile(); showToast("Undone", "refresh-cw");
   }
   function flowRedo() {
-    if (!_flowRedo.length) { showToast("Nada que rehacer", "warn"); return; }
+    if (!_flowRedo.length) { showToast("Nothing to redo", "warn"); return; }
     _flowUndo.push(JSON.stringify(flowDoc));
     const next = _flowRedo.pop();
     flowDoc = normalizeFlowDoc(JSON.parse(next)); _flowSnap = JSON.stringify(flowDoc); flow = activeFlowObj();
-    renderFlow(); renderFlowSwitcher(); writeFlowFile(); showToast("Rehecho", "refresh-cw");
+    renderFlow(); renderFlowSwitcher(); writeFlowFile(); showToast("Redone", "refresh-cw");
   }
   async function loadFlowForActive() {
     const at = activeTab();
@@ -5577,75 +5579,75 @@
   }
   // Portable guide for any agent (Claude/Codex/…) reading the project folder.
   // Versioned: bump MOKA_GUIDE_V when the template changes so stale copies regenerate.
-  const MOKA_GUIDE_V = "<!-- moka-guide v2 -->";
+  const MOKA_GUIDE_V = "<!-- moka-guide v3 -->";
   async function ensureMokaGuide() {
     try {
       const existing = await window.api.ohanaReadFile("MOKA.md");
       if (existing && existing.indexOf(MOKA_GUIDE_V) !== -1) return;
       const md = [
-        "# Moka — cómo armar sitemaps y user flows (para agentes)",
+        "# Moka — how to build sitemaps and user flows (for agents)",
         MOKA_GUIDE_V,
         "",
-        "Este proyecto usa Moka (el lienzo de maquetación de Ohana). Los boards viven en `.ohana/flow.json` y son DEL PROYECTO (se listan en la sección Flujos del navegador).",
-        "Estructura del proyecto: `prototipos/` (HTML), `planes/` (planes de agentes), `handoff/` (docs para el repo), `design/` + `design.md` (sistema de diseño). Escribe cada artefacto en su carpeta.",
-        "NO pongas coordenadas (x/y): Moka ordena solo. Expresa la ESTRUCTURA.",
+        "This project uses Moka (Ohana's layout canvas). The boards live in `.ohana/flow.json` and belong TO THE PROJECT (they're listed in the navigator's Flows section).",
+        "Project structure: `prototipos/` (HTML), `planes/` (agent plans), `handoff/` (docs for the repo), `design/` + `design.md` (design system). Write each artifact in its folder.",
+        "Do NOT set coordinates (x/y): Moka lays out on its own. Express the STRUCTURE.",
         "",
-        "## Tipo de tablero — el orden lo da la ESTRUCTURA, no las coordenadas",
-        "Moka ordena con un algoritmo por capas (Sugiyama). Un dibujo limpio depende solo de que el grafo esté bien formado:",
-        "- **Sitemap** (`board:\"sitemap\"`): ÁRBOL que se lee de ARRIBA a ABAJO (TB). REGLA DE ÁRBOL: cada página tiene EXACTAMENTE UN padre; conecta SOLO padre→hija; las hermanas comparten padre pero NO se conectan entre sí; NADA de enlaces cruzados ni saltos de nivel (eso cruza líneas). Si algo cuelga de dos sitios, elige el padre principal y deja el otro vínculo como `link` de la pantalla, no como arista. Solo `page`.",
-        "- **User flow** (`board:\"userflow\"`): SECUENCIA que se lee de IZQUIERDA a DERECHA (LR). ESPINA DORSAL: un camino principal, cada pantalla con UN 'siguiente', siempre hacia adelante. Las `decision` tienen 2 salidas: Sí (verde) sigue la espina, No (rojo) es una rama lateral corta que reingresa o termina. Marca reintentos reales con `dir:\"back\"`. Evita saltos largos y abanicos de conexiones.",
+        "## Board type — order comes from the STRUCTURE, not the coordinates",
+        "Moka lays out with a layered algorithm (Sugiyama). A clean drawing depends only on the graph being well-formed:",
+        "- **Sitemap** (`board:\"sitemap\"`): a TREE read TOP to BOTTOM (TB). TREE RULE: every page has EXACTLY ONE parent; connect ONLY parent→child; siblings share a parent but do NOT connect to each other; NO cross-links or level jumps (those cross lines). If something hangs from two places, pick the primary parent and leave the other tie as a screen `link`, not an edge. Only `page`.",
+        "- **User flow** (`board:\"userflow\"`): a SEQUENCE read LEFT to RIGHT (LR). BACKBONE: one main path, each screen with ONE 'next', always moving forward. `decision` nodes have 2 outputs: Yes (green) continues the backbone, No (red) is a short side branch that re-enters or ends. Mark real retries with `dir:\"back\"`. Avoid long jumps and fans of connections.",
         "",
-        "## Tipos de nodo (`kind`)",
-        "- `page` / `modal` / `dialog`: pantallas reales.",
-        "- `decision`: rombo con salidas ya resueltas Sí (verde) / No (rojo).",
-        "- `subflow`: enlaza a otro flujo del proyecto (vincúlalo con `ohana_flow_update_screen({ id, flowRef })`).",
-        "- `start` / `end`: marcan dónde empieza y termina la experiencia (úsalos siempre en user flows).",
+        "## Node types (`kind`)",
+        "- `page` / `modal` / `dialog`: real screens.",
+        "- `decision`: a diamond with outputs already resolved Yes (green) / No (red).",
+        "- `subflow`: links to another flow in the project (link it with `ohana_flow_update_screen({ id, flowRef })`).",
+        "- `start` / `end`: mark where the experience begins and ends (always use them in user flows).",
         "",
-        "## Herramientas de intención (MCP `ohana-comments`)",
-        "- Sitemap: `ohana_sitemap_add_page({ name })` para nivel 1; `ohana_sitemap_add_page({ parent, name })` para colgar una hija (conecta padre→hija).",
-        "- User flow: empieza con `kind:\"start\"` y termina cada camino con `kind:\"end\"`; `ohana_flow_add_step({ after, name, kind })` para el siguiente paso; `ohana_flow_add_branch({ from, label, name })` para ramas de una `decision`.",
-        "- `ohana_flow_guide` devuelve estas convenciones; `ohana_flow_read`/`ohana_flow_layout` para leer/ordenar.",
+        "## Intent tools (MCP `ohana-comments`)",
+        "- Sitemap: `ohana_sitemap_add_page({ name })` for level 1; `ohana_sitemap_add_page({ parent, name })` to hang a child (connects parent→child).",
+        "- User flow: start with `kind:\"start\"` and end each path with `kind:\"end\"`; `ohana_flow_add_step({ after, name, kind })` for the next step; `ohana_flow_add_branch({ from, label, name })` for the branches of a `decision`.",
+        "- `ohana_flow_guide` returns these conventions; `ohana_flow_read`/`ohana_flow_layout` to read/lay out.",
         "",
-        "## Anatomía de una pantalla (regiones → secciones → componentes)",
-        "Jerarquía: Página → REGIONES → SECCIONES → COMPONENTES.",
-        "- Las REGIONES definen el layout de la tarjeta (Header/Body/Footer o un preset: `ohana_flow_set_layout` acepta builtins y layouts del proyecto creados en el grid painter).",
-        "- Las SECCIONES son organismos UI dentro de una región (`ohana_flow_add_section({ screenId, name, region })`; sin `region` crea una región raíz).",
-        "- Los COMPONENTES (Button, Data table, Chart, Acordeón, etc.) van dentro de secciones (`ohana_flow_add_component`). Cada uno lleva su detalle (título/descripción/elementos): qué dice, cómo se ve, cómo funciona.",
-        "En `flow.json` el layout es un árbol: contenedores (regiones/secciones) con bloques (componentes) hoja. Las conexiones salen de páginas o componentes y siempre llegan a la tarjeta destino, nunca a un componente.",
+        "## Anatomy of a screen (regions → sections → components)",
+        "Hierarchy: Page → REGIONS → SECTIONS → COMPONENTS.",
+        "- REGIONS define the card's layout (Header/Body/Footer or a preset: `ohana_flow_set_layout` accepts builtins and project layouts created in the grid painter).",
+        "- SECTIONS are UI organisms inside a region (`ohana_flow_add_section({ screenId, name, region })`; without `region` it creates a root region).",
+        "- COMPONENTS (Button, Data table, Chart, Accordion, etc.) go inside sections (`ohana_flow_add_component`). Each one carries its detail (title/description/elements): what it says, how it looks, how it works.",
+        "In `flow.json` the layout is a tree: containers (regions/sections) with leaf blocks (components). Connections leave from pages or components and always land on the destination card, never on a component.",
         "",
-        "## Referir a una pantalla",
-        "Cada pantalla tiene un handle interno estable (`handle`, ej. `P1`). El usuario te habla por NOMBRE; resuelve por nombre o handle. No lo muestres en la UI.",
+        "## Referring to a screen",
+        "Every screen has a stable internal handle (`handle`, e.g. `P1`). The user talks to you by NAME; resolve by name or handle. Don't show it in the UI.",
         "",
-        "## De Moka a código (lo importante)",
-        "El flujo es el brief para construir el producto real:",
-        "- **Prototipo HTML**: genera el HTML de cada pantalla respetando sus secciones/componentes, APIs y la lógica de las ramas. La edición es libre.",
-        "- **Repo**: implementa cada pantalla usando los componentes reales del design system del proyecto. La maqueta indica qué componente va en cada sección; no inventes componentes fuera del sistema.",
-        "- Respeta Inicio/Fin (recorrido), y el color de las salidas: verde = camino positivo, rojo = negativo/error, azul = normal.",
+        "## From Moka to code (the important part)",
+        "The flow is the brief for building the real product:",
+        "- **HTML prototype**: generate the HTML for each screen respecting its sections/components, APIs, and branch logic. Editing is free.",
+        "- **Repo**: implement each screen using the project's real design-system components. The mockup says which component goes in each section; don't invent components outside the system.",
+        "- Respect Start/End (the journey), and the output colors: green = positive path, red = negative/error, blue = normal.",
         "",
-        "Sin MCP: edita `.ohana/flow.json` (formato { flows:[{ board, src, screens:[{id,name,kind,layout,apis,links}], edges:[{from,to,color,out}] }], active }). Conecta padre→hija (sitemap) o paso→paso (userflow); deja x/y en 0 y avisa para ordenar.",
+        "Without MCP: edit `.ohana/flow.json` (format { flows:[{ board, src, screens:[{id,name,kind,layout,apis,links}], edges:[{from,to,color,out}] }], active }). Connect parent→child (sitemap) or step→step (userflow); leave x/y at 0 and ask to lay out.",
       ].join("\n");
       window.api.ohanaWriteFile({ filename: "MOKA.md", content: md });
     } catch (e) {}
   }
   function renderFlowSwitcher() {
     const nm = document.getElementById("flow-switcher-name");
-    if (nm) { const n = flowsForActive().length; nm.textContent = (activeFlowObj().name || "Flujo") + (n > 1 ? "  (" + n + ")" : ""); }
+    if (nm) { const n = flowsForActive().length; nm.textContent = (activeFlowObj().name || "Flow") + (n > 1 ? "  (" + n + ")" : ""); }
     if (typeof renderBoardSwitch === "function") renderBoardSwitch();
   }
   function openFlowSwitcher(rect) {
     const own = flowsForActive();
     const orphans = orphanFlows();
     flowMenu.innerHTML =
-      '<div class="fm-label">Flujos de este tab</div>' +
-      (own.length ? '' : '<div class="fm-empty-hint">Este tab aún no tiene flujos.</div>') +
-      own.map((f) => '<div class="fm-item" data-fid="' + f.id + '">' + (f.id === flowDoc.active ? FI.check : '<span style="width:14px;display:inline-block;flex-shrink:0;"></span>') + escapeHtml(f.name || "Flujo") + '</div>').join("") +
+      '<div class="fm-label">This tab’s flows</div>' +
+      (own.length ? '' : '<div class="fm-empty-hint">This tab has no flows yet.</div>') +
+      own.map((f) => '<div class="fm-item" data-fid="' + f.id + '">' + (f.id === flowDoc.active ? FI.check : '<span style="width:14px;display:inline-block;flex-shrink:0;"></span>') + escapeHtml(f.name || "Flow") + '</div>').join("") +
       '<div class="fm-sep"></div>' +
-      '<div class="fm-item" data-act="new">' + FI.plus + ' Nuevo flujo</div>' +
-      '<div class="fm-item" data-act="rename">' + FI.edit + ' Renombrar actual</div>' +
-      (own.length > 1 ? '<div class="fm-item danger" data-act="delflow">' + FI.trash + ' Eliminar flujo actual</div>' : '') +
-      (orphans.length ? '<div class="fm-sep"></div><div class="fm-label">Flujos sin asignar</div>' +
-        '<div class="fm-empty-hint">Asígnalos a este tab para usarlos aquí.</div>' +
-        orphans.map((f) => '<div class="fm-item" data-claim="' + f.id + '">' + FI.plus + ' ' + escapeHtml(f.name || "Flujo") + '</div>').join("") : '');
+      '<div class="fm-item" data-act="new">' + FI.plus + ' New flow</div>' +
+      '<div class="fm-item" data-act="rename">' + FI.edit + ' Rename current</div>' +
+      (own.length > 1 ? '<div class="fm-item danger" data-act="delflow">' + FI.trash + ' Delete current flow</div>' : '') +
+      (orphans.length ? '<div class="fm-sep"></div><div class="fm-label">Unassigned flows</div>' +
+        '<div class="fm-empty-hint">Assign them to this tab to use them here.</div>' +
+        orphans.map((f) => '<div class="fm-item" data-claim="' + f.id + '">' + FI.plus + ' ' + escapeHtml(f.name || "Flow") + '</div>').join("") : '');
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 220) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
     flowMenu.classList.add("visible");
@@ -5653,7 +5655,7 @@
     flowMenu.querySelectorAll("[data-claim]").forEach((it) => it.onclick = () => { const f = flowDoc.flows.find((x) => x.id === it.dataset.claim); if (f) { f.src = activeSrc(); flowDoc.active = f.id; bindTabFlow(f.id); flow = activeFlowObj(); flowSel = new Set(); flowView = { x: 40, y: 40, s: 1 }; saveFlow(); renderFlow(); renderFlowSwitcher(); closeFlowMenu(); } });
     flowMenu.querySelectorAll("[data-act]").forEach((it) => it.onclick = () => {
       const a = it.dataset.act;
-      if (a === "new") { const f = { id: flowGenId(), name: "Flujo " + (flowsForActive().length + 1), src: activeSrc(), screens: [], edges: [] }; flowDoc.flows.push(f); flowDoc.active = f.id; bindTabFlow(f.id); flow = f; flowView = { x: 40, y: 40, s: 1 }; saveFlow(); renderFlow(); renderFlowSwitcher(); closeFlowMenu(); }
+      if (a === "new") { const f = { id: flowGenId(), name: "Flow " + (flowsForActive().length + 1), src: activeSrc(), screens: [], edges: [] }; flowDoc.flows.push(f); flowDoc.active = f.id; bindTabFlow(f.id); flow = f; flowView = { x: 40, y: 40, s: 1 }; saveFlow(); renderFlow(); renderFlowSwitcher(); closeFlowMenu(); }
       else if (a === "rename") { openFlowRename(); }
       else if (a === "delflow") {
         const gone = flowDoc.active;
@@ -5669,10 +5671,10 @@
   }
   function openFlowRename() {
     const f = activeFlowObj();
-    flowMenu.innerHTML = '<div class="fm-label">Renombrar flujo</div><input class="fm-edge-input" id="fm-rename" value="' + escapeHtml(f.name || "") + '" />';
+    flowMenu.innerHTML = '<div class="fm-label">Rename flow</div><input class="fm-edge-input" id="fm-rename" value="' + escapeHtml(f.name || "") + '" />';
     const inp = flowMenu.querySelector("#fm-rename");
     setTimeout(() => { inp.focus(); inp.select(); }, 0);
-    const commit = () => { f.name = inp.value.trim() || "Flujo"; saveFlow(); renderFlowSwitcher(); closeFlowMenu(); };
+    const commit = () => { f.name = inp.value.trim() || "Flow"; saveFlow(); renderFlowSwitcher(); closeFlowMenu(); };
     inp.onkeydown = (ev) => { if (ev.key === "Enter") commit(); };
     inp.onblur = commit;
   }
@@ -5708,7 +5710,7 @@
     ensureHandles();
     // Heavy flows drop the (GPU-costly) card blur — see the .heavy CSS note.
     flowVp.classList.toggle("heavy", (flow.screens || []).length > 10);
-    const vp = document.getElementById("flow-view-proto"); if (vp) vp.style.display = (flow && flow.proto) ? "" : "none"; // show "Ver prototipo" when linked
+    const vp = document.getElementById("flow-view-proto"); if (vp) vp.style.display = (flow && flow.proto) ? "" : "none"; // show "View prototype" when linked
     if (typeof hideActBar === "function") hideActBar();
     // Notes/sections/labels are few → cheap full rebuild.
     Array.from(flowNodes.querySelectorAll(".flow-note, .flow-section, .flow-label")).forEach((el) => el.remove());
@@ -5795,7 +5797,7 @@
       const px = x + 9 * s, avail = w - 15 * s; let cy = y + 8 * s; const lh = Math.max(8, 13 * s);
       // title
       ctx.fillStyle = "rgba(255,255,255,0.9)"; ctx.font = "600 " + Math.max(7, 11 * s) + "px system-ui, sans-serif";
-      ctx.fillText(fitText(ctx, sc.name || "Pantalla", avail), px, cy); cy += lh + 3 * s;
+      ctx.fillText(fitText(ctx, sc.name || "Screen", avail), px, cy); cy += lh + 3 * s;
       // content lines (sections bold, components indented) — from the layout tree
       const lines = [];
       (function walk(n, depth) {
@@ -5830,28 +5832,28 @@
     el.style.left = (s.x || 0) + "px"; el.style.top = (s.y || 0) + "px";
     el.style.setProperty("--fs-accent", k.color);
     const PORT_ARR = { top: "M12 19V5M6 11l6-6 6 6", right: "M5 12h14M13 6l6 6-6 6", bottom: "M12 5v14M6 13l6 6 6-6", left: "M19 12H5M11 6l-6 6 6 6" };
-    const portsFor = (sides) => sides.map((sd) => '<button class="fs-port" data-side="' + sd + '" title="Conexión normal · arrastra para conectar, clic para una pantalla nueva"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="' + PORT_ARR[sd] + '"/></svg></button>').join("");
+    const portsFor = (sides) => sides.map((sd) => '<button class="fs-port" data-side="' + sd + '" title="Normal connection · drag to connect, click for a new screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="' + PORT_ARR[sd] + '"/></svg></button>').join("");
     const ports = portsFor(["top", "right", "bottom", "left"]);
-    // Predefined outputs (decision Sí/No, system Éxito/Error) — labeled + colored.
+    // Predefined outputs (decision Yes/No, system Success/Error labels) — labeled + colored.
     const outs = BRANCH_OUTS[s.kind];
     const outsHtml = outs ? '<div class="fs-outs">' + outs.map((o, i) => '<button class="fs-out side-' + o.side + '" data-out="' + i + '" style="--oc:' + o.color + '" title="' + escapeHtml(o.label) + '"><span class="fs-out-dot"></span>' + escapeHtml(o.label) + '</button>').join("") + '</div>' : "";
     // Free sides keep a plain (blue) connector so the node can still branch normally.
     const freePorts = outs ? portsFor(["top", "right", "bottom", "left"].filter((sd) => !outs.some((o) => o.side === sd))) : ports;
-    // Decision node — a diamond with an editable question + Sí/No outputs.
+    // Decision node — a diamond with an editable question + Yes/No outputs.
     if (s.kind === "decision") {
       el.className = "flow-screen decision status-" + st + (flowSel.has(s.id) ? " selected" : "") + dimCls;
       el.innerHTML =
-        '<button class="fs-menu-btn fs-dmenu" title="Opciones">' + FI.dots + '</button>' +
-        '<div class="fs-diamond"><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="¿Decisión?">' + escapeHtml(s.name || "") + '</div></div>' +
+        '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
+        '<div class="fs-diamond"><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="Decision?">' + escapeHtml(s.name || "") + '</div></div>' +
         outsHtml + freePorts;
       wireScreenEl(el, s);
       return el;
     }
-    if (TERMINAL_KINDS[s.kind]) { // Inicio / Fin — terminator pill marking start/end of the experience
+    if (TERMINAL_KINDS[s.kind]) { // Start / End — terminator pill marking start/end of the experience
       el.className = "flow-screen terminal term-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + dimCls;
       el.style.setProperty("--fs-accent", k.color);
       el.innerHTML =
-        '<button class="fs-menu-btn fs-dmenu" title="Opciones">' + FI.dots + '</button>' +
+        '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<div class="fs-term"><span class="fs-term-ic">' + k.icon + '</span><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="' + escapeHtml(k.label) + '">' + escapeHtml(s.name || "") + '</div></div>' +
         ports;
       wireScreenEl(el, s);
@@ -5862,10 +5864,10 @@
       el.className = "flow-screen compact ck-subflow" + (flowSel.has(s.id) ? " selected" : "") + dimCls;
       el.style.setProperty("--fs-accent", k.color);
       el.innerHTML =
-        '<button class="fs-menu-btn fs-dmenu" title="Opciones">' + FI.dots + '</button>' +
-        '<button class="fs-cnode fs-subflow" title="' + (target ? "Abrir flujo vinculado" : "Vincular un flujo del proyecto") + '">' +
+        '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
+        '<button class="fs-cnode fs-subflow" title="' + (target ? "Open linked flow" : "Link a flow from the project") + '">' +
           '<span class="fs-cnode-ic">' + k.icon + '</span>' +
-          '<span class="fs-subflow-name' + (target ? "" : " ph") + '">' + escapeHtml(target ? target.name : "Vincular flujo…") + '</span>' +
+          '<span class="fs-subflow-name' + (target ? "" : " ph") + '">' + escapeHtml(target ? target.name : "Link flow…") + '</span>' +
           '<span class="fs-subflow-go">' + (target ? FI.open : FI.plus) + '</span>' +
         '</button>' + ports;
       const btn = el.querySelector(".fs-subflow");
@@ -5883,7 +5885,7 @@
       el.className = "flow-screen compact ck-" + s.kind + (flowSel.has(s.id) ? " selected" : "") + dimCls;
       el.style.setProperty("--fs-accent", k.color);
       el.innerHTML =
-        '<button class="fs-menu-btn fs-dmenu" title="Opciones">' + FI.dots + '</button>' +
+        '<button class="fs-menu-btn fs-dmenu" title="Options">' + FI.dots + '</button>' +
         '<div class="fs-cnode"><span class="fs-cnode-ic">' + k.icon + '</span><div class="fs-dlabel" contenteditable="true" spellcheck="false" data-ph="' + escapeHtml(k.label) + '">' + escapeHtml(s.name || "") + '</div></div>' +
         (outs ? outsHtml + freePorts : ports);
       wireScreenEl(el, s);
@@ -5894,18 +5896,18 @@
     el.innerHTML =
       '<div class="fs-head">' +
         '<div class="fs-htop"><span class="fs-badge">' + escapeHtml(k.label) + '</span>' +
-        '<button class="fs-status fs-status-' + st + '" title="Estado: ' + FLOW_STATUS[st].label + ' (clic para cambiar)"><span class="fs-status-ic">' + FLOW_STATUS[st].icon + '</span>' + FLOW_STATUS[st].label + '</button>' +
+        '<button class="fs-status fs-status-' + st + '" title="Status: ' + FLOW_STATUS[st].label + ' (click to change)"><span class="fs-status-ic">' + FLOW_STATUS[st].icon + '</span>' + FLOW_STATUS[st].label + '</button>' +
         '<span class="fs-hspace"></span>' +
-        '<button class="fs-layout-btn" title="Layout de la pantalla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="9" y1="9" x2="21" y2="9"/></svg></button>' +
-        '<button class="fs-link-btn' + ((s.links && s.links.length) ? " on" : "") + '" title="Vínculos a vistas / redirecciones">' + FI.link + '</button>' +
-        '<button class="fs-api-btn' + ((s.apis && s.apis.length) ? " on" : "") + '" title="Endpoints / APIs que contextualizan esta pantalla">' + FI.db + '</button>' +
-        '<button class="fs-menu-btn" title="Opciones">' + FI.dots + '</button></div>' +
-        '<input class="fs-name" value="' + escapeHtml(s.name || "Pantalla") + '" spellcheck="false" /></div>' +
-      '<div class="fs-context" contenteditable="true" spellcheck="false" data-ph="Contexto de esta pantalla…">' + escapeHtml(s.desc || "") + '</div>' +
+        '<button class="fs-layout-btn" title="Screen layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="9" y1="9" x2="21" y2="9"/></svg></button>' +
+        '<button class="fs-link-btn' + ((s.links && s.links.length) ? " on" : "") + '" title="Links to views / redirects">' + FI.link + '</button>' +
+        '<button class="fs-api-btn' + ((s.apis && s.apis.length) ? " on" : "") + '" title="Endpoints / APIs that give this screen context">' + FI.db + '</button>' +
+        '<button class="fs-menu-btn" title="Options">' + FI.dots + '</button></div>' +
+        '<input class="fs-name" value="' + escapeHtml(s.name || "Screen") + '" spellcheck="false" /></div>' +
+      '<div class="fs-context" contenteditable="true" spellcheck="false" data-ph="Context for this screen…">' + escapeHtml(s.desc || "") + '</div>' +
       ((s.apis || []).map((a) => '<div class="fs-api-chip">' + FI.db + '<span class="fs-api-ep">' + escapeHtml(a.endpoint || "") + '</span>' + (a.ctx ? '<span class="fs-api-ctx">' + escapeHtml(a.ctx) + '</span>' : "") + '</div>').join("")) +
       ((s.links || []).map((l) => '<div class="fs-link-chip" data-url="' + (l.url || "").replace(/"/g, "&quot;") + '"><span class="fs-link-dot"></span><span class="fs-link-url">' + escapeHtml(l.url || "") + '</span>' + (l.ctx ? '<span class="fs-link-ctx">' + escapeHtml(l.ctx) + '</span>' : "") + '</div>').join("")) +
       '<div class="fs-layout-host"></div>' +
-      '<div class="fs-resize" title="Redimensionar pantalla"></div>' +
+      '<div class="fs-resize" title="Resize screen"></div>' +
       ports;
     ensureLayout(s);
     const host = el.querySelector(".fs-layout-host");
@@ -5937,7 +5939,7 @@
     split: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>',
   };
   function buildNode(s, node, parent) { return isCont(node) ? buildContainerNode(s, node, parent) : buildBlockNode(s, node, parent); }
-  // Hierarchy: Pantalla → Layout → Región(es) → Sección(es) → Componente(s).
+  // Hierarchy: Screen → Layout → Region(s) → Section(s) → Component(s).
   //  · Simple screen: the root layout IS the single region (holds sections).
   //  · Grid screen: the root is a grid layout; its direct children are regions.
   //  · A region holds sections; a section holds components.
@@ -5946,8 +5948,8 @@
     if (s && parent === s.layout) return "region";  // direct child of the layout = a region
     return "section";                               // inside a region = a section
   }
-  function mkRegion(name) { return { cid: genCid(), dir: "col", name: name || "Región", children: [] }; }
-  // "Construir": seed the default layout — Header / Body / Footer regions.
+  function mkRegion(name) { return { cid: genCid(), dir: "col", name: name || "Region", children: [] }; }
+  // "Build": seed the default layout — Header / Body / Footer regions.
   function seedDefaultLayout(s) { ensureLayout(s); s.layout.children = [mkRegion("Header"), mkRegion("Body"), mkRegion("Footer")]; saveFlow(); renderFlow(); }
   function buildContainerNode(s, cont, parent) {
     const editing = _renderingEditor;
@@ -5964,11 +5966,11 @@
     if (level === "region" || level === "section") {
       const head = document.createElement("div"); head.className = "fl-cont-head";
       const isRegion = level === "region";
-      const nm = document.createElement("input"); nm.className = "fl-name fl-name-card" + (isRegion ? " fl-name-region" : ""); nm.value = cont.name || ""; nm.placeholder = isRegion ? "Nombre de la región" : "Nombre de la sección";
+      const nm = document.createElement("input"); nm.className = "fl-name fl-name-card" + (isRegion ? " fl-name-region" : ""); nm.value = cont.name || ""; nm.placeholder = isRegion ? "Region name" : "Section name";
       nm.addEventListener("mousedown", (e) => e.stopPropagation());
       nm.addEventListener("input", () => { cont.name = nm.value; saveFlow(); });
       head.appendChild(nm);
-      const mb = document.createElement("button"); mb.className = "fl-sec-menu"; mb.title = isRegion ? "Opciones de la región" : "Opciones de la sección"; mb.innerHTML = FI.dots;
+      const mb = document.createElement("button"); mb.className = "fl-sec-menu"; mb.title = isRegion ? "Region options" : "Section options"; mb.innerHTML = FI.dots;
       mb.addEventListener("mousedown", (e) => e.stopPropagation());
       mb.addEventListener("click", (e) => { e.stopPropagation(); (isRegion ? openRegionMenu : openSectionMenu)(s, cont, parent, mb.getBoundingClientRect()); });
       head.appendChild(mb);
@@ -5979,21 +5981,21 @@
     cont.children.forEach((child) => { body.appendChild(buildNode(s, child, cont)); });
     el.appendChild(body);
     // Add button by level:
-    //  · Layout → "+ Región" bar (add another region).
-    //  · Region → "+ Sección" bar (add a section).
+    //  · Layout → "+ Region" bar (add another region).
+    //  · Region → "+ Section" bar (add a section).
     //  · Section → the beloved circular "+" (anchored at its bottom) for COMPONENTS.
     if (!editing && s && level === "section") {
-      const add = document.createElement("button"); add.className = "fl-add"; add.title = "Agregar componente"; add.innerHTML = FI.plus;
+      const add = document.createElement("button"); add.className = "fl-add"; add.title = "Add component"; add.innerHTML = FI.plus;
       add.addEventListener("mousedown", (e) => e.stopPropagation());
       add.addEventListener("click", (e) => { e.stopPropagation(); openBlockPalette(s, add.getBoundingClientRect(), cont, "component"); });
       el.appendChild(add);
     } else if (!editing && s && level === "region") {
-      const add = document.createElement("button"); add.className = "fl-add-section"; add.innerHTML = FI.plus + "<span>Sección</span>";
+      const add = document.createElement("button"); add.className = "fl-add-section"; add.innerHTML = FI.plus + "<span>Section</span>";
       add.addEventListener("mousedown", (e) => e.stopPropagation());
       add.addEventListener("click", (e) => { e.stopPropagation(); openBlockPalette(s, add.getBoundingClientRect(), cont, "section"); });
       el.appendChild(add);
     }
-    // (Las regiones solo se agregan/cambian desde el layout — no hay "+ Región" aquí.)
+    // (Regions are only added/changed from the layout — there's no "+ Region" here.)
     return el;
   }
   // Grid layout: {grid:{cols,rows}, children:[region containers with .area=[c0,r0,c1,r1]]}.
@@ -6017,13 +6019,13 @@
   }
   // ── Layout presets: pick a classic SaaS layout instead of building per card ──
   const BUILTIN_LAYOUTS = [
-    { id: "vert", name: "Vertical simple", tree: { dir: "col", children: [] } },
-    { id: "sidebar", name: "Sidebar + contenido", tree: { dir: "row", children: [{ dir: "col", name: "Navegación", grow: 28, children: [] }, { dir: "col", name: "Contenido", grow: 72, children: [] }] } },
-    { id: "topbar", name: "Topbar + contenido", tree: { dir: "col", children: [{ dir: "row", name: "Barra superior", grow: 14, children: [] }, { dir: "col", name: "Contenido", grow: 86, children: [] }] } },
-    { id: "topsidebar", name: "Topbar + sidebar + contenido", tree: { dir: "col", children: [{ dir: "row", name: "Barra superior", grow: 14, children: [] }, { dir: "row", grow: 86, children: [{ dir: "col", name: "Navegación", grow: 26, children: [] }, { dir: "col", name: "Contenido", grow: 74, children: [] }] }] } },
-    { id: "subpanel", name: "Sidebar + subpanel + contenido", tree: { dir: "row", children: [{ dir: "col", name: "Navegación", grow: 20, children: [] }, { dir: "col", name: "Subpanel", grow: 26, children: [] }, { dir: "col", name: "Contenido", grow: 54, children: [] }] } },
-    { id: "masterdetail", name: "Master–detail", tree: { dir: "row", children: [{ dir: "col", name: "Lista", grow: 36, children: [] }, { dir: "col", name: "Detalle", grow: 64, children: [] }] } },
-    { id: "twocol", name: "Dos columnas", tree: { dir: "row", children: [{ dir: "col", name: "Columna 1", grow: 50, children: [] }, { dir: "col", name: "Columna 2", grow: 50, children: [] }] } },
+    { id: "vert", name: "Simple vertical", tree: { dir: "col", children: [] } },
+    { id: "sidebar", name: "Sidebar + content", tree: { dir: "row", children: [{ dir: "col", name: "Navigation", grow: 28, children: [] }, { dir: "col", name: "Content", grow: 72, children: [] }] } },
+    { id: "topbar", name: "Topbar + content", tree: { dir: "col", children: [{ dir: "row", name: "Top bar", grow: 14, children: [] }, { dir: "col", name: "Content", grow: 86, children: [] }] } },
+    { id: "topsidebar", name: "Topbar + sidebar + content", tree: { dir: "col", children: [{ dir: "row", name: "Top bar", grow: 14, children: [] }, { dir: "row", grow: 86, children: [{ dir: "col", name: "Navigation", grow: 26, children: [] }, { dir: "col", name: "Content", grow: 74, children: [] }] }] } },
+    { id: "subpanel", name: "Sidebar + subpanel + content", tree: { dir: "row", children: [{ dir: "col", name: "Navigation", grow: 20, children: [] }, { dir: "col", name: "Subpanel", grow: 26, children: [] }, { dir: "col", name: "Content", grow: 54, children: [] }] } },
+    { id: "masterdetail", name: "Master–detail", tree: { dir: "row", children: [{ dir: "col", name: "List", grow: 36, children: [] }, { dir: "col", name: "Detail", grow: 64, children: [] }] } },
+    { id: "twocol", name: "Two columns", tree: { dir: "row", children: [{ dir: "col", name: "Column 1", grow: 50, children: [] }, { dir: "col", name: "Column 2", grow: 50, children: [] }] } },
   ];
   function userLayouts() { return (flowDoc.layouts = flowDoc.layouts || []); }
   function allLayouts() { return BUILTIN_LAYOUTS.concat(userLayouts()); }
@@ -6066,13 +6068,13 @@
     return '<div class="lt-thumb dir-' + (tree.dir === "row" ? "row" : "col") + '">' + (tree.children && tree.children.length ? tree.children.map(box).join("") : '<div class="lt-cell"></div>') + '</div>';
   }
   function openLayoutPicker(s, rect) {
-    let html = '<div class="fm-label">Layout de la pantalla</div><div class="lp-grid">';
+    let html = '<div class="fm-label">Screen layout</div><div class="lp-grid">';
     html += allLayouts().map((L) => {
       const isUser = BUILTIN_LAYOUTS.indexOf(L) === -1;
       return '<button class="lp-item' + (isUser ? " user" : "") + '" data-lid="' + L.id + '">' + layoutThumb(L) + '<span>' + escapeHtml(L.name) + '</span>' +
-        (isUser ? '<span class="lp-edit" data-edit="' + L.id + '" title="Editar layout">' + FI.edit + '</span><span class="lp-del" data-del="' + L.id + '" title="Eliminar layout">' + FI.x + '</span>' : "") + '</button>';
+        (isUser ? '<span class="lp-edit" data-edit="' + L.id + '" title="Edit layout">' + FI.edit + '</span><span class="lp-del" data-del="' + L.id + '" title="Delete layout">' + FI.x + '</span>' : "") + '</button>';
     }).join("");
-    html += '</div><div class="fm-sep"></div><div class="fm-item" data-act="new">' + FI.plus + ' Crear layout nuevo…</div>';
+    html += '</div><div class="fm-sep"></div><div class="fm-item" data-act="new">' + FI.plus + ' Create new layout…</div>';
     flowMenu.innerHTML = html;
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 340) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
@@ -6117,8 +6119,8 @@
       el.style.top = (g.r0 / _leRows * 100) + "%"; el.style.height = ((g.r1 - g.r0 + 1) / _leRows * 100) + "%";
       el.style.setProperty("--rc", g.color);
       const isRow = g.dir === "row";
-      el.innerHTML = '<div class="le-region-head"><input class="le-region-name" value="' + escapeHtml(g.name) + '" spellcheck="false"><button class="le-region-del" title="Eliminar región">' + FI.x + '</button></div>' +
-        '<button class="le-region-dir" title="Dirección del contenido: ' + (isRow ? "horizontal" : "vertical") + '">' + (isRow ? FI.dirRow : FI.dirCol) + '</button>';
+      el.innerHTML = '<div class="le-region-head"><input class="le-region-name" value="' + escapeHtml(g.name) + '" spellcheck="false"><button class="le-region-del" title="Delete region">' + FI.x + '</button></div>' +
+        '<button class="le-region-dir" title="Content direction: ' + (isRow ? "horizontal" : "vertical") + '">' + (isRow ? FI.dirRow : FI.dirCol) + '</button>';
       el.querySelector(".le-region-name").addEventListener("input", (e) => { g.name = e.target.value; });
       el.querySelector(".le-region-name").addEventListener("mousedown", (e) => e.stopPropagation());
       el.querySelector(".le-region-del").addEventListener("mousedown", (e) => { e.stopPropagation(); _leRegions = _leRegions.filter((x) => x.id !== g.id); renderLayoutEditor(); });
@@ -6158,7 +6160,7 @@
         const cur = cellAt(uv) || start;
         const c0 = Math.min(start.c, cur.c), c1 = Math.max(start.c, cur.c), r0 = Math.min(start.r, cur.r), r1 = Math.max(start.r, cur.r);
         start = null;
-        if (rectFree(c0, r0, c1, r1)) _leRegions.push({ id: flowGenId(), name: "Región " + (_leRegions.length + 1), c0: c0, r0: r0, c1: c1, r1: r1, dir: "col", color: LE_COLORS[_leRegions.length % LE_COLORS.length] });
+        if (rectFree(c0, r0, c1, r1)) _leRegions.push({ id: flowGenId(), name: "Region " + (_leRegions.length + 1), c0: c0, r0: r0, c1: c1, r1: r1, dir: "col", color: LE_COLORS[_leRegions.length % LE_COLORS.length] });
         renderLayoutEditor();
       };
       window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
@@ -6195,7 +6197,7 @@
   }
   function openLayoutEditor(preset, screen) {
     _editScreen = screen || null;
-    if (preset && preset.grid) { _leCols = preset.grid.cols; _leRows = preset.grid.rows; _leRegions = (preset.regions || []).map((g, i) => ({ id: flowGenId(), name: g.name || "Región", c0: g.c0, r0: g.r0, c1: g.c1, r1: g.r1, dir: g.dir === "row" ? "row" : "col", color: g.color || LE_COLORS[i % LE_COLORS.length] })); _leName = preset.name || ""; _leId = (preset.userId || preset.id) || null; }
+    if (preset && preset.grid) { _leCols = preset.grid.cols; _leRows = preset.grid.rows; _leRegions = (preset.regions || []).map((g, i) => ({ id: flowGenId(), name: g.name || "Region", c0: g.c0, r0: g.r0, c1: g.c1, r1: g.r1, dir: g.dir === "row" ? "row" : "col", color: g.color || LE_COLORS[i % LE_COLORS.length] })); _leName = preset.name || ""; _leId = (preset.userId || preset.id) || null; }
     else { _leCols = 4; _leRows = 3; _leRegions = []; _leName = ""; _leId = null; }
     const nameInp = document.getElementById("le-name"); if (nameInp) nameInp.value = _leName;
     document.getElementById("layout-editor").classList.add("visible");
@@ -6204,7 +6206,7 @@
   function closeLayoutEditor() { document.getElementById("layout-editor").classList.remove("visible"); }
   function saveLayoutEditor() {
     const name = (document.getElementById("le-name").value || "").trim() || "Layout";
-    if (!_leRegions.length) { showToast("Pinta al menos una región", "warn"); return; }
+    if (!_leRegions.length) { showToast("Paint at least one region", "warn"); return; }
     const grid = { cols: _leCols, rows: _leRows };
     const regions = _leRegions.map((g) => ({ name: g.name, c0: g.c0, r0: g.r0, c1: g.c1, r1: g.r1, dir: g.dir === "row" ? "row" : "col", color: g.color }));
     if (_leId) { const u = userLayouts().find((x) => x.id === _leId); if (u) { u.name = name; u.grid = grid; u.regions = regions; delete u.tree; } else userLayouts().push({ id: _leId, name: name, grid: grid, regions: regions }); }
@@ -6212,7 +6214,7 @@
     saveFlow();
     if (_editScreen) applyLayout(_editScreen, { grid: grid, regions: regions });
     closeLayoutEditor();
-    showToast('Layout "' + name + '" guardado', "check");
+    showToast('Layout "' + name + '" saved', "check");
   }
   // Divide a region into two (wrapping any existing content into the first).
   function divideRegion(cont, mainDir) {
@@ -6245,10 +6247,10 @@
     if (isCont(node)) {
       // editor → structure tools; card → only add a block into the region
       flowActBar.innerHTML = editing
-        ? actBtn("cols", FL_ICON.row, "Columnas") + actBtn("rows", FL_ICON.col, "Filas") + actBtn("region", FL_ICON.split, "Región") + (parent ? '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "") : "")
-        : actBtn("block", FI.plus, "Bloque");
+        ? actBtn("cols", FL_ICON.row, "Columns") + actBtn("rows", FL_ICON.col, "Rows") + actBtn("region", FL_ICON.split, "Region") + (parent ? '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "") : "")
+        : actBtn("block", FI.plus, "Block");
     } else {
-      flowActBar.innerHTML = actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + actBtn("global", FI.diamond, node.globalId ? "Separar" : "Global") + '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "");
+      flowActBar.innerHTML = actBtn("up", FI.up, "") + actBtn("down", FI.down, "") + actBtn("global", FI.diamond, node.globalId ? "Detach" : "Global") + '<span class="fl-ab-sep"></span>' + actBtn("del", FI.trash, "");
     }
     const vr = host.getBoundingClientRect(), r = el.getBoundingClientRect();
     flowActBar.style.left = (r.left - vr.left + r.width / 2) + "px";
@@ -6271,7 +6273,7 @@
       else if (a === "global") {
         if (node.globalId) {
           const gid = node.globalId, g = flowGlobals()[gid];
-          arr[bi] = g ? { bid: node.bid, type: g.type, title: g.title, desc: g.desc, items: (g.items || []).slice() } : { bid: node.bid, title: "Bloque" };
+          arr[bi] = g ? { bid: node.bid, type: g.type, title: g.title, desc: g.desc, items: (g.items || []).slice() } : { bid: node.bid, title: "Block" };
           // Globals are DOC-wide (shared across flows): drop the entry only when
           // no block in ANY flow still references it.
           const used = (flowDoc.flows || []).some((f) => (f.screens || []).some((sc) => { let hit = false; eachBlock(sc, (b) => { if (b.globalId === gid) hit = true; }); return hit; }));
@@ -6317,15 +6319,15 @@
     el.__fnode = blk; el.__fparent = parent; el.__fscreen = s; el.__editing = false; // for the floating toolbar
     if (blk.grow) { el.style.flexGrow = blk.grow; }
     el.innerHTML =
-      '<button class="fb-port" title="Conectar bloque"></button>' +
-      (isG ? '<div class="fb-global">Global · ' + globalCount(blk.globalId) + ' uso' + (globalCount(blk.globalId) === 1 ? "" : "s") + '</div>' : '') +
+      '<button class="fb-port" title="Connect block"></button>' +
+      (isG ? '<div class="fb-global">Global · ' + globalCount(blk.globalId) + ' use' + (globalCount(blk.globalId) === 1 ? "" : "s") + '</div>' : '') +
       (bc.type ? '<div class="fb-type">' + (FI[bc.icon] || FI[iconForType(bc.type)] || FI.diamond) + '<span>' + escapeHtml(bc.type) + '</span></div>' : '') +
-      '<div class="fb-title" contenteditable="true" spellcheck="false">' + escapeHtml(bc.title || "Bloque") + '</div>' +
-      '<div class="fb-desc" contenteditable="true" spellcheck="false" data-ph="Descripción…">' + escapeHtml(bc.desc || "") + '</div>' +
+      '<div class="fb-title" contenteditable="true" spellcheck="false">' + escapeHtml(bc.title || "Block") + '</div>' +
+      '<div class="fb-desc" contenteditable="true" spellcheck="false" data-ph="Description…">' + escapeHtml(bc.desc || "") + '</div>' +
       '<div class="fb-items">' +
-        (bc.items || []).map((it, j) => '<div class="fb-item" data-ii="' + j + '"><span class="fb-item-dot"></span><span class="fb-item-txt" contenteditable="true" spellcheck="false">' + escapeHtml(it) + '</span><button class="fb-item-x" data-ii="' + j + '" title="Quitar">' + FI.x + '</button></div>').join("") +
+        (bc.items || []).map((it, j) => '<div class="fb-item" data-ii="' + j + '"><span class="fb-item-dot"></span><span class="fb-item-txt" contenteditable="true" spellcheck="false">' + escapeHtml(it) + '</span><button class="fb-item-x" data-ii="' + j + '" title="Remove">' + FI.x + '</button></div>').join("") +
       '</div>' +
-      '<button class="fb-add-item">' + FI.plus + ' Elemento</button>';
+      '<button class="fb-add-item">' + FI.plus + ' Element</button>';
     const t = el.querySelector(".fb-title"), dd = el.querySelector(".fb-desc");
     const sync = () => { bc.title = t.textContent; if (dd) bc.desc = dd.textContent; saveFlow(); };
     [t, dd].forEach((n) => { if (!n) return; n.addEventListener("input", sync); n.addEventListener("mousedown", (e) => e.stopPropagation()); });
@@ -6443,7 +6445,7 @@
     el.querySelectorAll(".fs-port").forEach((port) => {
       port.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); startFlowConnect(s, port.dataset.side, e); });
     });
-    // predefined output handles (Sí/No, Éxito/Error) — carry their label + color
+    // predefined output handles (Yes/No, Success/Error labels) — carry their label + color
     const outDefs = BRANCH_OUTS[s.kind];
     if (outDefs) el.querySelectorAll(".fs-out").forEach((ob) => {
       const out = outDefs[parseInt(ob.dataset.out, 10)]; if (!out) return;
@@ -6530,12 +6532,13 @@
       } else {
         const f = byId[e.from], t = byId[e.to]; if (!f || !t) return;
         // If the edge leaves a branching node (decision/system/loading) and its label
-        // matches a predefined output (Sí/No/Éxito/Error), route it from that output's
-        // handle + color automatically — so the line actually exits the Sí/No pill.
+        // matches a predefined output (Yes/No/Success/Error), route it from that output's
+        // handle + color automatically — so the line actually exits the Yes/No pill.
         let eFromSide = e.fromSide;
         const outs = BRANCH_OUTS[f.kind];
         if (outs && !eFromSide) {
-          const key = String(e.out || e.label || "").toLowerCase();
+          let key = String(e.out || e.label || "").toLowerCase();
+          key = LEGACY_OUT_LABELS[key] || key; // accept boards saved with Spanish labels
           const m = outs.find((o) => o.label.toLowerCase() === key);
           if (m) { eFromSide = m.side; if (!eColor) eColor = m.color; onHandle = true; }
         }
@@ -6556,7 +6559,7 @@
       const col = eColor ? ' style="stroke:' + eColor + ';color:' + eColor + '"' : ''; // color too → glow matches the stroke
       // Each connector is a group so hovering the line reveals its elbow handle.
       let g = '<path class="flow-edge-hit" data-ei="' + i + '" d="' + d + '"></path><path class="flow-edge' + (dashed || e.dash ? " dashed" : "") + '" d="' + d + '"' + col + me + ms + '></path>';
-      if (e.label && !onHandle) g += edgeLabelSvg(i, a, b, e.label); // the handle already shows the Sí/No label
+      if (e.label && !onHandle) g += edgeLabelSvg(i, a, b, e.label); // the handle already shows the Yes/No label
       if (isOrtho) { // draggable elbow handle (move the bend) — shown on hover, last so it's on top
         const el = orthoElbow(a, b, e.mid);
         if (el) {
@@ -6654,7 +6657,7 @@
       both: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="9 8 5 12 9 16"/><polyline points="15 8 19 12 15 16"/></svg>',
     };
     flowMenu.innerHTML =
-      '<div class="fm-label">Dirección</div>' +
+      '<div class="fm-label">Direction</div>' +
       '<div class="fm-kinds">' +
         ["fwd", "back", "both"].map((dd) => '<button class="fm-kind' + (dir === dd ? " on" : "") + '" data-dir="' + dd + '">' + dirIcon[dd] + '</button>').join("") +
       '</div>' +
@@ -6662,14 +6665,14 @@
       '<div class="fm-colors">' +
         EDGE_COLORS.map((c) => '<button class="fm-color' + ((e.color || EDGE_COLORS[0]) === c ? " on" : "") + '" data-color="' + c + '" style="background:' + c + '"></button>').join("") +
       '</div>' +
-      '<div class="fm-label">Línea</div>' +
+      '<div class="fm-label">Line</div>' +
       '<div class="fm-kinds fm-kinds-icons">' +
-        '<button class="fm-kind fm-kind-ic' + (!e.dash ? " on" : "") + '" data-dash="0" title="Continua"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>' +
-        '<button class="fm-kind fm-kind-ic' + (e.dash ? " on" : "") + '" data-dash="1" title="Punteada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="3.5 4"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>' +
+        '<button class="fm-kind fm-kind-ic' + (!e.dash ? " on" : "") + '" data-dash="0" title="Solid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>' +
+        '<button class="fm-kind fm-kind-ic' + (e.dash ? " on" : "") + '" data-dash="1" title="Dashed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="3.5 4"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>' +
       '</div>' +
-      '<div class="fm-label">Interacción / validación</div>' +
-      '<input class="fm-edge-input" value="' + escapeHtml(e.label || "") + '" placeholder="ej. al pulsar Guardar · si rol = operador" />' +
-      '<div class="fm-sep"></div><div class="fm-item danger" data-act="del">' + FI.trash + ' Eliminar conexión</div>';
+      '<div class="fm-label">Interaction / validation</div>' +
+      '<input class="fm-edge-input" value="' + escapeHtml(e.label || "") + '" placeholder="e.g. on pressing Save · if role = operator" />' +
+      '<div class="fm-sep"></div><div class="fm-item danger" data-act="del">' + FI.trash + ' Delete connection</div>';
     flowMenu.style.left = Math.min(cx, window.innerWidth - 240) + "px";
     flowMenu.style.top = Math.min(cy, window.innerHeight - 220) + "px";
     flowMenu.classList.add("visible");
@@ -6691,16 +6694,16 @@
         '<div class="fm-link-row" data-i="' + i + '">' +
           '<span class="fm-api-ico">' + FI.db + '</span>' +
           '<div class="fm-link-fields">' +
-            '<input class="fm-link-url" value="' + escapeHtml(a.endpoint || "") + '" placeholder="ej. GET /api/v1/dashboards" />' +
-            '<input class="fm-link-ctx" value="' + escapeHtml(a.ctx || "") + '" placeholder="Contexto de este endpoint…" />' +
+            '<input class="fm-link-url" value="' + escapeHtml(a.endpoint || "") + '" placeholder="e.g. GET /api/v1/dashboards" />' +
+            '<input class="fm-link-ctx" value="' + escapeHtml(a.ctx || "") + '" placeholder="Context for this endpoint…" />' +
           '</div>' +
-          '<button class="fm-link-del" title="Quitar API">' + FI.x + '</button>' +
+          '<button class="fm-link-del" title="Remove API">' + FI.x + '</button>' +
         '</div>').join("");
       flowMenu.innerHTML =
-        '<div class="fm-label">Endpoints / APIs de esta pantalla</div>' +
-        (rows || '<div class="fm-empty-hint">Sin endpoints todavía.</div>') +
+        '<div class="fm-label">Endpoints / APIs for this screen</div>' +
+        (rows || '<div class="fm-empty-hint">No endpoints yet.</div>') +
         '<div class="fm-sep"></div>' +
-        '<div class="fm-item" data-act="add">' + FI.plus + ' Agregar endpoint…</div>';
+        '<div class="fm-item" data-act="add">' + FI.plus + ' Add endpoint…</div>';
       flowMenu.querySelectorAll(".fm-link-row").forEach((row) => {
         const i = parseInt(row.dataset.i, 10); const a = s.apis[i];
         const u = row.querySelector(".fm-link-url"), c = row.querySelector(".fm-link-ctx");
@@ -6730,18 +6733,18 @@
         '<div class="fm-link-row" data-i="' + i + '">' +
           '<span class="fs-link-dot"></span>' +
           '<div class="fm-link-fields">' +
-            '<input class="fm-link-url" value="' + escapeHtml(l.url || "") + '" placeholder="URL o vista (ej. /dashboards)" />' +
-            '<input class="fm-link-ctx" value="' + escapeHtml(l.ctx || "") + '" placeholder="Contexto de este vínculo…" />' +
+            '<input class="fm-link-url" value="' + escapeHtml(l.url || "") + '" placeholder="URL or view (e.g. /dashboards)" />' +
+            '<input class="fm-link-ctx" value="' + escapeHtml(l.ctx || "") + '" placeholder="Context for this link…" />' +
           '</div>' +
-          (l.url ? '<button class="fm-link-open" title="Abrir en Preview">' + FI.open + '</button>' : '') +
-          '<button class="fm-link-del" title="Quitar vínculo">' + FI.x + '</button>' +
+          (l.url ? '<button class="fm-link-open" title="Open in Preview">' + FI.open + '</button>' : '') +
+          '<button class="fm-link-del" title="Remove link">' + FI.x + '</button>' +
         '</div>').join("");
       flowMenu.innerHTML =
-        '<div class="fm-label">Vínculos / vistas conectadas</div>' +
-        (rows || '<div class="fm-empty-hint">Sin vínculos todavía.</div>') +
+        '<div class="fm-label">Links / connected views</div>' +
+        (rows || '<div class="fm-empty-hint">No links yet.</div>') +
         '<div class="fm-sep"></div>' +
-        '<div class="fm-item" data-act="addcur">' + FI.link + ' Vincular vista actual</div>' +
-        '<div class="fm-item" data-act="addnew">' + FI.plus + ' Agregar enlace…</div>';
+        '<div class="fm-item" data-act="addcur">' + FI.link + ' Link current view</div>' +
+        '<div class="fm-item" data-act="addnew">' + FI.plus + ' Add link…</div>';
       flowMenu.querySelectorAll(".fm-link-row").forEach((row) => {
         const i = parseInt(row.dataset.i, 10); const l = s.links[i];
         const u = row.querySelector(".fm-link-url"), c = row.querySelector(".fm-link-ctx");
@@ -6831,7 +6834,7 @@
     const stepX = vertical ? 0 : (NW + 40), stepY = vertical ? (NH + 40) : 0;
     let guard = 0;
     while (overlapsAny(nx, ny, NW, NH, M) && guard++ < 300) { nx += stepX; ny += stepY; }
-    const ns = { id: flowGenId(), name: "Nueva pantalla", kind: "page", status: "todo", x: nx, y: ny, apis: [], links: [], blocks: [] };
+    const ns = { id: flowGenId(), name: "New screen", kind: "page", status: "todo", x: nx, y: ny, apis: [], links: [], blocks: [] };
     const OPP = { top: "bottom", bottom: "top", left: "right", right: "left" };
     flow.screens.push(ns);
     const e = { from: s.id, to: ns.id, fromSide: side, toSide: OPP[side] || "left", label: "" };
@@ -6860,10 +6863,10 @@
   function openSubflowPicker(s, rect) {
     flowMenu.classList.remove("palette");
     const list = flowsForActive().filter((f) => f.id !== (flow && flow.id));
-    let h = '<div class="fm-label">Vincular a un flujo del proyecto</div>';
-    if (!list.length) h += '<div class="fm-item" style="opacity:.55;pointer-events:none">No hay otros flujos en el proyecto</div>';
-    else h += list.map((f) => '<div class="fm-item" data-fid="' + f.id + '">' + FI.workflow + '<span>' + escapeHtml(f.name || "Flujo") + '</span></div>').join("");
-    if (s.flowRef) h += '<div class="fm-sep"></div><div class="fm-item danger" data-unlink="1">' + FI.x + '<span>Quitar vínculo</span></div>';
+    let h = '<div class="fm-label">Link to a project flow</div>';
+    if (!list.length) h += '<div class="fm-item" style="opacity:.55;pointer-events:none">No other flows in the project</div>';
+    else h += list.map((f) => '<div class="fm-item" data-fid="' + f.id + '">' + FI.workflow + '<span>' + escapeHtml(f.name || "Flow") + '</span></div>').join("");
+    if (s.flowRef) h += '<div class="fm-sep"></div><div class="fm-item danger" data-unlink="1">' + FI.x + '<span>Remove link</span></div>';
     flowMenu.innerHTML = h;
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 240) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
@@ -6875,14 +6878,14 @@
   function openFlowMenu(s, rect) {
     const k = s.kind || "page";
     flowMenu.innerHTML =
-      '<div class="fm-label">Tipo</div><div class="fm-kinds fm-kinds-icons fm-grid4">' +
+      '<div class="fm-label">Type</div><div class="fm-kinds fm-kinds-icons fm-grid4">' +
         Object.keys(FLOW_KINDS).map((key) => '<button class="fm-kind fm-kind-ic' + (key === k ? " on" : "") + '" data-kind="' + key + '" title="' + escapeHtml(FLOW_KINDS[key].label) + '" style="--fs-accent:' + FLOW_KINDS[key].color + '">' + FLOW_KINDS[key].icon + '</button>').join("") +
       '</div><div class="fm-sep"></div>' +
-      (k === "subflow" ? '<div class="fm-item" data-act="link">' + FI.workflow + ' Vincular flujo…</div>' : '<div class="fm-item" data-act="gen">' + FI.sparkle + ' Generar contenido con IA</div>') +
-      '<div class="fm-item" data-act="dup">' + FI.dup + ' Duplicar</div>' +
+      (k === "subflow" ? '<div class="fm-item" data-act="link">' + FI.workflow + ' Link flow…</div>' : '<div class="fm-item" data-act="gen">' + FI.sparkle + ' Generate content with AI</div>') +
+      '<div class="fm-item" data-act="dup">' + FI.dup + ' Duplicate</div>' +
       '<div class="fm-sep"></div>' +
-      '<div class="fm-item" data-act="docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Cómo funciona Moka</div>' +
-      '<div class="fm-sep"></div><div class="fm-item danger" data-act="del">' + FI.trash + ' Eliminar pantalla</div>';
+      '<div class="fm-item" data-act="docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> How Moka works</div>' +
+      '<div class="fm-sep"></div><div class="fm-item danger" data-act="del">' + FI.trash + ' Delete screen</div>';
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 190) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
     flowMenu.classList.add("visible");
@@ -6894,32 +6897,32 @@
       if (act === "link") { closeFlowMenu(); openSubflowPicker(s, rect); return; }
       if (act === "docs") { closeFlowMenu(); openDocs("moka"); return; }
       if (act === "del") { flow.screens = flow.screens.filter((x) => x.id !== s.id); flow.edges = flow.edges.filter((e) => e.from !== s.id && e.to !== s.id); }
-      else if (act === "dup") { const c = JSON.parse(JSON.stringify(s)); c.id = flowGenId(); c.x = (s.x || 0) + 40; c.y = (s.y || 0) + 40; c.name = (s.name || "") + " copia"; flow.screens.push(c); }
+      else if (act === "dup") { const c = JSON.parse(JSON.stringify(s)); c.id = flowGenId(); c.x = (s.x || 0) + 40; c.y = (s.y || 0) + 40; c.name = (s.name || "") + " copy"; flow.screens.push(c); }
       saveFlow(); renderFlow(); closeFlowMenu();
     });
   }
   // Per-screen AI: Claude fills/regenerates this screen's blocks in flow.json.
   function openScreenGen(s) {
     flowMenu.innerHTML =
-      '<div class="fm-label">Generar contenido — ' + escapeHtml(s.name || "Pantalla") + '</div>' +
-      '<input class="fm-edge-input" id="fm-gen-input" placeholder="Objetivo / qué debe contener esta pantalla…" />' +
-      '<div class="fm-sep"></div><div class="fm-item" data-act="run">' + FI.sparkle + ' Generar contenido con IA</div>';
+      '<div class="fm-label">Generate content — ' + escapeHtml(s.name || "Screen") + '</div>' +
+      '<input class="fm-edge-input" id="fm-gen-input" placeholder="Goal / what this screen should contain…" />' +
+      '<div class="fm-sep"></div><div class="fm-item" data-act="run">' + FI.sparkle + ' Generate content with AI</div>';
     const inp = flowMenu.querySelector("#fm-gen-input");
     setTimeout(() => inp.focus(), 0);
     const run = () => {
-      const at = activeTab(); if (!at) { showToast("Abre un proyecto", "warn"); return; }
+      const at = activeTab(); if (!at) { showToast("Open a project", "warn"); return; }
       const goal = inp.value.trim();
       const k = FLOW_KINDS[s.kind] || FLOW_KINDS.page;
       const instr =
-        "Usa las herramientas MCP de Moka (servidor `ohana-comments`) para definir el contenido de la pantalla id \"" + s.id + "\" (\"" + (s.name || "") + "\", tipo " + k.label + ") del flujo activo \"" + flowDoc.active + "\". " +
-        "Opcional: aplica un layout con `ohana_flow_set_layout` y agrega bloques con `ohana_flow_add_block(screenId, containerId, type, title, items)` (usa `ohana_flow_read` para los `cid` de las regiones). Cada bloque con su `type` ancla. " +
-        "No toques otras pantallas." +
-        (goal ? " Objetivo: " + goal + "." : "") +
-        " Si el proyecto usa un design system, referencia componentes reales. Si no tienes las tools MCP, edita `.ohana/flow.json` solo en esa pantalla. Aparece en vivo.";
+        "Use Moka's MCP tools (the `ohana-comments` server) to define the content of the screen with id \"" + s.id + "\" (\"" + (s.name || "") + "\", type " + k.label + ") in the active flow \"" + flowDoc.active + "\". " +
+        "Optional: apply a layout with `ohana_flow_set_layout` and add blocks with `ohana_flow_add_block(screenId, containerId, type, title, items)` (use `ohana_flow_read` for the regions' `cid`s). Each block anchored by its `type`. " +
+        "Don't touch other screens." +
+        (goal ? " Goal: " + goal + "." : "") +
+        " If the project uses a design system, reference real components. If you don't have the MCP tools, edit `.ohana/flow.json` only for that screen. It appears live.";
       if (!termVisible) toggleTerminal(); else switchTerminalTo(at);
       setTimeout(() => window.api.termInput({ tabKey: at.key, data: instr }), 280);
       closeFlowMenu();
-      showToast("Generando “" + (s.name || "pantalla") + "” — se recargará solo al terminar", "check");
+      showToast("Generating “" + (s.name || "screen") + "” — it will reload on its own when done", "check");
     };
     inp.onkeydown = (ev) => { if (ev.key === "Enter") run(); };
     flowMenu.querySelector('[data-act="run"]').onclick = run;
@@ -6929,26 +6932,28 @@
 
   // Base component catalog — the common UI pieces a section can hold (name + Lucide icon).
   const BASE_COMPONENTS = [
-    { name: "Acordeón", icon: "accordion" }, { name: "Alerta", icon: "alert" },
+    { name: "Accordion", icon: "accordion" }, { name: "Alert", icon: "alert" },
     { name: "Avatar", icon: "avatar" }, { name: "Badge", icon: "badge" },
     { name: "Breadcrumbs", icon: "breadcrumb" }, { name: "Button", icon: "button" },
     { name: "Button group", icon: "buttonGroup" }, { name: "Calendar", icon: "calendar" },
-    { name: "Carrusel", icon: "carousel" }, { name: "Chart", icon: "chart" },
-    { name: "Checkbox", icon: "checkbox" }, { name: "Colapsable", icon: "collapsible" },
-    { name: "Buscador", icon: "search" }, { name: "Menú", icon: "menu" },
+    { name: "Carousel", icon: "carousel" }, { name: "Chart", icon: "chart" },
+    { name: "Checkbox", icon: "checkbox" }, { name: "Collapsible", icon: "collapsible" },
+    { name: "Search", icon: "search" }, { name: "Menu", icon: "menu" },
     { name: "Data table", icon: "table" }, { name: "Date picker", icon: "datePicker" },
   ];
+  // Legacy Spanish catalog names (blocks saved before the English migration) → catalog icon.
+  const LEGACY_COMPONENT_ICONS = { "acordeón": "accordion", "acordeon": "accordion", "alerta": "alert", "carrusel": "carousel", "colapsable": "collapsible", "buscador": "search", "menú": "menu", "menu": "menu" };
   // Map a block's free-text `type` (e.g. "Button", written by an agent) to a catalog icon.
   function iconForType(type) {
     if (!type) return null;
     const lo = String(type).toLowerCase();
     const c = BASE_COMPONENTS.find((x) => x.name.toLowerCase() === lo);
-    return c ? c.icon : null;
+    return c ? c.icon : (LEGACY_COMPONENT_ICONS[lo] || null);
   }
   // Section variants — a section (layout region) can be typed by its purpose.
   const SECTION_VARIANTS = [
-    { name: "Sección de contenido", icon: "secContent", variant: "content" },
-    { name: "Sección Empty state", icon: "secEmpty", variant: "empty" },
+    { name: "Content section", icon: "secContent", variant: "content" },
+    { name: "Empty state section", icon: "secEmpty", variant: "empty" },
   ];
   // Icon choices offered when creating your own component.
   const ICON_CHOICES = ["cube", "accordion", "alert", "avatar", "badge", "breadcrumb", "button", "buttonGroup", "calendar", "carousel", "chart", "checkbox", "collapsible", "search", "menu", "table", "datePicker", "box", "fileText", "comment", "eye", "link", "db", "sparkle", "note", "heading"];
@@ -6957,11 +6962,11 @@
     let chosen = "cube";
     flowMenu.classList.remove("palette");
     flowMenu.innerHTML =
-      '<div class="fm-label">Nuevo componente (se guarda en tu biblioteca)</div>' +
-      '<input class="fm-search cc-name" placeholder="Nombre — ej. Acordeón" spellcheck="false" />' +
-      '<div class="fm-label">Ícono</div>' +
+      '<div class="fm-label">New component (saved to your library)</div>' +
+      '<input class="fm-search cc-name" placeholder="Name — e.g. Accordion" spellcheck="false" />' +
+      '<div class="fm-label">Icon</div>' +
       '<div class="cc-icons">' + ICON_CHOICES.map((k, i) => '<button class="cc-icon' + (i === 0 ? " on" : "") + '" data-k="' + k + '" title="' + k + '">' + FI[k] + '</button>').join("") + '</div>' +
-      '<button class="cc-create">Crear componente</button>';
+      '<button class="cc-create">Create component</button>';
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 260) + "px";
     flowMenu.style.top = Math.min(rect.bottom + 4, window.innerHeight - 300) + "px";
     flowMenu.classList.add("visible");
@@ -6989,9 +6994,9 @@
   function openSectionMenu(s, cont, parent, rect) {
     flowMenu.classList.remove("palette");
     flowMenu.innerHTML =
-      '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Volver componente</span></div>' +
+      '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Turn into component</span></div>' +
       '<div class="fm-sep"></div>' +
-      '<div class="fm-item danger" data-a="del">' + FI.trash + '<span>Eliminar sección</span></div>';
+      '<div class="fm-item danger" data-a="del">' + FI.trash + '<span>Delete section</span></div>';
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 200) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
     flowMenu.classList.add("visible");
@@ -7004,7 +7009,7 @@
           else if (a === "tocomp") {
             const items = [];
             (function collect(n) { if (isCont(n)) (n.children || []).forEach(collect); else { const bc = blockContent(n); if (bc && (bc.title || bc.type)) items.push(bc.title || bc.type); } })(cont);
-            parent.children.splice(idx, 1, { type: cont.name || "Componente", icon: "cube", title: cont.name || "Componente", desc: "", items: items });
+            parent.children.splice(idx, 1, { type: cont.name || "Component", icon: "cube", title: cont.name || "Component", desc: "", items: items });
           }
           saveFlow(); renderFlow();
         }
@@ -7016,9 +7021,9 @@
   function openRegionMenu(s, cont, parent, rect) {
     flowMenu.classList.remove("palette");
     flowMenu.innerHTML =
-      '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Volver componente</span></div>' +
+      '<div class="fm-item" data-a="tocomp">' + FI.cube + '<span>Turn into component</span></div>' +
       '<div class="fm-sep"></div>' +
-      '<div class="fm-item danger" data-a="del">' + FI.trash + '<span>Eliminar región</span></div>';
+      '<div class="fm-item danger" data-a="del">' + FI.trash + '<span>Delete region</span></div>';
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 200) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
     flowMenu.classList.add("visible");
@@ -7031,7 +7036,7 @@
           else if (a === "tocomp") {
             const items = [];
             (function collect(n) { if (isCont(n)) (n.children || []).forEach(collect); else { const bc = blockContent(n); if (bc && (bc.title || bc.type)) items.push(bc.title || bc.type); } })(cont);
-            parent.children.splice(idx, 1, { type: cont.name || "Componente", icon: "cube", title: cont.name || "Componente", desc: "", items: items });
+            parent.children.splice(idx, 1, { type: cont.name || "Component", icon: "cube", title: cont.name || "Component", desc: "", items: items });
           }
           saveFlow(); renderFlow();
         }
@@ -7045,7 +7050,7 @@
     flowMenu.classList.add("palette");
     // Sections are just 2 types → no search. Components are many → keep the search.
     const withSearch = mode !== "section";
-    flowMenu.innerHTML = (withSearch ? '<input class="fm-search" placeholder="Buscar componente…" spellcheck="false" />' : '') + '<div class="fm-list" id="fm-list"></div>';
+    flowMenu.innerHTML = (withSearch ? '<input class="fm-search" placeholder="Search component…" spellcheck="false" />' : '') + '<div class="fm-list" id="fm-list"></div>';
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 240) + "px";
     flowMenu.style.top = Math.min(rect.bottom + 4, window.innerHeight - 440) + "px";
     flowMenu.classList.add("visible");
@@ -7054,7 +7059,7 @@
     const addBlock = (b) => { cont().children.push(b); saveFlow(); renderFlow(); closeFlowMenu(); };
     const addSection = (v) => { cont().children.push({ dir: "col", name: v.name, variant: v.variant, children: [] }); saveFlow(); renderFlow(); closeFlowMenu(); };
     const compToBlock = (c) => ({
-      type: c.name || "Componente", title: c.name || "Componente", icon: "cube",
+      type: c.name || "Component", title: c.name || "Component", icon: "cube",
       desc: c.import || c.use || "",
       items: (c.props || []).filter((p) => (p.options || []).length).map((p) => (p.label || p.name) + ": " + p.options.join(" / ")),
     });
@@ -7066,21 +7071,21 @@
       if (mode === "component") {
         // Inside a section → components: base + your global library + the repo's design system
         const base = BASE_COMPONENTS.filter((c) => match(c.name));
-        if (base.length) h += '<div class="fm-label">Componentes</div>' + base.map((c) => item('data-comp="' + BASE_COMPONENTS.indexOf(c) + '"', c.icon, c.name)).join("");
+        if (base.length) h += '<div class="fm-label">Components</div>' + base.map((c) => item('data-comp="' + BASE_COMPONENTS.indexOf(c) + '"', c.icon, c.name)).join("");
         const uc = userComponents.filter((c) => match(c.name));
-        if (uc.length) h += '<div class="fm-label">Mis componentes</div>' + uc.map((c) => item('data-uc="' + userComponents.indexOf(c) + '"', c.icon, c.name)).join("");
+        if (uc.length) h += '<div class="fm-label">My components</div>' + uc.map((c) => item('data-uc="' + userComponents.indexOf(c) + '"', c.icon, c.name)).join("");
         const fc = comps.filter((c) => match(c.name));
-        if (fc.length) h += '<div class="fm-label">Componentes del proyecto</div>' + fc.map((c) => item('data-ci="' + comps.indexOf(c) + '"', "cube", c.name || "")).join("");
-        h += '<div class="fm-sep"></div>' + item('data-new="1"', "plus", "Crear componente…");
+        if (fc.length) h += '<div class="fm-label">Project components</div>' + fc.map((c) => item('data-ci="' + comps.indexOf(c) + '"', "cube", c.name || "")).join("");
+        h += '<div class="fm-sep"></div>' + item('data-new="1"', "plus", "Create component…");
       } else {
         // Screen level → sections (layout regions with a purpose) + reusable globals
         const sv = SECTION_VARIANTS.filter((v) => match(v.name));
-        if (sv.length) h += '<div class="fm-label">Secciones</div>' + sv.map((v) => item('data-sec="' + SECTION_VARIANTS.indexOf(v) + '"', v.icon, v.name)).join("");
+        if (sv.length) h += '<div class="fm-label">Sections</div>' + sv.map((v) => item('data-sec="' + SECTION_VARIANTS.indexOf(v) + '"', v.icon, v.name)).join("");
         const globals = flowGlobals();
         const gids = Object.keys(globals).filter((id) => match(globals[id].title));
-        if (gids.length) h += '<div class="fm-label">Secciones globales</div>' + gids.map((id) => item('data-gid="' + id + '"', "diamond", globals[id].title || "Global")).join("");
+        if (gids.length) h += '<div class="fm-label">Global sections</div>' + gids.map((id) => item('data-gid="' + id + '"', "diamond", globals[id].title || "Global")).join("");
       }
-      list.innerHTML = h || '<div class="fm-label">Sin resultados</div>';
+      list.innerHTML = h || '<div class="fm-label">No results</div>';
       list.querySelectorAll(".fm-item").forEach((it) => it.onclick = () => {
         const d = it.dataset;
         if (d.comp !== undefined) { const c = BASE_COMPONENTS[+d.comp]; addBlock({ type: c.name, icon: c.icon, title: c.name, desc: "", items: [] }); }
@@ -7208,12 +7213,12 @@
     ids.forEach((id) => { byId[id].x = pos[id].x; byId[id].y = levelY[pos[id].depth]; });
   }
   function autoLayoutFlow() {
-    if (!flow.screens.length) { showToast("El flujo está vacío", "warn"); return; }
+    if (!flow.screens.length) { showToast("The flow is empty", "warn"); return; }
     _edgeRoutes = {}; // recomputed by the layout below (only layeredLayout fills lanes)
     if (boardType() === "sitemap") treeLayout(flow.screens, flow.edges);
     else layeredLayout(flow.screens, flow.edges, "LR");
     saveFlow(); renderFlow(); fitFlowView();
-    showToast(boardType() === "sitemap" ? "Sitemap ordenado" : "Flujo ordenado", "check");
+    showToast(boardType() === "sitemap" ? "Sitemap laid out" : "Flow laid out", "check");
   }
   function renderBoardSwitch() {
     const cur = boardType();
@@ -7234,14 +7239,14 @@
     };
     const curveVal = (flowLayoutCfg().curve != null) ? flowLayoutCfg().curve : 0.4;
     flowMenu.innerHTML =
-      '<div class="fm-note" style="max-width:240px">La dirección la define el tipo de tablero (Sitemap = vertical · User flow = horizontal).</div>' +
-      '<div class="fm-label">Conectores</div><div class="fm-kinds fm-kinds-icons">' +
-        '<button class="fm-kind fm-kind-ic' + (conn === "smooth" ? " on" : "") + '" data-conn="smooth" title="Suave">' + connIcon.smooth + '</button>' +
-        '<button class="fm-kind fm-kind-ic' + (conn === "ortho" ? " on" : "") + '" data-conn="ortho" title="Codo">' + connIcon.ortho + '</button>' +
+      '<div class="fm-note" style="max-width:240px">Direction is set by the board type (Sitemap = vertical · User flow = horizontal).</div>' +
+      '<div class="fm-label">Connectors</div><div class="fm-kinds fm-kinds-icons">' +
+        '<button class="fm-kind fm-kind-ic' + (conn === "smooth" ? " on" : "") + '" data-conn="smooth" title="Smooth">' + connIcon.smooth + '</button>' +
+        '<button class="fm-kind fm-kind-ic' + (conn === "ortho" ? " on" : "") + '" data-conn="ortho" title="Elbow">' + connIcon.ortho + '</button>' +
       '</div>' +
-      (conn === "smooth" ? '<div class="fm-label">Curvatura</div><input type="range" class="fm-range" id="fm-curve" min="0" max="0.9" step="0.05" value="' + curveVal + '" />' : '') +
+      (conn === "smooth" ? '<div class="fm-label">Curvature</div><input type="range" class="fm-range" id="fm-curve" min="0" max="0.9" step="0.05" value="' + curveVal + '" />' : '') +
       '<div class="fm-sep"></div>' +
-      '<div class="fm-item" data-act="run">' + FI.check + ' Ordenar ahora</div>';
+      '<div class="fm-item" data-act="run">' + FI.check + ' Lay out now</div>';
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 240) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
     flowMenu.classList.add("visible");
@@ -7271,21 +7276,21 @@
   function addScreen(kind) {
     const r = flowVp.getBoundingClientRect();
     const w = flowWorld(r.left + r.width / 2, r.top + r.height / 2);
-    const s = { id: flowGenId(), name: "Nueva pantalla", kind: kind || "page", status: "todo", x: Math.round(w.x - 120), y: Math.round(w.y - 40), apis: [], links: [], blocks: [] };
+    const s = { id: flowGenId(), name: "New screen", kind: kind || "page", status: "todo", x: Math.round(w.x - 120), y: Math.round(w.y - 40), apis: [], links: [], blocks: [] };
     flow.screens.push(s); flowSel = new Set([s.id]); saveFlow(); renderFlow();
   }
 
-  // ── Estado: filtro ──
+  // ── Status: filter ──
   function setFlowFilter(f) {
     flowFilter = f;
-    const lbl = document.getElementById("flow-filter-label"); if (lbl) lbl.textContent = (f === "all") ? "Todos" : FLOW_STATUS[f].label;
+    const lbl = document.getElementById("flow-filter-label"); if (lbl) lbl.textContent = (f === "all") ? "All" : FLOW_STATUS[f].label;
     const btn = document.getElementById("flow-filter"); if (btn) btn.classList.toggle("on", f !== "all");
     renderFlow();
   }
   function openFlowFilter(rect) {
     const chk = (on) => on ? FI.check : '<span style="width:14px;display:inline-block;flex-shrink:0;"></span>';
-    flowMenu.innerHTML = '<div class="fm-label">Filtrar por estado</div>' +
-      '<div class="fm-item" data-f="all">' + chk(flowFilter === "all") + ' Todos</div>' +
+    flowMenu.innerHTML = '<div class="fm-label">Filter by status</div>' +
+      '<div class="fm-item" data-f="all">' + chk(flowFilter === "all") + ' All</div>' +
       STATUS_ORDER.map((k) => '<div class="fm-item fm-status-' + k + '" data-f="' + k + '">' + chk(flowFilter === k) + '<span class="fs-status-dot"></span> ' + FLOW_STATUS[k].label + '</div>').join("");
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 220) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
@@ -7293,7 +7298,7 @@
     flowMenu.querySelectorAll("[data-f]").forEach((it) => it.onclick = () => { setFlowFilter(it.dataset.f); closeFlowMenu(); });
   }
 
-  // ── Navegación: ver todo (zoom-to-fit) + buscar + centrar ──
+  // ── Navigation: see all (zoom-to-fit) + search + center ──
   function flowBBox() {
     const items = [];
     flow.screens.forEach((s) => {
@@ -7331,8 +7336,8 @@
     if (select) { flowSel = new Set([s.id]); refreshSelClasses(); }
   }
   function openFlowSearch(rect) {
-    flowMenu.innerHTML = '<div class="fm-label">Buscar pantalla</div>' +
-      '<input class="fm-edge-input" id="fm-search" placeholder="Nombre o contexto…" spellcheck="false" />' +
+    flowMenu.innerHTML = '<div class="fm-label">Search screen</div>' +
+      '<input class="fm-edge-input" id="fm-search" placeholder="Name or context…" spellcheck="false" />' +
       '<div id="fm-results"></div>';
     flowMenu.style.left = Math.min(rect.left, window.innerWidth - 320) + "px";
     flowMenu.style.top = (rect.bottom + 4) + "px";
@@ -7342,8 +7347,8 @@
       const ql = inp.value.trim().toLowerCase();
       const matches = flow.screens.filter((s) => !ql || (s.name || "").toLowerCase().indexOf(ql) !== -1 || (s.desc || "").toLowerCase().indexOf(ql) !== -1).slice(0, 40);
       res.innerHTML = matches.length
-        ? matches.map((s) => '<div class="fm-item" data-sid="' + s.id + '"><span class="fs-status-dot" style="background:' + FLOW_STATUS[screenStatus(s)].color + '"></span> ' + escapeHtml(s.name || "Pantalla") + '</div>').join("")
-        : '<div class="fm-empty-hint">Sin resultados.</div>';
+        ? matches.map((s) => '<div class="fm-item" data-sid="' + s.id + '"><span class="fs-status-dot" style="background:' + FLOW_STATUS[screenStatus(s)].color + '"></span> ' + escapeHtml(s.name || "Screen") + '</div>').join("")
+        : '<div class="fm-empty-hint">No results.</div>';
       res.querySelectorAll("[data-sid]").forEach((it) => it.onclick = () => { const s = flow.screens.find((x) => x.id === it.dataset.sid); if (s) { centerOnScreen(s, true); closeFlowMenu(); } });
     };
     inp.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -7360,8 +7365,8 @@
     el.dataset.id = n.id;
     el.style.left = (n.x || 0) + "px"; el.style.top = (n.y || 0) + "px";
     el.innerHTML =
-      '<div class="fn-bar"><button class="fn-color" title="Color"></button><span class="fn-grip"></span><button class="fn-del" title="Opciones">' + FI.dots + '</button></div>' +
-      '<div class="fn-text" contenteditable="true" spellcheck="false" data-ph="Nota…">' + escapeHtml(n.text || "") + '</div>';
+      '<div class="fn-bar"><button class="fn-color" title="Color"></button><span class="fn-grip"></span><button class="fn-del" title="Options">' + FI.dots + '</button></div>' +
+      '<div class="fn-text" contenteditable="true" spellcheck="false" data-ph="Note…">' + escapeHtml(n.text || "") + '</div>';
     const text = el.querySelector(".fn-text");
     text.addEventListener("mousedown", (e) => e.stopPropagation());
     text.addEventListener("input", () => { n.text = text.textContent; saveFlow(); });
@@ -7373,8 +7378,8 @@
     el.querySelector(".fn-del").onclick = (e) => {
       e.stopPropagation();
       openObjMenu(e.currentTarget.getBoundingClientRect(), [
-        { label: "Cambiar color", icon: FI.palette, fn: () => { n.color = NOTE_KEYS[(NOTE_KEYS.indexOf(n.color || "yellow") + 1) % NOTE_KEYS.length]; saveFlow(); renderFlow(); } },
-        { label: "Eliminar nota", icon: FI.trash, danger: true, fn: () => { flow.notes = (flow.notes || []).filter((x) => x.id !== n.id); saveFlow(); renderFlow(); } },
+        { label: "Change color", icon: FI.palette, fn: () => { n.color = NOTE_KEYS[(NOTE_KEYS.indexOf(n.color || "yellow") + 1) % NOTE_KEYS.length]; saveFlow(); renderFlow(); } },
+        { label: "Delete note", icon: FI.trash, danger: true, fn: () => { flow.notes = (flow.notes || []).filter((x) => x.id !== n.id); saveFlow(); renderFlow(); } },
       ]);
     };
     return el;
@@ -7402,10 +7407,10 @@
     el.dataset.id = l.id;
     el.style.left = (l.x || 0) + "px"; el.style.top = (l.y || 0) + "px"; el.style.width = (l.w || 360) + "px";
     el.innerHTML =
-      '<div class="fl-lbl-bar"><span class="fl-lbl-grip"></span><button class="fl-lbl-del" title="Opciones">' + FI.dots + '</button></div>' +
-      '<div class="fl-lbl-title" contenteditable="true" spellcheck="false" data-ph="Título de sección">' + escapeHtml(l.title || "") + '</div>' +
-      '<div class="fl-lbl-ctx" contenteditable="true" spellcheck="false" data-ph="Contexto…">' + escapeHtml(l.ctx || "") + '</div>' +
-      '<div class="fl-lbl-resize" title="Ancho"></div>';
+      '<div class="fl-lbl-bar"><span class="fl-lbl-grip"></span><button class="fl-lbl-del" title="Options">' + FI.dots + '</button></div>' +
+      '<div class="fl-lbl-title" contenteditable="true" spellcheck="false" data-ph="Section title">' + escapeHtml(l.title || "") + '</div>' +
+      '<div class="fl-lbl-ctx" contenteditable="true" spellcheck="false" data-ph="Context…">' + escapeHtml(l.ctx || "") + '</div>' +
+      '<div class="fl-lbl-resize" title="Width"></div>';
     const t = el.querySelector(".fl-lbl-title"), c = el.querySelector(".fl-lbl-ctx");
     t.addEventListener("mousedown", (e) => e.stopPropagation()); t.addEventListener("input", () => { l.title = t.textContent; saveFlow(); });
     c.addEventListener("mousedown", (e) => e.stopPropagation()); c.addEventListener("input", () => { l.ctx = c.textContent; saveFlow(); });
@@ -7415,7 +7420,7 @@
     el.querySelector(".fl-lbl-del").onclick = (e) => {
       e.stopPropagation();
       openObjMenu(e.currentTarget.getBoundingClientRect(), [
-        { label: "Eliminar título", icon: FI.trash, danger: true, fn: () => { flow.labels = (flow.labels || []).filter((x) => x.id !== l.id); saveFlow(); renderFlow(); } },
+        { label: "Delete title", icon: FI.trash, danger: true, fn: () => { flow.labels = (flow.labels || []).filter((x) => x.id !== l.id); saveFlow(); renderFlow(); } },
       ]);
     };
     const rz = el.querySelector(".fl-lbl-resize");
@@ -7436,7 +7441,7 @@
     setTimeout(() => { const t = flowNodes.querySelector('.flow-label[data-id="' + l.id + '"] .fl-lbl-title'); if (t) t.focus(); }, 0);
   }
 
-  // ── Alinear / distribuir la selección ──
+  // ── Align / distribute the selection ──
   function sdim(s) { return nodeDim(s); }
   function alignSelection(op) {
     const ss = selectedScreens(); if (ss.length < 2) return;
@@ -7460,7 +7465,7 @@
     bar.classList.toggle("visible", flowMode && flowSel.size >= 2);
   }
 
-  // ── Secciones / frames ──
+  // ── Sections / frames ──
   const SECTION_COLORS = { slate: "#8a93a6", blue: "#7cb0ff", green: "#34d399", amber: "#f5a623", purple: "#b388ff" };
   const SECTION_KEYS = ["slate", "blue", "green", "amber", "purple"];
   function buildSectionEl(g) {
@@ -7471,9 +7476,9 @@
     el.style.width = (g.w || 360) + "px"; el.style.height = (g.h || 260) + "px";
     el.style.setProperty("--sec-color", SECTION_COLORS[g.color] || SECTION_COLORS.slate);
     el.innerHTML =
-      '<div class="fsec-bar"><span class="fsec-dot"></span><span class="fsec-name" contenteditable="true" spellcheck="false" data-ph="Sección">' + escapeHtml(g.name || "") + '</span><span class="fsec-sp"></span>' +
-      '<button class="fsec-color" title="Color"></button><button class="fsec-del" title="Eliminar sección">' + FI.x + '</button></div>' +
-      '<div class="fsec-resize" title="Redimensionar"></div>';
+      '<div class="fsec-bar"><span class="fsec-dot"></span><span class="fsec-name" contenteditable="true" spellcheck="false" data-ph="Section">' + escapeHtml(g.name || "") + '</span><span class="fsec-sp"></span>' +
+      '<button class="fsec-color" title="Color"></button><button class="fsec-del" title="Delete section">' + FI.x + '</button></div>' +
+      '<div class="fsec-resize" title="Resize"></div>';
     const nm = el.querySelector(".fsec-name");
     nm.addEventListener("mousedown", (e) => e.stopPropagation());
     nm.addEventListener("input", () => { g.name = nm.textContent; saveFlow(); });
@@ -7513,7 +7518,7 @@
   function addFrame() {
     const r = flowVp.getBoundingClientRect(); const w = flowWorld(r.left + r.width / 2, r.top + r.height / 2);
     flow.sections = flow.sections || [];
-    const g = { id: flowGenId(), name: "Sección", x: Math.round(w.x - 180), y: Math.round(w.y - 130), w: 360, h: 260, color: "slate" };
+    const g = { id: flowGenId(), name: "Section", x: Math.round(w.x - 180), y: Math.round(w.y - 130), w: 360, h: 260, color: "slate" };
     flow.sections.push(g); saveFlow(); renderFlow();
     setTimeout(() => { const nm = flowNodes.querySelector('.flow-section[data-id="' + g.id + '"] .fsec-name'); if (nm) nm.focus(); }, 0);
   }
@@ -7593,7 +7598,7 @@
       const pad = "  ".repeat(depth);
       if (isCont(node)) {
         let out = "";
-        if (depth > 0) out += pad + "- " + (node.dir === "row" ? "Fila (lado a lado)" : "Columna (apiladas)") + ":\n";
+        if (depth > 0) out += pad + "- " + (node.dir === "row" ? "Row (side by side)" : "Column (stacked)") + ":\n";
         node.children.forEach((c) => (out += renderLayoutMd(c, depth + 1)));
         return out;
       }
@@ -7603,37 +7608,37 @@
       return line;
     };
     let md = "";
-    const starts = flow.screens.filter((s) => s.kind === "start").map((s) => s.name || "Inicio");
-    const ends = flow.screens.filter((s) => s.kind === "end").map((s) => s.name || "Fin");
-    if (starts.length || ends.length) md += "**La experiencia empieza en:** " + (starts.join(", ") || "(sin marcar)") + "  ·  **termina en:** " + (ends.join(", ") || "(sin marcar)") + "\n";
+    const starts = flow.screens.filter((s) => s.kind === "start").map((s) => s.name || "Start");
+    const ends = flow.screens.filter((s) => s.kind === "end").map((s) => s.name || "End");
+    if (starts.length || ends.length) md += "**The experience starts at:** " + (starts.join(", ") || "(unmarked)") + "  ·  **ends at:** " + (ends.join(", ") || "(unmarked)") + "\n";
     md += "\n";
     flow.screens.forEach((s, i) => {
       const k = FLOW_KINDS[s.kind] || FLOW_KINDS.page;
-      md += "## " + (s.handle ? s.handle + " · " : "") + (s.name || "Pantalla") + "  ·  " + k.label + "  ·  [" + FLOW_STATUS[screenStatus(s)].label + "]\n";
+      md += "## " + (s.handle ? s.handle + " · " : "") + (s.name || "Screen") + "  ·  " + k.label + "  ·  [" + FLOW_STATUS[screenStatus(s)].label + "]\n";
       if (s.desc) md += s.desc + "\n";
       (s.apis || []).forEach((a) => { if (a.endpoint) md += "API/endpoint: `" + a.endpoint + "`" + (a.ctx ? " — " + a.ctx : "") + "\n"; });
-      (s.links || []).forEach((l) => { if (l.url) md += "Vista vinculada: `" + l.url + "`" + (l.ctx ? " — " + l.ctx : "") + "\n"; });
+      (s.links || []).forEach((l) => { if (l.url) md += "Linked view: `" + l.url + "`" + (l.ctx ? " — " + l.ctx : "") + "\n"; });
       if (s.kind !== "decision") {
         ensureLayout(s);
-        md += "Estructura: " + (s.layout.dir === "row" ? "horizontal (regiones lado a lado)" : "vertical (apilada)") + "\n";
+        md += "Structure: " + (s.layout.dir === "row" ? "horizontal (regions side by side)" : "vertical (stacked)") + "\n";
         md += renderLayoutMd(s.layout, 0);
       }
       const outs = flow.edges.filter((e) => e.from === s.id);
-      outs.forEach((e) => { const t = byId[e.to]; if (t) md += "  → lleva a **" + (t.handle ? t.handle + " " : "") + (t.name || "") + "**" + (e.out ? " (" + e.out + ")" : "") + (e.label ? " cuando: " + e.label : "") + "\n"; });
+      outs.forEach((e) => { const t = byId[e.to]; if (t) md += "  → leads to **" + (t.handle ? t.handle + " " : "") + (t.name || "") + "**" + (e.out ? " (" + e.out + ")" : "") + (e.label ? " when: " + e.label : "") + "\n"; });
       md += "\n";
     });
     if ((flow.sections || []).length) {
-      md += "## Secciones / agrupación\n";
+      md += "## Sections / grouping\n";
       flow.sections.forEach((g) => {
         const x2 = (g.x || 0) + (g.w || 360), y2 = (g.y || 0) + (g.h || 260);
-        const inside = flow.screens.filter((s) => { const x = s.x || 0, y = s.y || 0; return x >= (g.x || 0) && y >= (g.y || 0) && x <= x2 && y <= y2; }).map((s) => s.name || "Pantalla");
-        md += "- **" + (g.name || "Sección") + "**" + (inside.length ? ": " + inside.join(", ") : "") + "\n";
+        const inside = flow.screens.filter((s) => { const x = s.x || 0, y = s.y || 0; return x >= (g.x || 0) && y >= (g.y || 0) && x <= x2 && y <= y2; }).map((s) => s.name || "Screen");
+        md += "- **" + (g.name || "Section") + "**" + (inside.length ? ": " + inside.join(", ") : "") + "\n";
       });
       md += "\n";
     }
     if ((flow.notes || []).length) {
       const ns = flow.notes.filter((n) => (n.text || "").trim());
-      if (ns.length) { md += "## Notas\n"; ns.forEach((n) => { md += "- " + n.text.trim().replace(/\n/g, " ") + "\n"; }); md += "\n"; }
+      if (ns.length) { md += "## Notes\n"; ns.forEach((n) => { md += "- " + n.text.trim().replace(/\n/g, " ") + "\n"; }); md += "\n"; }
     }
     return md;
   }
@@ -7643,43 +7648,42 @@
     if (toastMsg) showToast(toastMsg, "check");
   }
   function exportFlowPrompt() {
-    const at = activeTab(); if (!at) { showToast("Abre un proyecto", "warn"); return; }
-    if (!flow.screens.length) { showToast("El flujo está vacío", "warn"); return; }
-    let md = "Toma este user flow (de Ohana, fuente: .ohana/flow.json) y constrúyelo/ajústalo de forma consistente:\n\n";
-    md += "# User Flow — " + (at.name || "proyecto") + "\n";
+    const at = activeTab(); if (!at) { showToast("Open a project", "warn"); return; }
+    if (!flow.screens.length) { showToast("The flow is empty", "warn"); return; }
+    let md = "Take this user flow (from Ohana, source: .ohana/flow.json) and build/adjust it consistently:\n\n";
+    md += "# User Flow — " + (at.name || "project") + "\n";
     md += (at.kind === "file")
-      ? "Trabaja sobre el archivo de este tab: `$OHANA_FILE` (" + (at.src || "") + ").\n"
-      : "Trabaja en el proyecto de este tab" + (at.dir ? " (`" + at.dir + "`)" : "") + ".\n";
+      ? "Work on this tab's file: `$OHANA_FILE` (" + (at.src || "") + ").\n"
+      : "Work in this tab's project" + (at.dir ? " (`" + at.dir + "`)" : "") + ".\n";
     md += flowPromptBody();
-    sendToTerminal(at, md, "Flujo enviado a la terminal — revísalo y Enter");
+    sendToTerminal(at, md, "Flow sent to the terminal — review it and hit Enter");
   }
-  function slugify(s) { return (s || "prototipo").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "prototipo"; }
-  // «Llevar a prototipo»: link the board to an HTML file and ask the agent to
+  function slugify(s) { return (s || "prototype").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "prototype"; }
+  // «Take to prototype»: link the board to an HTML file and ask the agent to
   // build/refine it from the flow's structure. You then iterate board ↔ preview.
   function takeToPrototype() {
     const at = requireAnchor(); if (!at) return;
-    if (!flow.screens.length) { showToast("El flujo está vacío", "warn"); return; }
+    if (!flow.screens.length) { showToast("The flow is empty", "warn"); return; }
     let rel = flow.proto;
     if (!rel) { rel = "prototipos/" + slugify(flow.name) + ".html"; flow.proto = rel; saveFlow(); renderProjectNav(true); }
     const abs = (at.dir ? at.dir.replace(/\/$/, "") + "/" : "") + rel;
-    let md = "Construye (o refina si ya existe) un PROTOTIPO HTML real de este user flow, en el archivo `" + rel + "` de este proyecto.\n";
-    md += "Requisitos: UN solo archivo HTML autocontenido; Tailwind CSS, Alpine.js y Lucide por CDN (sin instalar dependencias). Si hay un `design.md` o tokens del proyecto, RESPÉTALOS (voz, tono, colores, componentes). Cada pantalla del flujo es una vista; respeta sus secciones y componentes. Deja `data-ai-id` en los elementos clave para poder comentarlos en Ohana.\n\n";
-    md += "# " + (flow.name || "Prototipo") + " — estructura del flujo\n";
+    let md = "Build (or refine if it already exists) a real HTML PROTOTYPE of this user flow, in the file `" + rel + "` of this project.\n";
+    md += "Requirements: ONE self-contained HTML file; Tailwind CSS, Alpine.js, and Lucide via CDN (no installing dependencies). If there's a project `design.md` or tokens, RESPECT THEM (voice, tone, colors, components). Each screen in the flow is a view; respect its sections and components. Leave `data-ai-id` on the key elements so they can be commented on in Ohana.\n\n";
+    md += "# " + (flow.name || "Prototype") + " — flow structure\n";
     md += flowPromptBody();
-    sendToTerminal(at, md, "Prototipo enlazado (" + rel + ") — el agente lo construye; ábrelo en Prototipos");
+    sendToTerminal(at, md, "Prototype linked (" + rel + ") — the agent builds it; open it in Prototypes");
   }
 
   // Mode switch (Preview · Moka)
-  // Moka necesita una carpeta real en disco: ahí vive .ohana/flow.json y ahí
-  // apunta ~/.ohana/active.json, el único puente con las herramientas MCP del
-  // agente. Un tab de URL (dir=null) NO está anclado → el MCP no tiene a dónde
-  // escribir. Regla: "sin carpeta = no entras a Moka".
+  // Moka needs a real folder on disk: that's where .ohana/flow.json lives and where
+  // ~/.ohana/active.json points, the only bridge to the agent's MCP tools. A URL tab
+  // (dir=null) is NOT anchored → the MCP has nowhere to write. Rule: "no folder = no Moka".
   function anchoredTab() { const at = activeTab(); return at && at.dir ? at : null; }
   function requireAnchor() {
     const at = activeTab();
-    if (!at) { showToast("Abre un proyecto primero", "warn"); return null; }
+    if (!at) { showToast("Open a project first", "warn"); return null; }
     if (!at.dir) {
-      showToast("Moka necesita una carpeta. Abre un .html, una carpeta o «Nuevo prototipo».", "warn");
+      showToast("Moka needs a folder. Open an .html, a folder, or 'New prototype'.", "warn");
       openOpenDialog();
       return null;
     }
@@ -7697,7 +7701,7 @@
   // Open the real view a screen is linked to (closes the loop flow ↔ prototype).
   function openLinkedView(link) {
     setFlowMode(false);
-    if (!link) { showToast("Esta pantalla no está vinculada a una vista", "warn"); return; }
+    if (!link) { showToast("This screen isn't linked to a view", "warn"); return; }
     if (/^https?:/i.test(link)) openFromURL(link);
     else window.api.loadDropped(link);
   }
@@ -7707,52 +7711,52 @@
   function runFlowGenerate() {
     const at = requireAnchor(); if (!at) return;
     const prompt = document.getElementById("flow-gen-prompt").value.trim();
-    if (!prompt) { showToast("Describe la funcionalidad primero", "warn"); return; }
-    const schema = '{ "flows": [ { "id": "<id>", "name": "...", "screens": [ { "id": "<id-único>", "name": "<título; si kind=decision, la pregunta>", "desc": "<contexto>", "kind": "page|modal|dialog|decision|start|end|subflow", "status": "todo|wip|done", "apis": [ { "endpoint": "GET /api/…", "ctx": "opcional" } ], "links": [ { "url": "ruta", "ctx": "opcional" } ], "layout": { "dir": "col", "children": [ { "dir": "col", "name": "<SECCIÓN, ej. Hero / Formulario / Filtros>", "children": [ { "type": "<COMPONENTE del catálogo: Button, Input, Data table, Chart, Checkbox, Avatar, Menú, Calendar, Date picker, Carrusel, Breadcrumbs, Badge, Alerta, Acordeón, Buscador>", "title": "<qué es>", "desc": "<detalle>", "items": ["<sub-elemento opcional>"] } ] } ] } } ], "edges": [ { "from": "<id>", "to": "<id>", "label": "<Sí/No en decisiones>", "dir": "fwd|back|both" } ] } ], "active": "<id-del-flujo-activo>" }';
+    if (!prompt) { showToast("Describe the feature first", "warn"); return; }
+    const schema = '{ "flows": [ { "id": "<id>", "name": "...", "screens": [ { "id": "<unique-id>", "name": "<title; if kind=decision, the question>", "desc": "<context>", "kind": "page|modal|dialog|decision|start|end|subflow", "status": "todo|wip|done", "apis": [ { "endpoint": "GET /api/…", "ctx": "optional" } ], "links": [ { "url": "path", "ctx": "optional" } ], "layout": { "dir": "col", "children": [ { "dir": "col", "name": "<SECTION, e.g. Hero / Form / Filters>", "children": [ { "type": "<COMPONENT from the catalog: Button, Input, Data table, Chart, Checkbox, Avatar, Menu, Calendar, Date picker, Carousel, Breadcrumbs, Badge, Alert, Accordion, Search>", "title": "<what it is>", "desc": "<detail>", "items": ["<optional sub-element>"] } ] } ] } } ], "edges": [ { "from": "<id>", "to": "<id>", "label": "<Yes/No on decisions>", "dir": "fwd|back|both" } ] } ], "active": "<active-flow-id>" }';
     // A screen = SECTIONS (containers with a name) → each holds COMPONENTS (leaves with a catalog type).
-    // Never flatten components into a text list; a button is {type:"Button"}, not an item "Botón Enviar".
+    // Never flatten components into a text list; a button is {type:"Button"}, not an item "Send button".
     const isSitemap = boardType() === "sitemap";
     const common =
-      "PRIMERO llama `ohana_status` para confirmar que Ohana tiene un proyecto abierto. Si responde que no hay proyecto activo (o `projectDir` es null), DETENTE y avísame que abra o cree una carpeta en Ohana (Abrir → «Nuevo prototipo»); NO escribas ningún archivo a ciegas.\n" +
-      "Usa las HERRAMIENTAS MCP de Moka (servidor `ohana-comments`); NO escribas flow.json a mano si las tienes. " +
-      "Trabaja sobre el flujo del proyecto activo: NO pases `flowId` — las herramientas resuelven solas el flujo del tab abierto en Ohana (por eso aparece en vivo donde lo ves). Crea pantallas con `ohana_flow_add_screen` (no te preocupes por x/y). " +
-      "Conéctalas con `ohana_flow_connect`. Al terminar llama `ohana_flow_layout`. Aparece EN VIVO en el lienzo.\n" +
-      "DECISIONES: al conectar cada salida de un `decision`, pásale la etiqueta y el color: `ohana_flow_connect({ from, to, label: \"Sí\", color: \"positive\" })` para el camino afirmativo y `{ label: \"No\", color: \"negative\" }` para el negativo. (Si escribes flow.json a mano: cada edge lleva su `label` \"Sí\"/\"No\" — la salida sale sola del nodo correcto.)\n" +
-      "CONTENIDO de cada pantalla (IMPORTANTE): se compone de SECCIONES y, dentro, COMPONENTES. " +
-      "Crea la sección con `ohana_flow_add_section({ screenId, name })` (ej. name \"Hero\", \"Formulario\", \"Filtros\") — devuelve un containerId — y mete cada COMPONENTE con `ohana_flow_add_component({ screenId, section, name })` usando el CATÁLOGO: Button, Input, Data table, Chart, Checkbox, Avatar, Menú, Calendar, Date picker, Carrusel, Breadcrumbs, Badge, Alerta, Acordeón, Buscador. " +
-      "NO pongas los componentes como texto suelto: un botón es un componente `{ name: \"Button\" }`, NO un item \"Botón Enviar\". Un formulario es una sección \"Formulario\" con componentes Input, Input, Button.\n";
-    // Contrato espacial: el agente NO coloca coordenadas (x/y). Ohana ordena solo
-    // con un algoritmo por capas (estilo Sugiyama). Lo único que decide la
-    // limpieza del dibujo es la ESTRUCTURA del grafo. Estas reglas hacen que el
-    // orden salga claro sin que el agente tenga que "ver" el lienzo.
+      "FIRST call `ohana_status` to confirm Ohana has a project open. If it responds that there's no active project (or `projectDir` is null), STOP and tell me to open or create a folder in Ohana (Open → «New prototype»); do NOT write any file blindly.\n" +
+      "Use Moka's MCP TOOLS (the `ohana-comments` server); do NOT write flow.json by hand if you have them. " +
+      "Work on the active project's flow: do NOT pass `flowId` — the tools resolve the flow of the open tab in Ohana on their own (that's why it appears live where you see it). Create screens with `ohana_flow_add_screen` (don't worry about x/y). " +
+      "Connect them with `ohana_flow_connect`. When done, call `ohana_flow_layout`. It appears LIVE on the canvas.\n" +
+      "DECISIONS: when connecting each output of a `decision`, pass it the label and color: `ohana_flow_connect({ from, to, label: \"Yes\", color: \"positive\" })` for the affirmative path and `{ label: \"No\", color: \"negative\" }` for the negative one. (If you write flow.json by hand: each edge carries its `label` \"Yes\"/\"No\" — the output leaves the correct node on its own.)\n" +
+      "CONTENT of each screen (IMPORTANT): it's made of SECTIONS and, inside them, COMPONENTS. " +
+      "Create the section with `ohana_flow_add_section({ screenId, name })` (e.g. name \"Hero\", \"Form\", \"Filters\") — it returns a containerId — and add each COMPONENT with `ohana_flow_add_component({ screenId, section, name })` using the CATALOG: Button, Input, Data table, Chart, Checkbox, Avatar, Menu, Calendar, Date picker, Carousel, Breadcrumbs, Badge, Alert, Accordion, Search. " +
+      "Do NOT put components as loose text: a button is a component `{ name: \"Button\" }`, NOT an item \"Send button\". A form is a section \"Form\" with Input, Input, Button components.\n";
+    // Spatial contract: the agent does NOT place coordinates (x/y). Ohana lays out on
+    // its own with a layered algorithm (Sugiyama-style). The only thing that decides how
+    // clean the drawing is is the graph STRUCTURE. These rules make the order come out
+    // clear without the agent having to "see" the canvas.
     const spatial =
-      "ORDEN ESPACIAL (clave): NO pongas coordenadas ni te preocupes por posiciones — Ohana ordena el grafo automáticamente. Lo único que importa es que la ESTRUCTURA de conexiones esté limpia. El orden de lectura lo da el sentido de las conexiones.\n" +
-      "CANTIDAD: decide TÚ cuántas pantallas hacen falta según la funcionalidad — las necesarias para que la experiencia se entienda, sin inflar ni recortar de más.\n";
+      "SPATIAL ORDER (key): do NOT set coordinates or worry about positions — Ohana lays out the graph automatically. All that matters is that the connection STRUCTURE is clean. Reading order comes from the direction of the connections.\n" +
+      "QUANTITY: YOU decide how many screens are needed for the feature — as many as it takes for the experience to make sense, without padding or trimming too much.\n";
     const instr = isSitemap
-      ? "Construye un SITEMAP (arquitectura de navegación) para esto. " + common + spatial +
-        "Un sitemap es un ÁRBOL que se lee de ARRIBA hacia ABAJO (TB):\n" +
-        "- Nivel 0 (arriba): 1 nodo raíz (la Home) = la entrada de la navegación principal.\n" +
-        "- Debajo, las secciones de nivel 1 (las del menú); debajo de cada una, sus páginas hijas de nivel 2/3.\n" +
-        "- REGLA DE ÁRBOL (evita el enredo): cada página tiene EXACTAMENTE UN padre. Conecta SOLO de PADRE → HIJA. Las hermanas comparten padre pero NO se conectan entre sí. NO hagas enlaces cruzados ni conexiones que salten de nivel — eso cruza líneas y arruina el orden.\n" +
-        "- Si una página cuelga de dos sitios, elige el padre principal (el del menú) y deja el otro vínculo como un `link` en la pantalla, NO como arista.\n" +
-        "- Todo `kind: \"page\"`. NADA de start/end/decision — eso es de user flows, no de sitemaps.\n" +
-        "- Al terminar: `ohana_flow_layout` con direction **TB**.\n\n" +
-        "Sitio: " + prompt
-      : "Construye un USER FLOW (secuencia de tareas) para esto. " + common + spatial +
-        "Un user flow es una SECUENCIA que se lee de IZQUIERDA a DERECHA (LR):\n" +
-        "- EMPIEZA con `kind:\"start\"` (Inicio) y TERMINA cada camino con `kind:\"end\"` (Fin).\n" +
-        "- ESPINA DORSAL: hay un camino principal paso 1 → paso 2 → paso 3… Cada pantalla tiene UN 'siguiente' principal. Conecta en ORDEN cronológico, siempre hacia adelante.\n" +
-        "- DECISIONES (`decision`, rombo): tienen exactamente 2 salidas. La rama **Sí** (positiva, verde) CONTINÚA la espina hacia la derecha; la rama **No** (negativa, roja) es una ramificación lateral que o bien REINGRESA a un paso posterior o TERMINA en un `end`.\n" +
-        "- EVITA el enredo: no hagas saltos largos ni conexiones hacia atrás salvo un reintento real (marca esos como `dir: \"back\"`). No conectes una pantalla con muchas otras; mantén ramas cortas.\n" +
-        "- `modal`/`dialog` para superposiciones; si un modal lleva a otra parte, conéctalo a su destino.\n" +
-        "- Al terminar: `ohana_flow_layout` con direction **LR**.\n\n" +
-        "Funcionalidad: " + prompt;
-    const full = instr + "\n\nSi NO tienes las herramientas MCP, como alternativa: llama primero a Ohana por su ruta — el archivo está en `<projectDir>/.ohana/flow.json`, donde `<projectDir>` es la carpeta que Ohana tiene abierta (pregúntame la ruta si no la sabes; NO uses una ruta relativa a tu cwd, sería un flujo huérfano que la app no lee). Conserva los demás flujos y deja `active` apuntando al flujo que rellenes:\n" + schema;
+      ? "Build a SITEMAP (navigation architecture) for this. " + common + spatial +
+        "A sitemap is a TREE read TOP to BOTTOM (TB):\n" +
+        "- Level 0 (top): 1 root node (the Home) = the entry to the main navigation.\n" +
+        "- Below it, the level-1 sections (the menu ones); below each, its level-2/3 child pages.\n" +
+        "- TREE RULE (avoids the tangle): every page has EXACTLY ONE parent. Connect ONLY PARENT → CHILD. Siblings share a parent but do NOT connect to each other. Do NOT make cross-links or connections that skip levels — that crosses lines and ruins the order.\n" +
+        "- If a page hangs from two places, pick the primary parent (the menu one) and leave the other tie as a `link` on the screen, NOT as an edge.\n" +
+        "- Everything `kind: \"page\"`. NO start/end/decision — that's for user flows, not sitemaps.\n" +
+        "- When done: `ohana_flow_layout` with direction **TB**.\n\n" +
+        "Site: " + prompt
+      : "Build a USER FLOW (sequence of tasks) for this. " + common + spatial +
+        "A user flow is a SEQUENCE read LEFT to RIGHT (LR):\n" +
+        "- START with `kind:\"start\"` (Start) and END each path with `kind:\"end\"` (End).\n" +
+        "- BACKBONE: there's a main path step 1 → step 2 → step 3… Each screen has ONE main 'next'. Connect in chronological ORDER, always moving forward.\n" +
+        "- DECISIONS (`decision`, diamond): they have exactly 2 outputs. The **Yes** branch (positive, green) CONTINUES the backbone to the right; the **No** branch (negative, red) is a side branch that either RE-ENTERS a later step or ENDS in an `end`.\n" +
+        "- AVOID the tangle: don't make long jumps or backward connections except a real retry (mark those as `dir: \"back\"`). Don't connect one screen to many others; keep branches short.\n" +
+        "- `modal`/`dialog` for overlays; if a modal leads elsewhere, connect it to its destination.\n" +
+        "- When done: `ohana_flow_layout` with direction **LR**.\n\n" +
+        "Feature: " + prompt;
+    const full = instr + "\n\nIf you do NOT have the MCP tools, as a fallback: first ask Ohana for its path — the file is at `<projectDir>/.ohana/flow.json`, where `<projectDir>` is the folder Ohana has open (ask me for the path if you don't know it; do NOT use a path relative to your cwd, it would be an orphan flow the app doesn't read). Keep the other flows and leave `active` pointing to the flow you fill in:\n" + schema;
     _flowAutoLayoutPending = true; // tidy if it falls back to writing the file
     if (!termVisible) toggleTerminal(); else switchTerminalTo(at);
     setTimeout(() => window.api.termInput({ tabKey: at.key, data: full }), 280);
     flowGenPanel.classList.remove("visible");
-    showToast("Instrucción enviada — el agente construye el " + (isSitemap ? "sitemap" : "flujo") + " con las herramientas de Moka (en vivo)", "check");
+    showToast("Instruction sent — the agent builds the " + (isSitemap ? "sitemap" : "flow") + " with Moka's tools (live)", "check");
   }
 
   document.getElementById("flow-add").onclick = () => addScreen("page");
@@ -7793,7 +7797,7 @@
     const abs = (at.dir ? at.dir.replace(/\/$/, "") + "/" : "") + flow.proto;
     openPrototypeArtifact(at, abs);
   };
-  document.getElementById("flow-refresh").onclick = () => { loadFlowForActive(); showToast("Flujo recargado del disco", "refresh-cw"); };
+  document.getElementById("flow-refresh").onclick = () => { loadFlowForActive(); showToast("Flow reloaded from disk", "refresh-cw"); };
   document.getElementById("flow-generate").onclick = () => flowGenPanel.classList.toggle("visible");
   document.getElementById("flow-gen-close").onclick = () => flowGenPanel.classList.remove("visible");
   document.getElementById("flow-gen-run").onclick = runFlowGenerate;
@@ -7834,9 +7838,9 @@
   // Error empty-states with a paste-to-terminal prompt so an agent can fix it.
   const FLOW_ERRORS = {
     corrupt: {
-      title: "El flujo está dañado",
-      msg: "No se pudo leer .ohana/flow.json (JSON malformado). No sobrescribimos el archivo para no perder tu trabajo; pídele a tu agente que lo repare.",
-      prompt: "El archivo .ohana/flow.json de este proyecto está malformado (JSON inválido) y Ohana no puede cargar el flujo de Moka. Ábrelo, localiza el error de sintaxis y repáralo conservando la estructura { \"flows\": [ { \"id\", \"name\", \"screens\", \"edges\" } ], \"active\" }. No borres flujos ni pantallas existentes.",
+      title: "The flow is corrupted",
+      msg: "Couldn't read .ohana/flow.json (malformed JSON). We won't overwrite the file so you don't lose your work; ask your agent to repair it.",
+      prompt: "This project's .ohana/flow.json file is malformed (invalid JSON) and Ohana can't load the Moka flow. Open it, find the syntax error, and repair it while preserving the structure { \"flows\": [ { \"id\", \"name\", \"screens\", \"edges\" } ], \"active\" }. Don't delete existing flows or screens.",
     },
   };
   function showFlowError(kind) {
@@ -7907,7 +7911,7 @@
   };
   document.getElementById("flow-error-copy").onclick = () => {
     const txt = document.getElementById("flow-error-prompt").textContent;
-    try { navigator.clipboard.writeText(txt); showToast("Prompt copiado", "check"); } catch (e) {}
+    try { navigator.clipboard.writeText(txt); showToast("Prompt copied", "check"); } catch (e) {}
   };
   document.getElementById("preview-error-send").onclick = () => {
     const at = activeTab(); const txt = document.getElementById("preview-error-prompt").textContent;
@@ -7920,7 +7924,7 @@
     try { const c = await window.api.ohanaReadGlobal("mcp-alive.json"); const d = c ? JSON.parse(c) : null; _mcpAlive = !!(d && d.at && (Date.now() - d.at < 5 * 60 * 1000)); }
     catch (e) { _mcpAlive = false; }
     const el = document.getElementById("mcp-status");
-    if (el) { el.classList.toggle("on", _mcpAlive); el.title = _mcpAlive ? "MCP conectado — clic para abrir la documentación" : "MCP no detectado — clic para ver cómo conectarlo a tu agente"; }
+    if (el) { el.classList.toggle("on", _mcpAlive); el.title = _mcpAlive ? "MCP connected — click to open the documentation" : "MCP not detected — click to see how to connect it to your agent"; }
   }
   // Single entry point to the docs: the MCP chip in the header. When the MCP is
   // missing it lands on the connect section; otherwise on the contextual one.
@@ -7946,7 +7950,7 @@
     if (cmd && e.shiftKey && (e.key === "c" || e.key === "C")) { e.preventDefault(); flowDuplicateSelection(); }
     else if (cmd && (e.key === "z" || e.key === "Z")) { e.preventDefault(); if (e.shiftKey) flowRedo(); else flowUndo(); }
     else if (cmd && (e.key === "y" || e.key === "Y")) { e.preventDefault(); flowRedo(); }
-    else if (cmd && (e.key === "c" || e.key === "C")) { e.preventDefault(); if (flowCopySelection()) showToast(flowSel.size + " tarjeta(s) copiada(s)", "check"); }
+    else if (cmd && (e.key === "c" || e.key === "C")) { e.preventDefault(); if (flowCopySelection()) showToast(flowSel.size + " card(s) copied", "check"); }
     else if (cmd && (e.key === "v" || e.key === "V" || e.key === "b" || e.key === "B")) { e.preventDefault(); flowPaste(); }
     else if (cmd && (e.key === "d" || e.key === "D")) { e.preventDefault(); flowDuplicateSelection(); }
     else if (cmd && (e.key === "a" || e.key === "A")) { e.preventDefault(); flowSel = new Set(flow.screens.map((s) => s.id)); refreshSelClasses(); }

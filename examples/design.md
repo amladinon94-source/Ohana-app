@@ -1,34 +1,34 @@
 # Design — Ohana onboarding
 
-> Fuente de verdad del diseño de este prototipo. El Inspector lee estos tokens;
-> para cambiar un valor, editá este archivo.
+> The design source of truth for this prototype. The Inspector reads these tokens;
+> to change a value, edit this file.
 
-## Principios
-- Local y honesto: nada de cuentas ni nube.
-- Editorial cálido: tipografía grande, gradiente marfil → terracota.
+## Principles
+- Local and honest: no accounts, no cloud.
+- Warm editorial: large type, ivory → terracotta gradient.
 
 ## Tokens
 
 ### Color
-| Token | Valor | Uso |
-|-------|-------|-----|
-| --ink | #211C17 | Texto principal |
-| --terra | #FF7A59 | Acento / terracota |
-| --paper | #FBF7F0 | Texto sobre fondo oscuro |
+| Token | Value | Usage |
+|-------|-------|-------|
+| --ink | #211C17 | Primary text |
+| --terra | #FF7A59 | Accent / terracotta |
+| --paper | #FBF7F0 | Text on dark background |
 
-### Tipografía
+### Typography
 - Display: Archivo 800
 - Body: Archivo 400
 
 ### Spacing & radius
-| Token | Valor | Uso |
-|-------|-------|-----|
-| --radius | 18px | Tarjetas |
-| --gap | 24px | Separación de secciones |
+| Token | Value | Usage |
+|-------|-------|-------|
+| --radius | 18px | Cards |
+| --gap | 24px | Section spacing |
 
-## Voz y tono
-- Directo, cálido, sin jerga.
+## Voice & tone
+- Direct, warm, no jargon.
 
-## Decisiones
-- 2026-06-22 — Paleta terracota + marfil, alineada a la referencia ConnectX.
-- 2026-06-22 — Token de acento `--terra` actualizado de #C0512A a #FF7A59 (terracota más cálida/coral).
+## Decisions
+- 2026-06-22 — Terracotta + ivory palette, aligned to the ConnectX reference.
+- 2026-06-22 — Accent token `--terra` updated from #C0512A to #FF7A59 (warmer/coral terracotta).
